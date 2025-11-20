@@ -1,0 +1,41 @@
+{
+  "name" :  "testMovement",
+  "systems" : [
+    {
+      "name" : "modules::movement::move", 
+      "timesToRun" : 1
+    }
+  ],
+  "initial" : [
+    {
+      "entity" : "TestEntity",
+      "components" : {
+        "modules.movement.Position" : {
+          "x" : 10.0,
+          "y" : 20.0
+        },
+        "modules.movement.Velocity" : {
+          "x" : 1.0,
+          "y" : 2.0
+        }
+      }
+    }
+  ],
+  "expected" : [
+    {
+      "entity" : "TestEntity",
+      "components" : [
+        {
+          "name" : "Position",
+          "x" : 11.0,
+          "y" : 22.0
+        },
+        {
+          "name" : "Velocity",
+          "x" : 1.0,
+          "y" : 2.0
+        }
+      ]
+    }
+  ]
+}
