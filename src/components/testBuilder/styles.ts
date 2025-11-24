@@ -5,10 +5,11 @@ export const Container = styled.div`
   margin: 0 auto;
   padding: 20px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif;
+  color: var(--color-text);
 `;
 
 export const Header = styled.h1`
-  color: #333;
+  color: var(--color-text);
   margin-bottom: 30px;
   text-align: center;
 `;
@@ -16,16 +17,16 @@ export const Header = styled.h1`
 export const Section = styled.div`
   margin-bottom: 30px;
   padding: 20px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
-  background-color: #f9f9f9;
+  background-color: var(--color-surface);
 `;
 
 export const SectionHeader = styled.h2`
-  color: #444;
+  color: var(--color-text);
   margin-bottom: 15px;
   font-size: 1.2em;
-  border-bottom: 2px solid #007acc;
+  border-bottom: 2px solid var(--color-focus);
   padding-bottom: 5px;
 `;
 
@@ -37,65 +38,76 @@ export const Label = styled.label`
   display: block;
   margin-bottom: 5px;
   font-weight: 600;
-  color: #555;
+  color: var(--color-text);
 `;
 
 export const Input = styled.input`
   width: 100%;
   padding: 8px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--color-input-border);
   border-radius: 4px;
   font-size: 14px;
   box-sizing: border-box;
+  background-color: var(--color-input-bg);
+  color: var(--color-input-text);
   
   &:focus {
     outline: none;
-    border-color: #007acc;
-    box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.2);
+    border-color: var(--color-focus);
+    box-shadow: 0 0 0 1px var(--color-focus);
   }
   
   &:disabled {
-    background-color: #f5f5f5;
-    color: #666;
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 `;
 
 export const Select = styled.select`
   width: 100%;
   padding: 8px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--color-input-border);
   border-radius: 4px;
   font-size: 14px;
   box-sizing: border-box;
-  background-color: white;
+  background-color: var(--color-input-bg);
+  color: var(--color-input-text);
   
   &:focus {
     outline: none;
-    border-color: #007acc;
-    box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.2);
+    border-color: var(--color-focus);
+    box-shadow: 0 0 0 1px var(--color-focus);
   }
   
   &:disabled {
-    background-color: #f5f5f5;
-    color: #666;
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  /* Style the dropdown options to match theme */
+  option {
+    background-color: var(--color-dropdown-bg);
+    color: var(--color-dropdown-text);
   }
 `;
 
 export const TextArea = styled.textarea`
   width: 100%;
   padding: 8px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--color-input-border);
   border-radius: 4px;
   font-size: 14px;
   font-family: 'Courier New', monospace;
   resize: vertical;
   min-height: 100px;
   box-sizing: border-box;
+  background-color: var(--color-input-bg);
+  color: var(--color-input-text);
   
   &:focus {
     outline: none;
-    border-color: #007acc;
-    box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.2);
+    border-color: var(--color-focus);
+    box-shadow: 0 0 0 1px var(--color-focus);
   }
 `;
 
@@ -178,9 +190,9 @@ export const SystemList = styled.div`
 `;
 
 export const SystemItem = styled.div`
-  background-color: white;
+  background-color: var(--color-input-bg);
   padding: 15px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   display: grid;
   grid-template-columns: 2fr 1fr auto;
@@ -195,9 +207,9 @@ export const EntityBuilder = styled.div`
 `;
 
 export const EntityItem = styled.div`
-  background-color: white;
+  background-color: var(--color-input-bg);
   padding: 20px;
-  border: 2px solid #ddd;
+  border: 2px solid var(--color-border);
   border-radius: 8px;
   position: relative;
 `;
@@ -210,16 +222,16 @@ export const ComponentBuilder = styled.div`
 `;
 
 export const ComponentItem = styled.div`
-  background-color: #f8f9fa;
+  background-color: var(--color-surface);
   padding: 15px;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   margin-left: 20px;
 `;
 
 export const PreviewBox = styled.div`
-  background-color: #f8f9fa;
-  border: 1px solid #e9ecef;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 4px;
   padding: 15px;
   max-height: 400px;
@@ -231,6 +243,7 @@ export const PreviewBox = styled.div`
     font-size: 12px;
     white-space: pre-wrap;
     word-wrap: break-word;
+    color: var(--color-text);
   }
 `;
 
@@ -240,6 +253,6 @@ export const ActionButtons = styled.div`
   gap: 10px;
   justify-content: center;
   padding: 20px 0;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid var(--color-border);
   margin-top: 20px;
 `;

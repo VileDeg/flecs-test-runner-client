@@ -4,8 +4,21 @@
   font-weight: 400;
 
   color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  
+  /* Dark theme variables (default) */
+  --color-text: rgba(255, 255, 255, 0.87);
+  --color-background: #242424;
+  --color-surface: #1a1a1a;
+  --color-border: #3a3a3a;
+  --color-input-bg: #2a2a2a;
+  --color-input-text: rgba(255, 255, 255, 0.87);
+  --color-input-border: #4a4a4a;
+  --color-focus: #646cff;
+  --color-dropdown-bg: #2a2a2a;
+  --color-dropdown-text: rgba(255, 255, 255, 0.87);
+  
+  color: var(--color-text);
+  background-color: var(--color-background);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -56,8 +69,17 @@ button:focus-visible {
 
 @media (prefers-color-scheme: light) {
   :root {
-    color: #213547;
-    background-color: #ffffff;
+    /* Light theme variables */
+    --color-text: #213547;
+    --color-background: #ffffff;
+    --color-surface: #f9f9f9;
+    --color-border: #e0e0e0;
+    --color-input-bg: #ffffff;
+    --color-input-text: #213547;
+    --color-input-border: #d0d0d0;
+    --color-focus: #646cff;
+    --color-dropdown-bg: #ffffff;
+    --color-dropdown-text: #213547;
   }
   a:hover {
     color: #747bff;

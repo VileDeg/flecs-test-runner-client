@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { type SystemInvocation } from "../uploader/uploader.tsx";
 import { useFlecsConnection } from "../../context/flecsConnection/useFlecsConnection.ts";
-import { FlecsMetadataService, type FlecsSystem, type FlecsComponent } from "../../common/flecsMetadataService.ts";
+import { FlecsMetadataService, type FlecsSystem, type FlecsComponent, type FlecsModule } from "../../common/flecsMetadataService.ts";
 import { TestRunner, type HierarchicalTest, type EntityData, type ComponentData } from "../../common/testRunner.ts";
+import { ModuleSelector } from "../moduleSelector/moduleSelector.tsx";
 import {
   Container,
   Header,
@@ -42,23 +43,54 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({ onTestCreated }) => {
   const [successMessage, setSuccessMessage] = useState("");
   const [jsonPreview, setJsonPreview] = useState("");
   
-  // Available systems and components from Flecs
+  // Module selection
+  const [availableModules, setAvailableModules] = useState<FlecsModule[]>([]);
+  const [selectedModules, setSelectedModules] = useState<string[]>([]);
+  
+  // Available systems and components from Flecs (filtered by selected modules)
   const [availableSystems, setAvailableSystems] = useState<FlecsSystem[]>([]);
   const [availableComponents, setAvailableComponents] = useState<FlecsComponent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMetadata, setLoadingMetadata] = useState(false);
 
   const { connection } = useFlecsConnection();
 
-  // Load available systems and components on mount
+  // Load available modules on mount
   useEffect(() => {
-    const loadFlecsMetadata = async () => {
+    const loadModules = async () => {
       if (!connection) return;
       
       setLoading(true);
       try {
+        const modulesData = await FlecsMetadataService.getModules(connection);
+        setAvailableModules(modulesData);
+        // Initially select all modules
+        setSelectedModules(modulesData.map(m => m.fullPath));
+        setErrorMessage("");
+      } catch (error: any) {
+        setErrorMessage(`Failed to load modules: ${error.message}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadModules();
+  }, [connection]);
+
+  // Load systems and components when selected modules change
+  useEffect(() => {
+    const loadFlecsMetadata = async () => {
+      if (!connection || selectedModules.length === 0) {
+        setAvailableSystems([]);
+        setAvailableComponents([]);
+        return;
+      }
+      
+      setLoadingMetadata(true);
+      try {
         const [systemsData, componentsData] = await Promise.all([
-          FlecsMetadataService.getSystems(),
-          FlecsMetadataService.getComponents()
+          FlecsMetadataService.getSystems(connection, selectedModules),
+          FlecsMetadataService.getComponents(connection, selectedModules)
         ]);
         
         setAvailableSystems(systemsData);
@@ -67,12 +99,12 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({ onTestCreated }) => {
       } catch (error: any) {
         setErrorMessage(`Failed to load Flecs metadata: ${error.message}`);
       } finally {
-        setLoading(false);
+        setLoadingMetadata(false);
       }
     };
 
     loadFlecsMetadata();
-  }, [connection]);
+  }, [connection, selectedModules]);
 
   // System management
   const addSystem = () => {
@@ -133,7 +165,13 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({ onTestCreated }) => {
     }
   };
 
-  const updateComponent = (entityIndex: number, componentIndex: number, field: string, value: any, isInitial: boolean) => {
+  const updateComponent = (
+    entityIndex: number, 
+    componentIndex: number, 
+    field: string, 
+    value: any, 
+    isInitial: boolean
+  ) => {
     if (isInitial) {
       const newEntities = [...initialEntities];
       if (field === 'name') {
@@ -146,6 +184,8 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({ onTestCreated }) => {
           component.fields.forEach(field => {
             newComponentData[field.name] = FlecsMetadataService.getDefaultValueForType(field.type);
           });
+        } else {
+          // TODO: component not found?
         }
         
         newEntities[entityIndex].components[componentIndex] = newComponentData;
@@ -279,12 +319,17 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({ onTestCreated }) => {
     return (
       <Container>
         <Header>Test Builder</Header>
-        <div>Loading available systems and components...</div>
+        <div>Loading modules...</div>
       </Container>
     );
   }
 
-  const renderComponentFields = (component: ComponentData, entityIndex: number, componentIndex: number, isInitial: boolean) => {
+  const renderComponentFields = (
+    component: ComponentData, 
+    entityIndex: number, 
+    componentIndex: number, 
+    isInitial: boolean
+  ) => {
     const componentSchema = availableComponents.find(c => c.name === component.name);
     if (!componentSchema || componentSchema.fields.length === 0) {
       return <div style={{ fontStyle: 'italic', color: '#666' }}>No fields available for this component</div>;
@@ -309,12 +354,139 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({ onTestCreated }) => {
     ));
   };
 
+  const renderSystemsList = () => {
+    return (
+      <>
+        <SystemList>
+          {systems.map((system, index) => (
+            <SystemItem key={index}>
+              <FormGroup>
+                <Label>System Name</Label>
+                <Select
+                  value={system.name}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => 
+                    updateSystem(index, 'name', e.target.value)
+                  }
+                >
+                  <option value="">Select a system...</option>
+                  {availableSystems.map(sys => (
+                    <option key={sys.name} value={sys.name}>
+                      {sys.name} {sys.module && `(${sys.module})`}
+                    </option>
+                  ))}
+                </Select>
+              </FormGroup>
+              <FormGroup>
+                <Label>Times to Run</Label>
+                <Input
+                  type="number"
+                  value={system.timesToRun}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
+                    updateSystem(index, 'timesToRun', parseInt(e.target.value) || 1)
+                  }
+                  min="1"
+                />
+              </FormGroup>
+              <RemoveButton onClick={() => removeSystem(index)}>Remove</RemoveButton>
+            </SystemItem>
+          ))}
+        </SystemList>
+        <AddButton onClick={addSystem}>Add System</AddButton>
+      </>
+    );
+  };
+
+  const renderEntityBuilder = (
+    entities: EntityData[],
+    isInitial: boolean
+  ) => {
+    return (
+      <>
+        <EntityBuilder>
+          {entities.map((entity, entityIndex) => (
+            <EntityItem key={entityIndex}>
+              <FormGroup>
+                <Label>Entity Name</Label>
+                <Input
+                  type="text"
+                  value={entity.entity}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
+                    updateEntityName(entityIndex, e.target.value, isInitial)
+                  }
+                  placeholder="e.g., TestEntity"
+                />
+              </FormGroup>
+              
+              <ComponentBuilder>
+                {entity.components.map((component, componentIndex) => (
+                  <ComponentItem key={componentIndex}>
+                    <FormGroup>
+                      <Label>Component</Label>
+                      <Select
+                        value={component.name}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => 
+                          updateComponent(entityIndex, componentIndex, 'name', e.target.value, isInitial)
+                        }
+                        disabled={availableComponents.length === 0}
+                      >
+                        <option value="">
+                          {availableComponents.length === 0 
+                            ? 'No components available in selected modules' 
+                            : 'Select a component...'}
+                        </option>
+                        {availableComponents.map(comp => (
+                          <option key={comp.name} value={comp.name}>
+                            {comp.name} {comp.module && `(${comp.module})`}
+                          </option>
+                        ))}
+                      </Select>
+                    </FormGroup>
+                    
+                    {component.name && (
+                      <div>
+                        <Label>Component Fields</Label>
+                        {renderComponentFields(component, entityIndex, componentIndex, isInitial)}
+                      </div>
+                    )}
+                    
+                    <RemoveButton onClick={() => removeComponent(entityIndex, componentIndex, isInitial)}>
+                      Remove Component
+                    </RemoveButton>
+                  </ComponentItem>
+                ))}
+                <AddButton onClick={() => addComponent(entityIndex, isInitial)}>Add Component</AddButton>
+              </ComponentBuilder>
+              
+              <RemoveButton onClick={() => removeEntity(entityIndex, isInitial)}>Remove Entity</RemoveButton>
+            </EntityItem>
+          ))}
+        </EntityBuilder>
+        <AddButton onClick={() => addEntity(isInitial)}>Add Entity</AddButton>
+      </>
+    );
+  };
+
   return (
     <Container>
       <Header>Test Builder</Header>
       
       {errorMessage && <ErrorBox>{errorMessage}</ErrorBox>}
       {successMessage && <SuccessBox>{successMessage}</SuccessBox>}
+
+      <ModuleSelector
+        modules={availableModules}
+        selectedModules={selectedModules}
+        onSelectionChange={setSelectedModules}
+        loading={false}
+      />
+
+      {loadingMetadata && (
+        <Section>
+          <div style={{ textAlign: 'center', color: '#666' }}>
+            Loading systems and components...
+          </div>
+        </Section>
+      )}
 
       <Section>
         <SectionHeader>Test Configuration</SectionHeader>
@@ -331,147 +503,39 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({ onTestCreated }) => {
 
       <Section>
         <SectionHeader>Systems to Run</SectionHeader>
-        <SystemList>
-          {systems.map((system, index) => (
-            <SystemItem key={index}>
-              <FormGroup>
-                <Label>System Name</Label>
-                <Select
-                  value={system.name}
-                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateSystem(index, 'name', e.target.value)}
-                >
-                  <option value="">Select a system...</option>
-                  {availableSystems.map(sys => (
-                    <option key={sys.name} value={sys.name}>
-                      {sys.name} {sys.module && `(${sys.module})`}
-                    </option>
-                  ))}
-                </Select>
-              </FormGroup>
-              <FormGroup>
-                <Label>Times to Run</Label>
-                <Input
-                  type="number"
-                  value={system.timesToRun}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateSystem(index, 'timesToRun', parseInt(e.target.value) || 1)}
-                  min="1"
-                />
-              </FormGroup>
-              <RemoveButton onClick={() => removeSystem(index)}>Remove</RemoveButton>
-            </SystemItem>
-          ))}
-        </SystemList>
-        <AddButton onClick={addSystem}>Add System</AddButton>
+        {selectedModules.length === 0 ? (
+          <div style={{ textAlign: 'center', color: '#666', fontStyle: 'italic' }}>
+            Please select at least one module to see available systems
+          </div>
+        ) : availableSystems.length === 0 ? (
+          <div style={{ textAlign: 'center', color: '#666', fontStyle: 'italic' }}>
+            No systems found in selected modules
+          </div>
+        ) : (
+          renderSystemsList()
+        )}
       </Section>
 
       <Section>
         <SectionHeader>Initial State (Entities & Components)</SectionHeader>
-        <EntityBuilder>
-          {initialEntities.map((entity, entityIndex) => (
-            <EntityItem key={entityIndex}>
-              <FormGroup>
-                <Label>Entity Name</Label>
-                <Input
-                  type="text"
-                  value={entity.entity}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateEntityName(entityIndex, e.target.value, true)}
-                  placeholder="e.g., TestEntity"
-                />
-              </FormGroup>
-              
-              <ComponentBuilder>
-                {entity.components.map((component, componentIndex) => (
-                  <ComponentItem key={componentIndex}>
-                    <FormGroup>
-                      <Label>Component</Label>
-                      <Select
-                        value={component.name}
-                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateComponent(entityIndex, componentIndex, 'name', e.target.value, true)}
-                      >
-                        <option value="">Select a component...</option>
-                        {availableComponents.map(comp => (
-                          <option key={comp.name} value={comp.name}>
-                            {comp.name} {comp.module && `(${comp.module})`}
-                          </option>
-                        ))}
-                      </Select>
-                    </FormGroup>
-                    
-                    {component.name && (
-                      <div>
-                        <Label>Component Fields</Label>
-                        {renderComponentFields(component, entityIndex, componentIndex, true)}
-                      </div>
-                    )}
-                    
-                    <RemoveButton onClick={() => removeComponent(entityIndex, componentIndex, true)}>
-                      Remove Component
-                    </RemoveButton>
-                  </ComponentItem>
-                ))}
-                <AddButton onClick={() => addComponent(entityIndex, true)}>Add Component</AddButton>
-              </ComponentBuilder>
-              
-              <RemoveButton onClick={() => removeEntity(entityIndex, true)}>Remove Entity</RemoveButton>
-            </EntityItem>
-          ))}
-        </EntityBuilder>
-        <AddButton onClick={() => addEntity(true)}>Add Entity</AddButton>
+        {selectedModules.length === 0 ? (
+          <div style={{ textAlign: 'center', color: '#666', fontStyle: 'italic' }}>
+            Please select at least one module to see available components
+          </div>
+        ) : (
+          renderEntityBuilder(initialEntities, true)
+        )}
       </Section>
 
       <Section>
         <SectionHeader>Expected State (After System Execution)</SectionHeader>
-        <EntityBuilder>
-          {expectedEntities.map((entity, entityIndex) => (
-            <EntityItem key={entityIndex}>
-              <FormGroup>
-                <Label>Entity Name</Label>
-                <Input
-                  type="text"
-                  value={entity.entity}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateEntityName(entityIndex, e.target.value, false)}
-                  placeholder="e.g., TestEntity"
-                />
-              </FormGroup>
-              
-              <ComponentBuilder>
-                {entity.components.map((component, componentIndex) => (
-                  <ComponentItem key={componentIndex}>
-                    <FormGroup>
-                      <Label>Component</Label>
-                      <Select
-                        value={component.name}
-                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateComponent(entityIndex, componentIndex, 'name', e.target.value, false)}
-                      >
-                        <option value="">Select a component...</option>
-                        {availableComponents.map(comp => (
-                          <option key={comp.name} value={comp.name}>
-                            {comp.name} {comp.module && `(${comp.module})`}
-                          </option>
-                        ))}
-                      </Select>
-                    </FormGroup>
-                    
-                    {component.name && (
-                      <div>
-                        <Label>Component Fields</Label>
-                        {renderComponentFields(component, entityIndex, componentIndex, false)}
-                      </div>
-                    )}
-                    
-                    <RemoveButton onClick={() => removeComponent(entityIndex, componentIndex, false)}>
-                      Remove Component
-                    </RemoveButton>
-                  </ComponentItem>
-                ))}
-                <AddButton onClick={() => addComponent(entityIndex, false)}>Add Component</AddButton>
-              </ComponentBuilder>
-              
-              <RemoveButton onClick={() => removeEntity(entityIndex, false)}>Remove Entity</RemoveButton>
-            </EntityItem>
-          ))}
-        </EntityBuilder>
-        <AddButton onClick={() => addEntity(false)}>Add Entity</AddButton>
+        {selectedModules.length === 0 ? (
+          <div style={{ textAlign: 'center', color: '#666', fontStyle: 'italic' }}>
+            Please select at least one module to see available components
+          </div>
+        ) : (
+          renderEntityBuilder(expectedEntities, false)
+        )}
       </Section>
 
       <ActionButtons>
