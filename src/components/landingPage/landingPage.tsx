@@ -1,5 +1,5 @@
-import { Uploader, type UnitTest } from "../uploader/uploader.tsx";
-import { TestRunner, type HierarchicalTest } from "../../common/testRunner.ts";
+import { Uploader } from "../uploader/uploader.tsx";
+import { TestRunner, type UnitTest } from "../../common/testRunner.ts";
 
 import { useState } from 'react'
 
@@ -22,7 +22,7 @@ JSON may start with `tests` array or may only contain one test element
 */
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onTestsUploaded }) => {
-  const [tests, setTests] = useState<(UnitTest | HierarchicalTest)[]>([]);
+  const [tests, setTests] = useState<UnitTest[]>([]);
   const [errorMessage, setErrorMessage] = useState<string>("");
   
   const { connection } = useFlecsConnection();
@@ -38,13 +38,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onTestsUploaded }) => 
   
   //     });
   
-  const onTestsParsed = (tests: (UnitTest | HierarchicalTest)[]) => {
+  const onTestsParsed = (tests: UnitTest[]) => {
     setTests(tests);
     runUnitTests(tests);
     onTestsUploaded();
   };
   
-  const runUnitTests = async (testsToRun: (UnitTest | HierarchicalTest)[]) => {
+  const runUnitTests = async (testsToRun: UnitTest[]) => {
     setErrorMessage("");
     
     try {
@@ -77,10 +77,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onTestsUploaded }) => 
           <TestsList>
             {tests.map((t) => (
               <li key={t.name}>
-                <strong>{t.name}</strong> – {t.systems.map((s) => s.name).join(", ")} 
-                <span style={{ fontStyle: 'italic', marginLeft: '10px' }}>
-                  ({TestRunner.isHierarchicalTest(t) ? 'Hierarchical' : 'Script-based'})
-                </span>
+                <strong>{t.name}</strong> – {t.systems.map((s) => s.name).join(", ")}
               </li>
             ))}
           </TestsList>

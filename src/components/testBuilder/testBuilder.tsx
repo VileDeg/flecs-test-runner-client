@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { type SystemInvocation } from "../uploader/uploader.tsx";
 import { useFlecsConnection } from "../../context/flecsConnection/useFlecsConnection.ts";
 import { FlecsMetadataService, type FlecsSystem, type FlecsComponent, type FlecsModule } from "../../common/flecsMetadataService.ts";
-import { TestRunner, type HierarchicalTest, type EntityData, type ComponentData } from "../../common/testRunner.ts";
+import { TestRunner, type SystemInvocation, type EntityData, type ComponentData } from "../../common/testRunner.ts";
 import { ModuleSelector } from "../moduleSelector/moduleSelector.tsx";
 import {
   Container,
@@ -30,22 +29,37 @@ import {
   Select,
 } from "./styles.ts";
 
-interface TestBuilderProps {
-  onTestCreated?: () => void;
+export interface TestBuilderPersistedState {
+  testName: string;
+  systems: SystemInvocation[];
+  initialEntities: EntityData[];
+  expectedEntities: EntityData[];
+  selectedModules: string[];
 }
 
-export const TestBuilder: React.FC<TestBuilderProps> = ({ onTestCreated }) => {
-  const [testName, setTestName] = useState("");
-  const [systems, setSystems] = useState<SystemInvocation[]>([]);
-  const [initialEntities, setInitialEntities] = useState<EntityData[]>([]);
-  const [expectedEntities, setExpectedEntities] = useState<EntityData[]>([]);
+interface TestBuilderProps {
+  onTestCreated?: () => void;
+  persistedState?: TestBuilderPersistedState;
+  onStateChange?: (state: TestBuilderPersistedState) => void;
+}
+
+export const TestBuilder: React.FC<TestBuilderProps> = ({ 
+  onTestCreated, 
+  persistedState,
+  onStateChange 
+}) => {
+  const [testName, setTestName] = useState(persistedState?.testName || "");
+  const [systems, setSystems] = useState<SystemInvocation[]>(persistedState?.systems || []);
+  const [initialEntities, setInitialEntities] = useState<EntityData[]>(persistedState?.initialEntities || []);
+  const [expectedEntities, setExpectedEntities] = useState<EntityData[]>(persistedState?.expectedEntities || []);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [jsonPreview, setJsonPreview] = useState("");
   
   // Module selection
   const [availableModules, setAvailableModules] = useState<FlecsModule[]>([]);
-  const [selectedModules, setSelectedModules] = useState<string[]>([]);
+  const [selectedModules, setSelectedModules] = useState<string[]>(persistedState?.selectedModules || []);
+  //const [usedModules, setUsedModules] = useState<string[]>([]);
   
   // Available systems and components from Flecs (filtered by selected modules)
   const [availableSystems, setAvailableSystems] = useState<FlecsSystem[]>([]);
@@ -54,6 +68,19 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({ onTestCreated }) => {
   const [loadingMetadata, setLoadingMetadata] = useState(false);
 
   const { connection } = useFlecsConnection();
+
+  // Persist state changes to parent component
+  useEffect(() => {
+    if (onStateChange) {
+      onStateChange({
+        testName,
+        systems,
+        initialEntities,
+        expectedEntities,
+        selectedModules
+      });
+    }
+  }, [testName, systems, initialEntities, expectedEntities, selectedModules, onStateChange]);
 
   // Load available modules on mount
   useEffect(() => {
@@ -64,8 +91,10 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({ onTestCreated }) => {
       try {
         const modulesData = await FlecsMetadataService.getModules(connection);
         setAvailableModules(modulesData);
-        // Initially select all modules
-        setSelectedModules(modulesData.map(m => m.fullPath));
+        // Only set default selection if no persisted selection exists
+        if (!persistedState?.selectedModules || persistedState.selectedModules.length === 0) {
+          setSelectedModules(modulesData.map(m => m.fullPath));
+        }
         setErrorMessage("");
       } catch (error: any) {
         setErrorMessage(`Failed to load modules: ${error.message}`);
@@ -75,7 +104,7 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({ onTestCreated }) => {
     };
 
     loadModules();
-  }, [connection]);
+  }, [connection, persistedState?.selectedModules]);
 
   // Load systems and components when selected modules change
   useEffect(() => {
@@ -153,7 +182,7 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({ onTestCreated }) => {
 
   // Component management
   const addComponent = (entityIndex: number, isInitial: boolean) => {
-    const newComponent: ComponentData = { name: "" };
+    const newComponent: ComponentData = { name: "", module: "" };
     if (isInitial) {
       const newEntities = [...initialEntities];
       newEntities[entityIndex].components.push(newComponent);
@@ -165,6 +194,38 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({ onTestCreated }) => {
     }
   };
 
+  const createUpdatedComponentData = (
+    entityIndex: number,
+    componentIndex: number,
+    field: string,
+    value: any,
+    entities: EntityData[]
+  ): EntityData[] => {
+    const newEntities = [...entities];
+    
+    if (field === 'name') {
+      // When component name changes, reset fields to defaults
+      const component = availableComponents.find(c => c.name === value);
+      const newComponentData: ComponentData = { 
+        name: value,
+        module: component?.module || ""
+      };
+      
+      // Initialize with default values for component fields
+      if (component) {
+        component.fields.forEach(field => {
+          newComponentData[field.name] = FlecsMetadataService.getDefaultValueForType(field.type);
+        });
+      }
+      
+      newEntities[entityIndex].components[componentIndex] = newComponentData;
+    } else {
+      newEntities[entityIndex].components[componentIndex][field] = value;
+    }
+    
+    return newEntities;
+  };
+
   const updateComponent = (
     entityIndex: number, 
     componentIndex: number, 
@@ -173,45 +234,15 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({ onTestCreated }) => {
     isInitial: boolean
   ) => {
     if (isInitial) {
-      const newEntities = [...initialEntities];
-      if (field === 'name') {
-        // When component name changes, reset fields to defaults
-        const component = availableComponents.find(c => c.name === value);
-        const newComponentData: ComponentData = { name: value };
-        
-        // Initialize with default values for component fields
-        if (component) {
-          component.fields.forEach(field => {
-            newComponentData[field.name] = FlecsMetadataService.getDefaultValueForType(field.type);
-          });
-        } else {
-          // TODO: component not found?
-        }
-        
-        newEntities[entityIndex].components[componentIndex] = newComponentData;
-      } else {
-        newEntities[entityIndex].components[componentIndex][field] = value;
-      }
-      setInitialEntities(newEntities);
+      const updatedEntities = createUpdatedComponentData(
+        entityIndex, componentIndex, field, value, initialEntities
+      );
+      setInitialEntities(updatedEntities);
     } else {
-      const newEntities = [...expectedEntities];
-      if (field === 'name') {
-        // When component name changes, reset fields to defaults
-        const component = availableComponents.find(c => c.name === value);
-        const newComponentData: ComponentData = { name: value };
-        
-        // Initialize with default values for component fields
-        if (component) {
-          component.fields.forEach(field => {
-            newComponentData[field.name] = FlecsMetadataService.getDefaultValueForType(field.type);
-          });
-        }
-        
-        newEntities[entityIndex].components[componentIndex] = newComponentData;
-      } else {
-        newEntities[entityIndex].components[componentIndex][field] = value;
-      }
-      setExpectedEntities(newEntities);
+      const updatedEntities = createUpdatedComponentData(
+        entityIndex, componentIndex, field, value, expectedEntities
+      );
+      setExpectedEntities(updatedEntities);
     }
   };
 
@@ -227,8 +258,8 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({ onTestCreated }) => {
     }
   };
 
-  // Generate hierarchical JSON
-  const generateJson = (): HierarchicalTest | null => {
+  // Generate UnitTest from form data
+  const generateTest = () => {
     if (!testName.trim()) {
       setErrorMessage("Test name is required");
       return null;
@@ -244,27 +275,29 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({ onTestCreated }) => {
       return null;
     }
 
-    return {
-      name: testName.trim(),
-      systems: systems.map(s => ({
+    return TestRunner.createTest(
+      testName.trim(),
+      systems.map(s => ({
         name: s.name.trim(),
         timesToRun: s.timesToRun
       })),
-      initial: initialEntities,
-      expected: expectedEntities
-    };
+      initialEntities,
+      expectedEntities
+    );
   };
 
-  const previewJson = () => {
-    const test = generateJson();
+  // Update JSON preview live whenever form data changes
+  useEffect(() => {
+    const test = generateTest();
     if (test) {
       setJsonPreview(JSON.stringify(test, null, 2));
-      setErrorMessage("");
+    } else {
+      setJsonPreview("");
     }
-  };
+  }, [testName, systems, initialEntities, expectedEntities]);
 
   const downloadJson = () => {
-    const test = generateJson();
+    const test = generateTest();
     if (test) {
       const blob = new Blob([JSON.stringify(test, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -281,8 +314,10 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({ onTestCreated }) => {
   };
 
   const runTest = async () => {
-    const test = generateJson();
-    if (!test) return;
+    const test = generateTest();
+    if (!test) {
+      return;
+    }
 
     setErrorMessage("");
     setSuccessMessage("");
@@ -539,9 +574,8 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({ onTestCreated }) => {
       </Section>
 
       <ActionButtons>
-        <Button onClick={previewJson}>Preview JSON</Button>
-        <SaveJsonButton onClick={downloadJson}>Save JSON File</SaveJsonButton>
-        <RunTestButton onClick={runTest}>Create & Run Test</RunTestButton>
+        <SaveJsonButton onClick={downloadJson}>Save Test File</SaveJsonButton>
+        <RunTestButton onClick={runTest}>Run Test</RunTestButton>
         <Button onClick={clearForm}>Clear Form</Button>
       </ActionButtons>
 

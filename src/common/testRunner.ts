@@ -1,22 +1,27 @@
-// Common test execution module for both script-based and hierarchical test formats
-import { type UnitTest } from "../components/uploader/uploader";
+// Common test execution module for script-based test format
 import { UNIT_TEST_COMPONENT_NAME } from "./constants";
+
+export interface SystemInvocation {
+  name: string;
+  timesToRun: number;
+}
+
+export interface UnitTest {
+  name: string;
+  systems: SystemInvocation[];
+  scriptActual: string;
+  scriptExpected: string;
+}
 
 export interface ComponentData {
   name: string;
+  module: string; // Module path for the component (e.g., "modules.movement")
   [key: string]: any; // Component field values
 }
 
 export interface EntityData {
   entity: string;
   components: ComponentData[];
-}
-
-export interface HierarchicalTest {
-  name: string;
-  systems: { name: string; timesToRun: number }[];
-  initial: EntityData[];
-  expected: EntityData[];
 }
 
 export interface TestExecutionResult {
@@ -33,18 +38,17 @@ export class TestRunner {
   }
 
   /**
-   * Execute a test - supports both script-based and hierarchical formats
+   * Execute a test
    */
-  async executeTest(test: UnitTest | HierarchicalTest): Promise<TestExecutionResult> {
+  async executeTest(test: UnitTest): Promise<TestExecutionResult> {
     try {
       const testName = test.name;
       
       // Create the entity for this test
       await this.connection?.create(testName);
       
-      // Convert to standard format and set the test component
-      const standardTest = this.convertToStandardFormat(test);
-      await this.connection?.set(testName, UNIT_TEST_COMPONENT_NAME, standardTest);
+      // Set the test component
+      await this.connection?.set(testName, UNIT_TEST_COMPONENT_NAME, test);
       
       return {
         success: true,
@@ -64,7 +68,7 @@ export class TestRunner {
   /**
    * Execute multiple tests
    */
-  async executeTests(tests: (UnitTest | HierarchicalTest)[]): Promise<TestExecutionResult[]> {
+  async executeTests(tests: UnitTest[]): Promise<TestExecutionResult[]> {
     const results: TestExecutionResult[] = [];
     
     for (const test of tests) {
@@ -79,42 +83,36 @@ export class TestRunner {
   }
 
   /**
-   * Convert hierarchical test format to script-based format for backward compatibility
+   * Create a UnitTest from entity data arrays
    */
-  private convertToStandardFormat(test: UnitTest | HierarchicalTest): UnitTest {
-    // If it's already a script-based test, return as-is
-    if ('scriptActual' in test) {
-      return test as UnitTest;
-    }
-    
-    // Convert hierarchical test to script-based format
-    const hierarchicalTest = test as HierarchicalTest;
-    
+  static createTest(
+    name: string,
+    systems: SystemInvocation[],
+    initialEntities: EntityData[],
+    expectedEntities: EntityData[]
+  ): UnitTest {
     return {
-      name: hierarchicalTest.name,
-      systems: hierarchicalTest.systems,
-      scriptActual: this.convertEntitiesToScript(hierarchicalTest.initial),
-      scriptExpected: this.convertEntitiesToScript(hierarchicalTest.expected)
+      name,
+      systems,
+      scriptActual: TestRunner.convertEntitiesToScript(initialEntities),
+      scriptExpected: TestRunner.convertEntitiesToScript(expectedEntities)
     };
   }
 
   /**
    * Convert entity data array to Flecs DSL script format
    */
-  private convertEntitiesToScript(entities: EntityData[]): string {
+  static convertEntitiesToScript(entities: EntityData[]): string {
     if (entities.length === 0) return "";
 
     let script = "";
     const modules = new Set<string>();
 
-    // Collect modules from component names
+    // Collect modules from components
     entities.forEach(entity => {
       entity.components.forEach(component => {
-        if (component.name.includes('.')) {
-          const moduleParts = component.name.split('.');
-          if (moduleParts.length > 1) {
-            modules.add(moduleParts.slice(0, -1).join('.'));
-          }
+        if (component.module) {
+          modules.add(component.module);
         }
       });
     });
@@ -132,14 +130,14 @@ export class TestRunner {
     entities.forEach(entity => {
       script += `${entity.entity} {\n`;
       entity.components.forEach(component => {
-        const componentName = component.name.split('.').pop() || component.name;
+        const componentName = component.name;
         
-        // Extract component field values (exclude the 'name' field)
-        const fields = Object.entries(component).filter(([key]) => key !== 'name');
+        // Extract component field values (exclude 'name' and 'module' fields)
+        const fields = Object.entries(component).filter(([key]) => key !== 'name' && key !== 'module');
         
         if (fields.length > 0) {
           const fieldsStr = fields
-            .map(([key, value]) => `${key}: ${this.formatValue(value)}`)
+            .map(([key, value]) => `${key}: ${TestRunner.formatValue(value)}`)
             .join(', ');
           script += `    ${componentName}: {${fieldsStr}}\n`;
         } else {
@@ -155,7 +153,7 @@ export class TestRunner {
   /**
    * Format a value for Flecs DSL script
    */
-  private formatValue(value: any): string {
+  private static formatValue(value: any): string {
     if (typeof value === 'string') {
       // If it's already a formatted string (like "hello"), keep it as-is
       // Otherwise, wrap in quotes
@@ -165,20 +163,6 @@ export class TestRunner {
       return `"${value}"`;
     }
     return String(value);
-  }
-
-  /**
-   * Check if a test uses the hierarchical format
-   */
-  static isHierarchicalTest(test: any): test is HierarchicalTest {
-    return test && 'initial' in test && 'expected' in test && !('scriptActual' in test);
-  }
-
-  /**
-   * Check if a test uses the script-based format
-   */
-  static isScriptBasedTest(test: any): test is UnitTest {
-    return test && 'scriptActual' in test && 'scriptExpected' in test;
   }
 
   /**
@@ -209,23 +193,11 @@ export class TestRunner {
       });
     }
 
-    // Check format-specific requirements
-    if (TestRunner.isHierarchicalTest(test)) {
-      if (!Array.isArray(test.initial)) {
-        errors.push("Hierarchical test: initial configuration must be an array");
-      }
-      if (!Array.isArray(test.expected)) {
-        errors.push("Hierarchical test: expected configuration must be an array");
-      }
-    } else if (TestRunner.isScriptBasedTest(test)) {
-      if (typeof test.scriptActual !== 'string') {
-        errors.push("Script-based test: scriptActual must be a string");
-      }
-      if (typeof test.scriptExpected !== 'string') {
-        errors.push("Script-based test: scriptExpected must be a string");
-      }
-    } else {
-      errors.push("Test must be either hierarchical (with initial/expected) or script-based (with scriptActual/scriptExpected)");
+    if (typeof test.scriptActual !== 'string') {
+      errors.push("scriptActual must be a string");
+    }
+    if (typeof test.scriptExpected !== 'string') {
+      errors.push("scriptExpected must be a string");
     }
 
     return { valid: errors.length === 0, errors };

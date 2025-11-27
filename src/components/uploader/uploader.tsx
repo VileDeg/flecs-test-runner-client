@@ -1,8 +1,6 @@
 import { useCallback } from "react";
 import { useDropzone } from "react-dropzone";
-import { TestRunner, type HierarchicalTest } from "../../common/testRunner.ts";
-
-
+import { TestRunner, type UnitTest } from "../../common/testRunner.ts";
 
 export namespace UnitTest {
   export interface Executed {
@@ -12,21 +10,8 @@ export namespace UnitTest {
   }
 }
 
-// Define test types for clarity
-export interface SystemInvocation {
-  name: string;
-  timesToRun: number;
-}
-
-export interface UnitTest {
-  name: string;
-  systems: SystemInvocation[];
-  scriptActual: string;
-  scriptExpected: string;
-}
-
 interface UploaderProps {
-  onTestsParsed : (tests: (UnitTest | HierarchicalTest)[]) => void;
+  onTestsParsed : (tests: UnitTest[]) => void;
 }
 
 // TODO: allow supplying multiple files, merge all files to get a list of the tests
@@ -39,7 +24,7 @@ JSON may start with `tests` array or may only contain one test element
 export const Uploader: React.FC<UploaderProps> = ({ onTestsParsed  }) => {
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
-      const allTests: (UnitTest | HierarchicalTest)[] = [];
+      const allTests: UnitTest[] = [];
 
       for (const file of acceptedFiles) {
         try {
@@ -48,8 +33,7 @@ export const Uploader: React.FC<UploaderProps> = ({ onTestsParsed  }) => {
 
           // Handle multiple formats:
           // 1) { tests: [ ... ] } - array of tests
-          // 2) { name, systems, scriptActual, scriptExpected } - script-based test
-          // 3) { name, systems, initial, expected } - hierarchical test
+          // 2) { name, systems, scriptActual, scriptExpected } - single test
           
           if (Array.isArray(json.tests)) {
             // Validate each test in the array

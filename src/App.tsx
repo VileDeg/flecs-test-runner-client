@@ -1,10 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 import { FlecsConnectionProvider } from "./context/flecsConnection/flecsConnectionProvider.tsx";
 
 import {LandingPage} from './components/landingPage/landingPage.tsx'
 import {ResultsPage} from './components/resultsPage/resultsPage.tsx'
-import {TestBuilder} from './components/testBuilder/testBuilder.tsx'
+import {TestBuilder, type TestBuilderPersistedState} from './components/testBuilder/testBuilder.tsx'
 
 import { useFlecsConnection } from "./context/flecsConnection/useFlecsConnection.ts";
 
@@ -47,7 +47,33 @@ const AppContent = () => {
   const [testMode] = useState(false);
   const [currentPage, setCurrentPage] = useState<'landing' | 'results' | 'builder'>('builder');
   
+  // Persist TestBuilder state with localStorage
+  const [testBuilderState, setTestBuilderState] = useState<TestBuilderPersistedState>(() => {
+    // Load from localStorage on initial mount
+    const saved = localStorage.getItem('testBuilderState');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse saved test builder state:', e);
+      }
+    }
+    // Default state if nothing saved
+    return {
+      testName: "",
+      systems: [],
+      initialEntities: [],
+      expectedEntities: [],
+      selectedModules: []
+    };
+  });
+  
   const { status } = useFlecsConnection();
+  
+  // Save to localStorage whenever state changes
+  useEffect(() => {
+    localStorage.setItem('testBuilderState', JSON.stringify(testBuilderState));
+  }, [testBuilderState]);
   
   // Comes from LandingPage
   const onTestsUploaded = () => {
@@ -221,7 +247,11 @@ const AppContent = () => {
               {renderTopBar()}
               <MainContent>
                 {currentPage === 'builder' ? (
-                  <TestBuilder onTestCreated={onTestsUploaded} />
+                  <TestBuilder 
+                    onTestCreated={onTestsUploaded}
+                    persistedState={testBuilderState}
+                    onStateChange={setTestBuilderState}
+                  />
                 ) : currentPage === 'landing' ? (
                   <LandingPage onTestsUploaded={onTestsUploaded} />
                 ) : (

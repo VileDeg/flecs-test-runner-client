@@ -236,6 +236,7 @@ export const PreviewBox = styled.div`
   padding: 15px;
   max-height: 400px;
   overflow-y: auto;
+  text-align: left;
   
   pre {
     margin: 0;
@@ -244,6 +245,7 @@ export const PreviewBox = styled.div`
     white-space: pre-wrap;
     word-wrap: break-word;
     color: var(--color-text);
+    text-align: left;
   }
 `;
 
