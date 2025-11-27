@@ -1,5 +1,5 @@
 // Common test execution module for script-based test format
-import { UNIT_TEST_COMPONENT_NAME } from "./constants";
+import { UNIT_TEST_COMPONENT_NAME, UNIT_TEST_READY_TAG_NAME } from "./constants";
 
 export interface SystemInvocation {
   name: string;
@@ -49,6 +49,7 @@ export class TestRunner {
       
       // Set the test component
       await this.connection?.set(testName, UNIT_TEST_COMPONENT_NAME, test);
+      await this.connection?.add(testName, UNIT_TEST_READY_TAG_NAME);
       
       return {
         success: true,

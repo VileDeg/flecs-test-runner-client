@@ -16,7 +16,7 @@ import {
 } from "./styles";
 
 import { type UnitTest } from "../uploader/uploader.tsx";
-import { Timer } from "../Timer/Timer.tsx";
+import { Timer } from "../timer/timer.tsx";
 
 import { useFlecsConnection } from "../../context/flecsConnection/useFlecsConnection.ts";
 
