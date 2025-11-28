@@ -156,7 +156,7 @@ export class FlecsMetadataService {
                 if (!systems.find(s => s.name === systemName)) {
                   systems.push({
                     name: systemName,
-                    module: this.extractModule(systemName)
+                    module: modulePath
                   });
                 }
               }
@@ -279,22 +279,6 @@ export class FlecsMetadataService {
     } catch (error) {
       throw new Error(`Error fetching component info for ${componentName}: ${error}`);
     }
-  }
-
-  /**
-   * Extract module name from entity path (e.g., "modules.movement.Position" -> "modules.movement")
-   */
-  private static extractModule(entityPath: string): string | undefined {
-    if (!entityPath || !entityPath.includes('.')) {
-      return undefined;
-    }
-    
-    const parts = entityPath.split('.');
-    if (parts.length > 1) {
-      return parts.slice(0, -1).join('.');
-    }
-    
-    return undefined;
   }
 
   /**

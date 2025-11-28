@@ -12,8 +12,6 @@ import {
   Label,
   Input,
   Button,
-  ErrorBox,
-  SuccessBox,
   SystemItem,
   SystemList,
   RemoveButton,
@@ -27,6 +25,11 @@ import {
   SaveJsonButton,
   RunTestButton,
   Select,
+  ToastContainer,
+  Toast,
+  ToastIcon,
+  ToastMessage,
+  ToastCloseButton,
 } from "./styles.ts";
 
 export interface TestBuilderPersistedState {
@@ -52,9 +55,19 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
   const [systems, setSystems] = useState<SystemInvocation[]>(persistedState?.systems || []);
   const [initialEntities, setInitialEntities] = useState<EntityData[]>(persistedState?.initialEntities || []);
   const [expectedEntities, setExpectedEntities] = useState<EntityData[]>(persistedState?.expectedEntities || []);
-  const [errorMessage, setErrorMessage] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
   const [jsonPreview, setJsonPreview] = useState("");
+  
+  // Toast notification state
+  interface Toast {
+    id: number;
+    message: string;
+    type: 'success' | 'error';
+  }
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  
+  // State for incomplete test execution (expected state generation)
+  const [isGeneratingExpected, setIsGeneratingExpected] = useState(false);
+  const [generatingMessage, setGeneratingMessage] = useState("");
   
   // Module selection
   const [availableModules, setAvailableModules] = useState<FlecsModule[]>([]);
@@ -68,6 +81,21 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
   const [loadingMetadata, setLoadingMetadata] = useState(false);
 
   const { connection } = useFlecsConnection();
+
+  // Toast notification functions
+  const showToast = (message: string, type: 'success' | 'error') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type }]);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+      removeToast(id);
+    }, 5000);
+  };
+  
+  const removeToast = (id: number) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id));
+  };
 
   // Persist state changes to parent component
   useEffect(() => {
@@ -95,9 +123,8 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
         if (!persistedState?.selectedModules || persistedState.selectedModules.length === 0) {
           setSelectedModules(modulesData.map(m => m.fullPath));
         }
-        setErrorMessage("");
       } catch (error: any) {
-        setErrorMessage(`Failed to load modules: ${error.message}`);
+        showToast(`Failed to load modules: ${error.message}`, 'error');
       } finally {
         setLoading(false);
       }
@@ -124,9 +151,8 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
         
         setAvailableSystems(systemsData);
         setAvailableComponents(componentsData);
-        setErrorMessage("");
       } catch (error: any) {
-        setErrorMessage(`Failed to load Flecs metadata: ${error.message}`);
+        showToast(`Failed to load Flecs metadata: ${error.message}`, 'error');
       } finally {
         setLoadingMetadata(false);
       }
@@ -261,17 +287,17 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
   // Generate UnitTest from form data
   const generateTest = () => {
     if (!testName.trim()) {
-      setErrorMessage("Test name is required");
+      showToast("Test name is required", 'error');
       return null;
     }
 
     if (systems.length === 0) {
-      setErrorMessage("At least one system is required");
+      showToast("At least one system is required", 'error');
       return null;
     }
 
     if (systems.some(s => !s.name.trim())) {
-      setErrorMessage("All systems must have names");
+      showToast("All systems must have names", 'error');
       return null;
     }
 
@@ -308,8 +334,7 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      setSuccessMessage(`JSON file "${test.name}.json" downloaded successfully!`);
-      setErrorMessage("");
+      showToast(`JSON file "${test.name}.json" downloaded successfully!`, 'success');
     }
   };
 
@@ -319,24 +344,98 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
       return;
     }
 
-    setErrorMessage("");
-    setSuccessMessage("");
-
     try {
       const testRunner = new TestRunner(connection);
       const result = await testRunner.executeTest(test);
       
       if (result.success) {
-        setSuccessMessage(result.message);
+        showToast(result.message, 'success');
         if (onTestCreated) {
           onTestCreated();
         }
       } else {
-        setErrorMessage(result.message);
+        showToast(result.message, 'error');
       }
     } catch (error: any) {
       console.error("Error running test:", error);
-      setErrorMessage(`Error running test "${test.name}": ${error.message}`);
+      showToast(`Error running test "${test.name}": ${error.message}`, 'error');
+    }
+  };
+
+  const fillExpectedFromInitial = async () => {
+    if (!testName.trim()) {
+      showToast("Test name is required", 'error');
+      return;
+    }
+
+    if (systems.length === 0) {
+      showToast("At least one system is required", 'error');
+      return;
+    }
+
+    if (systems.some(s => !s.name.trim())) {
+      showToast("All systems must have names", 'error');
+      return;
+    }
+
+    if (initialEntities.length === 0) {
+      showToast("Initial entities are required to generate expected state", 'error');
+      return;
+    }
+
+    setIsGeneratingExpected(true);
+    setGeneratingMessage("Creating incomplete test...");
+
+    try {
+      const testRunner = new TestRunner(connection);
+      const incompleteTestName = `${testName.trim()}_incomplete_${Date.now()}`;
+      
+      // Execute incomplete test
+      const executeResult = await testRunner.executeIncompleteTest(
+        incompleteTestName,
+        systems.map(s => ({
+          name: s.name.trim(),
+          timesToRun: s.timesToRun
+        })),
+        initialEntities
+      );
+      
+      if (!executeResult.success) {
+        showToast(executeResult.message, 'error');
+        setIsGeneratingExpected(false);
+        setGeneratingMessage("");
+        return;
+      }
+      
+      setGeneratingMessage("Test running... Waiting for results...");
+      
+      // Poll for results
+      const pollResult = await testRunner.pollForIncompleteTestResult(
+        incompleteTestName,
+        30000, // 30 second timeout
+        500    // poll every 500ms
+      );
+      
+      if (pollResult.success && pollResult.worldSerialized) {
+        // Parse the serialized world into EntityData array
+        const parsedEntities = TestRunner.parseWorldSerialized(pollResult.worldSerialized);
+        
+        if (parsedEntities.length > 0) {
+          setExpectedEntities(parsedEntities);
+          showToast(`Expected state generated successfully! Found ${parsedEntities.length} entities.`, 'success');
+        } else {
+          showToast("Failed to parse expected state from serialized world", 'error');
+        }
+      } else {
+        showToast(pollResult.error || "Failed to retrieve expected state from test execution", 'error');
+      }
+      
+    } catch (error: any) {
+      console.error("Error generating expected state:", error);
+      showToast(`Error generating expected state: ${error.message}`, 'error');
+    } finally {
+      setIsGeneratingExpected(false);
+      setGeneratingMessage("");
     }
   };
 
@@ -346,8 +445,6 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
     setInitialEntities([]);
     setExpectedEntities([]);
     setJsonPreview("");
-    setErrorMessage("");
-    setSuccessMessage("");
   };
 
   if (loading) {
@@ -405,7 +502,7 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
                 >
                   <option value="">Select a system...</option>
                   {availableSystems.map(sys => (
-                    <option key={sys.name} value={sys.name}>
+                    <option key={sys.name} value={sys.module + "." + sys.name}>
                       {sys.name} {sys.module && `(${sys.module})`}
                     </option>
                   ))}
@@ -504,9 +601,6 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
   return (
     <Container>
       <Header>Test Builder</Header>
-      
-      {errorMessage && <ErrorBox>{errorMessage}</ErrorBox>}
-      {successMessage && <SuccessBox>{successMessage}</SuccessBox>}
 
       <ModuleSelector
         modules={availableModules}
@@ -564,6 +658,29 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
 
       <Section>
         <SectionHeader>Expected State (After System Execution)</SectionHeader>
+        {isGeneratingExpected && (
+          <div style={{ 
+            padding: '12px', 
+            marginBottom: '16px', 
+            backgroundColor: '#e3f2fd', 
+            color: '#1976d2', 
+            borderRadius: '4px',
+            textAlign: 'center'
+          }}>
+            {generatingMessage}
+          </div>
+        )}
+        {!isGeneratingExpected && initialEntities.length > 0 && systems.length > 0 && (
+          <div style={{ marginBottom: '16px' }}>
+            <Button 
+              onClick={fillExpectedFromInitial}
+              disabled={isGeneratingExpected}
+              style={{ width: '100%' }}
+            >
+              Fill Expected State from Initial (Run Test)
+            </Button>
+          </div>
+        )}
         {selectedModules.length === 0 ? (
           <div style={{ textAlign: 'center', color: '#666', fontStyle: 'italic' }}>
             Please select at least one module to see available components
@@ -587,6 +704,16 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
           </PreviewBox>
         </Section>
       )}
+
+      <ToastContainer>
+        {toasts.map(toast => (
+          <Toast key={toast.id} type={toast.type}>
+            <ToastIcon>{toast.type === 'success' ? '✓' : '✕'}</ToastIcon>
+            <ToastMessage>{toast.message}</ToastMessage>
+            <ToastCloseButton onClick={() => removeToast(toast.id)}>×</ToastCloseButton>
+          </Toast>
+        ))}
+      </ToastContainer>
     </Container>
   );
 };

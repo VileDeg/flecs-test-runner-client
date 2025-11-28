@@ -13,6 +13,7 @@ import {
   Section,
   SectionHeader,
   EmptyMessage,
+  ClearButton,
 } from "./styles";
 
 import { type UnitTest } from "../uploader/uploader.tsx";
@@ -33,6 +34,7 @@ export const ResultsPage: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const [pendingStartTime, setPendingStartTime] = useState<number | null>(null);
   const [hasTimedOut, setHasTimedOut] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
 
     
   const { connection } = useFlecsConnection();
@@ -101,6 +103,41 @@ export const ResultsPage: React.FC = () => {
     return () => clearInterval(interval);
   }, [connection, pendingTests.length, pendingStartTime, hasTimedOut]);
 
+  // Clear all test results
+  const clearAllTests = async () => {
+    if (!connection) return;
+    
+    setIsClearing(true);
+    setErrorMessage("");
+    
+    try {
+      // Query all entities with UnitTest component
+      const allTestsQuery = await connection.query(
+        "TestRunner.UnitTest", {}
+      );
+      
+      if (allTestsQuery && allTestsQuery.results) {
+        // Delete each test entity
+        const deletePromises = allTestsQuery.results.map((entity: any) => 
+          connection.delete(entity.name)
+        );
+        
+        await Promise.all(deletePromises);
+        
+        // Clear local state
+        setPendingTests([]);
+        setPassedTests([]);
+        setFailedTests([]);
+        setPendingStartTime(null);
+        setHasTimedOut(false);
+      }
+    } catch (err: any) {
+      setErrorMessage(`Error clearing tests: ${err.message}`);
+    } finally {
+      setIsClearing(false);
+    }
+  };
+
   // Helper function to parse query results into TestResult array
   const parseQueryResults = (queryResult: any, defaultStatusMessage: string): TestResult[] => {
     const results: TestResult[] = [];
@@ -152,6 +189,13 @@ export const ResultsPage: React.FC = () => {
       <Header>Unit Test Results</Header>
 
       {errorMessage && <ErrorBox>{errorMessage}</ErrorBox>}
+      
+      <ClearButton 
+        onClick={clearAllTests}
+        disabled={isClearing || (pendingTests.length === 0 && passedTests.length === 0 && failedTests.length === 0)}
+      >
+        {isClearing ? 'Clearing...' : 'Clear All'}
+      </ClearButton>
 
       {pendingTests.length > 0 && (
         <Section>

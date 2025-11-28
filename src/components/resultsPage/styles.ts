@@ -136,3 +136,26 @@ export const EmptyMessage = styled.p`
   text-align: center;
   padding: 20px;
 `;
+
+export const ClearButton = styled.button`
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 20px;
+  transition: background-color 0.2s;
+  
+  &:hover {
+    background-color: #c82333;
+  }
+  
+  &:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+`;
