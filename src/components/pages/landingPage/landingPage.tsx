@@ -6,7 +6,7 @@ import { useState } from 'react'
 import {
   ErrorBox,
   TestsList,
-  RunButton,
+  Button,
 } from "./styles.ts";
 
 import { useFlecsConnection } from "@common/flecsConnection/useFlecsConnection.ts";
@@ -71,7 +71,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onTestsUploaded }) => 
             ))}
           </TestsList>
 
-          <RunButton onClick={() => runUnitTests(tests)}>Run Again</RunButton>
+          <Button onClick={() => runUnitTests(tests)}>Run Again</Button>
         </>
       )}
     </div>

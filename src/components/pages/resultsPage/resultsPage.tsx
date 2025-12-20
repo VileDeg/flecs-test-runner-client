@@ -1,4 +1,3 @@
-// src/pages/ResultsPage.tsx
 import React, { useEffect, useState } from "react";
 import {
   Container,
@@ -13,7 +12,7 @@ import {
   Section,
   SectionHeader,
   EmptyMessage,
-  ClearButton,
+  Button,
 } from "./styles.ts";
 
 import { type UnitTest } from "@ui/uploader/uploader.tsx";
@@ -190,12 +189,13 @@ export const ResultsPage: React.FC = () => {
 
       {errorMessage && <ErrorBox>{errorMessage}</ErrorBox>}
       
-      <ClearButton 
+      <Button 
+        $variant="error"
         onClick={clearAllTests}
         disabled={isClearing || (pendingTests.length === 0 && passedTests.length === 0 && failedTests.length === 0)}
       >
         {isClearing ? 'Clearing...' : 'Clear All'}
-      </ClearButton>
+      </Button>
 
       {pendingTests.length > 0 && (
         <Section>

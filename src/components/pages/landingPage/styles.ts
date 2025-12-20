@@ -1,45 +1,25 @@
 import styled from "styled-components";
+import { theme } from "@theme/theme.ts";
+import { PageContainer, ErrorBox, Button } from "@theme/components.ts";
 
-export const Container = styled.div`
-  font-family: "Inter", sans-serif;
-  padding: 24px;
-  max-width: 800px;
-  margin: 0 auto;
-  text-align: center;
-`;
+// Re-export common components
+export { ErrorBox, Button };
 
-export const ErrorBox = styled.div`
-  background-color: #fdecea;
-  color: #b71c1c;
-  border-radius: 8px;
-  padding: 10px 15px;
-  margin-bottom: 16px;
-  text-align: left;
-  white-space: pre-line;
-`;
+// Landing page container
+export const Container = styled(PageContainer)``;
 
+// Page-specific styled components
 export const TestsList = styled.ul`
   text-align: left;
-  background: #f7f7f7;
-  padding: 16px;
-  border-radius: 8px;
-  margin-top: 16px;
+  background: ${theme.colors.surface};
+  padding: ${theme.spacing.lg};
+  border-radius: ${theme.borderRadius.lg};
+  margin-top: ${theme.spacing.lg};
+  list-style: none;
+  border: 1px solid ${theme.colors.border};
+  
   li {
-    margin-bottom: 8px;
-  }
-`;
-
-export const RunButton = styled.button`
-  background-color: #007bff;
-  color: white;
-  border: none;
-  padding: 10px 18px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-  margin-top: 16px;
-  transition: background-color 0.2s;
-  &:hover {
-    background-color: #0056b3;
+    margin-bottom: ${theme.spacing.sm};
+    color: ${theme.colors.text};
   }
 `;

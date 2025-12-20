@@ -29,8 +29,8 @@
       "@ui/*": ["src/components/ui/*"],
       "@pages/*": ["src/components/pages/*"],
       "@hooks/*": ["src/hooks/*"],
-      "@types/*": ["src/types/*"],
-      "@common/*": ["src/common/*"]
+      "@common/*": ["src/common/*"],
+      "@theme/*": ["src/theme/*"]
     }
   },
   "include": ["vite.config.mts"]

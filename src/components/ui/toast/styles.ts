@@ -1,13 +1,14 @@
 import styled from "styled-components";
+import { theme } from "@theme/theme.ts";
 
 export const ToastContainer = styled.div`
   position: fixed;
-  bottom: 20px;
-  right: 20px;
-  z-index: 9999;
+  bottom: ${theme.spacing.xl};
+  right: ${theme.spacing.xl};
+  z-index: ${theme.zIndex.toast};
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: ${theme.spacing.md};
   max-width: 400px;
 `;
 
@@ -16,17 +17,17 @@ interface ToastProps {
 }
 
 export const Toast = styled.div<ToastProps>`
-  padding: 16px 20px;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: ${theme.spacing.lg} ${theme.spacing.xl};
+  border-radius: ${theme.borderRadius.lg};
+  box-shadow: ${theme.shadows.lg};
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: ${theme.spacing.md};
   min-width: 300px;
-  animation: slideIn 0.3s ease-out;
-  background-color: ${props => props.$type === 'success' ? '#4caf50' : '#f44336'};
+  animation: slideIn ${theme.transitions.slow} ease-out;
+  background-color: ${props => props.$type === 'success' ? theme.colors.success.main : theme.colors.error.main};
   color: white;
-  font-weight: 500;
+  font-weight: ${theme.typography.fontWeight.medium};
   
   @keyframes slideIn {
     from {
@@ -40,7 +41,7 @@ export const Toast = styled.div<ToastProps>`
   }
   
   &.fade-out {
-    animation: fadeOut 0.3s ease-out forwards;
+    animation: fadeOut ${theme.transitions.slow} ease-out forwards;
   }
   
   @keyframes fadeOut {
@@ -56,20 +57,21 @@ export const Toast = styled.div<ToastProps>`
 `;
 
 export const ToastIcon = styled.span`
-  font-size: 20px;
+  font-size: ${theme.typography.fontSize.xl};
   flex-shrink: 0;
 `;
 
 export const ToastMessage = styled.span`
   flex: 1;
   word-wrap: break-word;
+  font-size: ${theme.typography.fontSize.sm};
 `;
 
 export const ToastCloseButton = styled.button`
   background: none;
   border: none;
   color: white;
-  font-size: 20px;
+  font-size: ${theme.typography.fontSize.xl};
   cursor: pointer;
   padding: 0;
   width: 24px;
@@ -78,7 +80,7 @@ export const ToastCloseButton = styled.button`
   align-items: center;
   justify-content: center;
   opacity: 0.8;
-  transition: opacity 0.2s;
+  transition: opacity ${theme.transitions.normal};
   
   &:hover {
     opacity: 1;
