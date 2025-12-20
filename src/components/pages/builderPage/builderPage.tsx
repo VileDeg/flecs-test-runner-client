@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { useFlecsConnection } from "../../context/flecsConnection/useFlecsConnection.ts";
-import { FlecsMetadataService, type FlecsSystem, type FlecsComponent, type FlecsModule } from "../../common/flecsMetadataService.ts";
-import { TestRunner, type SystemInvocation, type EntityData, type ComponentData } from "../../common/testRunner.ts";
-import { ModuleSelector } from "../moduleSelector/moduleSelector.tsx";
+import { useFlecsConnection } from "@common/flecsConnection/useFlecsConnection.ts";
+import { FlecsMetadataService } from "@common/flecsMetadataService.ts";
+import { TestRunner, type SystemInvocation, type EntityData, type ComponentData } from "@common/testRunner.ts";
+import { ModuleSelector } from "./moduleSelector.tsx";
+import { SystemsList } from "./systemsList.tsx";
+import { EntityBuilderComponent } from "./entityBuilder.tsx";
+import { useToast } from "@ui/toast/useToast.ts";
+import { useTestBuilderState } from "@hooks/useTestBuilderState.ts";
+import { useModuleSelection } from "@hooks/useModuleSelection.ts";
+import type { TestBuilderProps } from "./builderPage.types.ts";
 import {
   Container,
   Header,
@@ -12,154 +18,91 @@ import {
   Label,
   Input,
   Button,
-  SystemItem,
-  SystemList,
-  RemoveButton,
-  AddButton,
-  EntityBuilder,
-  ComponentBuilder,
-  ComponentItem,
-  EntityItem,
   PreviewBox,
   ActionButtons,
   SaveJsonButton,
   RunTestButton,
-  Select,
-  ToastContainer,
-  Toast,
-  ToastIcon,
-  ToastMessage,
-  ToastCloseButton,
 } from "./styles.ts";
 
-export interface TestBuilderPersistedState {
-  testName: string;
-  systems: SystemInvocation[];
-  initialEntities: EntityData[];
-  expectedEntities: EntityData[];
-  selectedModules: string[];
-}
-
-interface TestBuilderProps {
-  onTestCreated?: () => void;
-  persistedState?: TestBuilderPersistedState;
-  onStateChange?: (state: TestBuilderPersistedState) => void;
-}
+export type { TestBuilderPersistedState } from "./builderPage.types.ts";
 
 export const TestBuilder: React.FC<TestBuilderProps> = ({ 
   onTestCreated, 
   persistedState,
   onStateChange 
 }) => {
-  const [testName, setTestName] = useState(persistedState?.testName || "");
-  const [systems, setSystems] = useState<SystemInvocation[]>(persistedState?.systems || []);
-  const [initialEntities, setInitialEntities] = useState<EntityData[]>(persistedState?.initialEntities || []);
-  const [expectedEntities, setExpectedEntities] = useState<EntityData[]>(persistedState?.expectedEntities || []);
-  const [jsonPreview, setJsonPreview] = useState("");
+  const { showToast } = useToast();
+  const { connection } = useFlecsConnection();
   
-  // Toast notification state
-  interface Toast {
-    id: number;
-    message: string;
-    type: 'success' | 'error';
-  }
-  const [toasts, setToasts] = useState<Toast[]>([]);
+  // Use custom hooks for state management
+  const {
+    testName,
+    setTestName,
+    systems,
+    setSystems,
+    initialEntities,
+    setInitialEntities,
+    expectedEntities,
+    setExpectedEntities,
+    selectedModules,
+    setSelectedModules,
+  } = useTestBuilderState(persistedState, onStateChange);
+
+  const {
+    availableModules,
+    availableSystems,
+    availableComponents,
+    loading,
+    loadingMetadata,
+  } = useModuleSelection(selectedModules);
+  
+  const [jsonPreview, setJsonPreview] = useState("");
   
   // State for incomplete test execution (expected state generation)
   const [isGeneratingExpected, setIsGeneratingExpected] = useState(false);
   const [generatingMessage, setGeneratingMessage] = useState("");
-  
-  // Module selection
-  const [availableModules, setAvailableModules] = useState<FlecsModule[]>([]);
-  const [selectedModules, setSelectedModules] = useState<string[]>(persistedState?.selectedModules || []);
-  //const [usedModules, setUsedModules] = useState<string[]>([]);
-  
-  // Available systems and components from Flecs (filtered by selected modules)
-  const [availableSystems, setAvailableSystems] = useState<FlecsSystem[]>([]);
-  const [availableComponents, setAvailableComponents] = useState<FlecsComponent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingMetadata, setLoadingMetadata] = useState(false);
 
-  const { connection } = useFlecsConnection();
-
-  // Toast notification functions
-  const showToast = (message: string, type: 'success' | 'error') => {
-    const id = Date.now();
-    setToasts(prev => [...prev, { id, message, type }]);
-    
-    // Auto-remove after 5 seconds
-    setTimeout(() => {
-      removeToast(id);
-    }, 5000);
-  };
-  
-  const removeToast = (id: number) => {
-    setToasts(prev => prev.filter(toast => toast.id !== id));
-  };
-
-  // Persist state changes to parent component
+  // Initialize selectedModules with all modules if not persisted
   useEffect(() => {
-    if (onStateChange) {
-      onStateChange({
-        testName,
-        systems,
-        initialEntities,
-        expectedEntities,
-        selectedModules
-      });
+    if (!persistedState?.selectedModules && availableModules.length > 0 && selectedModules.length === 0) {
+      setSelectedModules(availableModules.map(m => m.fullPath));
     }
-  }, [testName, systems, initialEntities, expectedEntities, selectedModules, onStateChange]);
+  }, [availableModules, persistedState?.selectedModules, selectedModules.length, setSelectedModules]);
 
-  // Load available modules on mount
+  // Clear systems that use modules that are no longer selected
   useEffect(() => {
-    const loadModules = async () => {
-      if (!connection) return;
-      
-      setLoading(true);
-      try {
-        const modulesData = await FlecsMetadataService.getModules(connection);
-        setAvailableModules(modulesData);
-        // Only set default selection if no persisted selection exists
-        if (!persistedState?.selectedModules || persistedState.selectedModules.length === 0) {
-          setSelectedModules(modulesData.map(m => m.fullPath));
-        }
-      } catch (error: any) {
-        showToast(`Failed to load modules: ${error.message}`, 'error');
-      } finally {
-        setLoading(false);
+    if (systems.length > 0 && availableSystems.length > 0) {
+      const availableSystemNames = new Set(availableSystems.map(s => s.module + "." + s.name));
+      const filteredSystems = systems.filter(s => availableSystemNames.has(s.name));
+      if (filteredSystems.length !== systems.length) {
+        setSystems(filteredSystems);
       }
+    }
+  }, [availableSystems]);
+
+  // Clear components from entities that are no longer available in selected modules
+  useEffect(() => {
+    if (availableComponents.length === 0) return;
+    
+    const availableComponentNames = new Set(availableComponents.map(c => c.name));
+    
+    const filterEntities = (entities: EntityData[]) => {
+      return entities.map(entity => ({
+        ...entity,
+        components: entity.components.filter(comp => availableComponentNames.has(comp.name))
+      }));
     };
 
-    loadModules();
-  }, [connection, persistedState?.selectedModules]);
-
-  // Load systems and components when selected modules change
-  useEffect(() => {
-    const loadFlecsMetadata = async () => {
-      if (!connection || selectedModules.length === 0) {
-        setAvailableSystems([]);
-        setAvailableComponents([]);
-        return;
-      }
-      
-      setLoadingMetadata(true);
-      try {
-        const [systemsData, componentsData] = await Promise.all([
-          FlecsMetadataService.getSystems(connection, selectedModules),
-          FlecsMetadataService.getComponents(connection, selectedModules)
-        ]);
-        
-        setAvailableSystems(systemsData);
-        setAvailableComponents(componentsData);
-      } catch (error: any) {
-        showToast(`Failed to load Flecs metadata: ${error.message}`, 'error');
-      } finally {
-        setLoadingMetadata(false);
-      }
-    };
-
-    loadFlecsMetadata();
-  }, [connection, selectedModules]);
+    const filteredInitial = filterEntities(initialEntities);
+    const filteredExpected = filterEntities(expectedEntities);
+    
+    if (JSON.stringify(filteredInitial) !== JSON.stringify(initialEntities)) {
+      setInitialEntities(filteredInitial);
+    }
+    if (JSON.stringify(filteredExpected) !== JSON.stringify(expectedEntities)) {
+      setExpectedEntities(filteredExpected);
+    }
+  }, [availableComponents]);
 
   // System management
   const addSystem = () => {
@@ -456,148 +399,6 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
     );
   }
 
-  const renderComponentFields = (
-    component: ComponentData, 
-    entityIndex: number, 
-    componentIndex: number, 
-    isInitial: boolean
-  ) => {
-    const componentSchema = availableComponents.find(c => c.name === component.name);
-    if (!componentSchema || componentSchema.fields.length === 0) {
-      return <div style={{ fontStyle: 'italic', color: '#666' }}>No fields available for this component</div>;
-    }
-
-    return componentSchema.fields.map(field => (
-      <FormGroup key={field.name} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-        <Label style={{ flex: '0 0 100px' }}>{field.name}:</Label>
-        <Input
-          type={field.type === 'bool' || field.type === 'boolean' ? 'checkbox' : 'text'}
-          value={String(component[field.name] ?? FlecsMetadataService.getDefaultValueForType(field.type))}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-            const value = field.type === 'bool' || field.type === 'boolean' 
-              ? e.target.checked 
-              : FlecsMetadataService.formatValueForType(e.target.value, field.type);
-            updateComponent(entityIndex, componentIndex, field.name, value, isInitial);
-          }}
-          placeholder={`${field.type} field`}
-          style={{ flex: 1 }}
-        />
-      </FormGroup>
-    ));
-  };
-
-  const renderSystemsList = () => {
-    return (
-      <>
-        <SystemList>
-          {systems.map((system, index) => (
-            <SystemItem key={index}>
-              <FormGroup>
-                <Label>System Name</Label>
-                <Select
-                  value={system.name}
-                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => 
-                    updateSystem(index, 'name', e.target.value)
-                  }
-                >
-                  <option value="">Select a system...</option>
-                  {availableSystems.map(sys => (
-                    <option key={sys.name} value={sys.module + "." + sys.name}>
-                      {sys.name} {sys.module && `(${sys.module})`}
-                    </option>
-                  ))}
-                </Select>
-              </FormGroup>
-              <FormGroup>
-                <Label>Times to Run</Label>
-                <Input
-                  type="number"
-                  value={system.timesToRun}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
-                    updateSystem(index, 'timesToRun', parseInt(e.target.value) || 1)
-                  }
-                  min="1"
-                />
-              </FormGroup>
-              <RemoveButton onClick={() => removeSystem(index)}>Remove</RemoveButton>
-            </SystemItem>
-          ))}
-        </SystemList>
-        <AddButton onClick={addSystem}>Add System</AddButton>
-      </>
-    );
-  };
-
-  const renderEntityBuilder = (
-    entities: EntityData[],
-    isInitial: boolean
-  ) => {
-    return (
-      <>
-        <EntityBuilder>
-          {entities.map((entity, entityIndex) => (
-            <EntityItem key={entityIndex}>
-              <FormGroup>
-                <Label>Entity Name</Label>
-                <Input
-                  type="text"
-                  value={entity.entity}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
-                    updateEntityName(entityIndex, e.target.value, isInitial)
-                  }
-                  placeholder="e.g., TestEntity"
-                />
-              </FormGroup>
-              
-              <ComponentBuilder>
-                {entity.components.map((component, componentIndex) => (
-                  <ComponentItem key={componentIndex}>
-                    <FormGroup>
-                      <Label>Component</Label>
-                      <Select
-                        value={component.name}
-                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => 
-                          updateComponent(entityIndex, componentIndex, 'name', e.target.value, isInitial)
-                        }
-                        disabled={availableComponents.length === 0}
-                      >
-                        <option value="">
-                          {availableComponents.length === 0 
-                            ? 'No components available in selected modules' 
-                            : 'Select a component...'}
-                        </option>
-                        {availableComponents.map(comp => (
-                          <option key={comp.name} value={comp.name}>
-                            {comp.name} {comp.module && `(${comp.module})`}
-                          </option>
-                        ))}
-                      </Select>
-                    </FormGroup>
-                    
-                    {component.name && (
-                      <div>
-                        <Label>Component Fields</Label>
-                        {renderComponentFields(component, entityIndex, componentIndex, isInitial)}
-                      </div>
-                    )}
-                    
-                    <RemoveButton onClick={() => removeComponent(entityIndex, componentIndex, isInitial)}>
-                      Remove Component
-                    </RemoveButton>
-                  </ComponentItem>
-                ))}
-                <AddButton onClick={() => addComponent(entityIndex, isInitial)}>Add Component</AddButton>
-              </ComponentBuilder>
-              
-              <RemoveButton onClick={() => removeEntity(entityIndex, isInitial)}>Remove Entity</RemoveButton>
-            </EntityItem>
-          ))}
-        </EntityBuilder>
-        <AddButton onClick={() => addEntity(isInitial)}>Add Entity</AddButton>
-      </>
-    );
-  };
-
   return (
     <Container>
       <Header>Test Builder</Header>
@@ -641,7 +442,13 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
             No systems found in selected modules
           </div>
         ) : (
-          renderSystemsList()
+          <SystemsList
+            systems={systems}
+            availableSystems={availableSystems}
+            onUpdate={updateSystem}
+            onRemove={removeSystem}
+            onAdd={addSystem}
+          />
         )}
       </Section>
 
@@ -652,7 +459,21 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
             Please select at least one module to see available components
           </div>
         ) : (
-          renderEntityBuilder(initialEntities, true)
+          <EntityBuilderComponent
+            entities={initialEntities}
+            availableComponents={availableComponents}
+            isInitial={true}
+            onUpdateEntityName={(index, name) => updateEntityName(index, name, true)}
+            onRemoveEntity={(index) => removeEntity(index, true)}
+            onAddEntity={() => addEntity(true)}
+            onUpdateComponent={(entityIndex, componentIndex, field, value) => 
+              updateComponent(entityIndex, componentIndex, field, value, true)
+            }
+            onRemoveComponent={(entityIndex, componentIndex) => 
+              removeComponent(entityIndex, componentIndex, true)
+            }
+            onAddComponent={(entityIndex) => addComponent(entityIndex, true)}
+          />
         )}
       </Section>
 
@@ -686,7 +507,21 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
             Please select at least one module to see available components
           </div>
         ) : (
-          renderEntityBuilder(expectedEntities, false)
+          <EntityBuilderComponent
+            entities={expectedEntities}
+            availableComponents={availableComponents}
+            isInitial={false}
+            onUpdateEntityName={(index, name) => updateEntityName(index, name, false)}
+            onRemoveEntity={(index) => removeEntity(index, false)}
+            onAddEntity={() => addEntity(false)}
+            onUpdateComponent={(entityIndex, componentIndex, field, value) => 
+              updateComponent(entityIndex, componentIndex, field, value, false)
+            }
+            onRemoveComponent={(entityIndex, componentIndex) => 
+              removeComponent(entityIndex, componentIndex, false)
+            }
+            onAddComponent={(entityIndex) => addComponent(entityIndex, false)}
+          />
         )}
       </Section>
 
@@ -704,16 +539,6 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
           </PreviewBox>
         </Section>
       )}
-
-      <ToastContainer>
-        {toasts.map(toast => (
-          <Toast key={toast.id} type={toast.type}>
-            <ToastIcon>{toast.type === 'success' ? '✓' : '✕'}</ToastIcon>
-            <ToastMessage>{toast.message}</ToastMessage>
-            <ToastCloseButton onClick={() => removeToast(toast.id)}>×</ToastCloseButton>
-          </Toast>
-        ))}
-      </ToastContainer>
     </Container>
   );
 };

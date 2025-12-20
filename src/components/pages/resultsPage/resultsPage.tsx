@@ -14,12 +14,12 @@ import {
   SectionHeader,
   EmptyMessage,
   ClearButton,
-} from "./styles";
+} from "./styles.ts";
 
-import { type UnitTest } from "../uploader/uploader.tsx";
-import { Timer } from "../timer/timer.tsx";
+import { type UnitTest } from "@ui/uploader/uploader.tsx";
+import { Timer } from "@ui/timer/timer.tsx";
 
-import { useFlecsConnection } from "../../context/flecsConnection/useFlecsConnection.ts";
+import { useFlecsConnection } from "@common/flecsConnection/useFlecsConnection.ts";
 
 
 interface TestResult {

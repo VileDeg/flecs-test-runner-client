@@ -259,87 +259,72 @@ export const ActionButtons = styled.div`
   margin-top: 20px;
 `;
 
-export const ToastContainer = styled.div`
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  z-index: 9999;
+// Module Selector Styles
+export const ModuleSelectorContainer = styled.div`
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+`;
+
+export const ModuleSelectorHeader = styled.h3`
+  margin: 0 0 15px 0;
+  color: var(--color-text);
+  font-size: 1.25rem;
+  font-weight: 600;
+`;
+
+export const ModuleList = styled.div`
   display: flex;
   flex-direction: column;
+  gap: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 10px;
+  background: var(--color-input-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+`;
+
+export const ModuleItem = styled.div`
+  display: flex;
+  align-items: center;
   gap: 10px;
-  max-width: 400px;
-`;
+  padding: 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
 
-interface ToastProps {
-  type: 'success' | 'error';
-}
-
-export const Toast = styled.div<ToastProps>`
-  padding: 16px 20px;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 300px;
-  animation: slideIn 0.3s ease-out;
-  background-color: ${props => props.type === 'success' ? '#4caf50' : '#f44336'};
-  color: white;
-  font-weight: 500;
-  
-  @keyframes slideIn {
-    from {
-      transform: translateX(400px);
-      opacity: 0;
-    }
-    to {
-      transform: translateX(0);
-      opacity: 1;
-    }
-  }
-  
-  &.fade-out {
-    animation: fadeOut 0.3s ease-out forwards;
-  }
-  
-  @keyframes fadeOut {
-    from {
-      opacity: 1;
-      transform: translateX(0);
-    }
-    to {
-      opacity: 0;
-      transform: translateX(400px);
-    }
-  }
-`;
-
-export const ToastIcon = styled.span`
-  font-size: 20px;
-  flex-shrink: 0;
-`;
-
-export const ToastMessage = styled.span`
-  flex: 1;
-  word-wrap: break-word;
-`;
-
-export const ToastCloseButton = styled.button`
-  background: none;
-  border: none;
-  color: white;
-  font-size: 20px;
-  cursor: pointer;
-  padding: 0;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0.8;
-  transition: opacity 0.2s;
-  
   &:hover {
-    opacity: 1;
+    background-color: var(--color-surface);
   }
+`;
+
+export const ModuleCheckbox = styled.input`
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--color-focus);
+`;
+
+export const ModuleLabel = styled.label`
+  cursor: pointer;
+  user-select: none;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  color: var(--color-text);
+`;
+
+export const ModuleButtonGroup = styled.div`
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+`;
+
+export const ModuleInfoText = styled.p`
+  margin: 0 0 15px 0;
+  color: var(--color-text);
+  opacity: 0.8;
+  font-size: 0.95rem;
 `;

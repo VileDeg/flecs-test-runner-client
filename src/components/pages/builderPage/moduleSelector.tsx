@@ -1,15 +1,15 @@
 import React from "react";
-import type { FlecsModule } from "../../common/flecsMetadataService";
+import type { FlecsModule } from "@common/flecsMetadataService.ts";
 import {
-  Container,
-  Header,
+  ModuleSelectorContainer,
+  ModuleSelectorHeader,
   ModuleList,
   ModuleItem,
-  Checkbox,
-  Label,
-  ButtonGroup,
+  ModuleCheckbox,
+  ModuleLabel,
+  ModuleButtonGroup,
   Button,
-  InfoText
+  ModuleInfoText
 } from "./styles.ts";
 
 interface ModuleSelectorProps {
@@ -43,55 +43,55 @@ export const ModuleSelector: React.FC<ModuleSelectorProps> = ({
 
   if (loading) {
     return (
-      <Container>
-        <Header>Module Selection</Header>
-        <InfoText>Loading modules...</InfoText>
-      </Container>
+      <ModuleSelectorContainer>
+        <ModuleSelectorHeader>Module Selection</ModuleSelectorHeader>
+        <ModuleInfoText>Loading modules...</ModuleInfoText>
+      </ModuleSelectorContainer>
     );
   }
 
   if (modules.length === 0) {
     return (
-      <Container>
-        <Header>Module Selection</Header>
-        <InfoText>No modules found</InfoText>
-      </Container>
+      <ModuleSelectorContainer>
+        <ModuleSelectorHeader>Module Selection</ModuleSelectorHeader>
+        <ModuleInfoText>No modules found</ModuleInfoText>
+      </ModuleSelectorContainer>
     );
   }
 
   return (
-    <Container>
-      <Header>Module Selection</Header>
-      <InfoText>
+    <ModuleSelectorContainer>
+      <ModuleSelectorHeader>Module Selection</ModuleSelectorHeader>
+      <ModuleInfoText>
         Select the modules to filter systems and components. 
         Selected: {selectedModules.length} / {modules.length}
-      </InfoText>
+      </ModuleInfoText>
       
-      <ButtonGroup>
+      <ModuleButtonGroup>
         <Button onClick={handleSelectAll}>Select All</Button>
         <Button onClick={handleDeselectAll}>Deselect All</Button>
-      </ButtonGroup>
+      </ModuleButtonGroup>
 
       <ModuleList>
         {modules.map((module) => (
           <ModuleItem key={module.fullPath}>
-            <Checkbox
+            <ModuleCheckbox
               type="checkbox"
               id={`module-${module.fullPath}`}
               checked={selectedModules.includes(module.fullPath)}
               onChange={() => handleToggleModule(module.fullPath)}
             />
-            <Label htmlFor={`module-${module.fullPath}`}>
+            <ModuleLabel htmlFor={`module-${module.fullPath}`}>
               <strong>{module.name}</strong>
               {module.fullPath !== module.name && (
                 <span style={{ color: '#666', fontSize: '0.9em', marginLeft: '8px' }}>
                   ({module.fullPath})
                 </span>
               )}
-            </Label>
+            </ModuleLabel>
           </ModuleItem>
         ))}
       </ModuleList>
-    </Container>
+    </ModuleSelectorContainer>
   );
 };

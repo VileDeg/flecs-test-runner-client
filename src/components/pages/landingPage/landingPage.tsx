@@ -1,5 +1,5 @@
-import { Uploader } from "../uploader/uploader.tsx";
-import { TestRunner, type UnitTest } from "../../common/testRunner.ts";
+import { Uploader } from "@ui/uploader/uploader.tsx";
+import { TestRunner, type UnitTest } from "@common/testRunner.ts";
 
 import { useState } from 'react'
 
@@ -9,7 +9,7 @@ import {
   RunButton,
 } from "./styles.ts";
 
-import { useFlecsConnection } from "../../context/flecsConnection/useFlecsConnection.ts";
+import { useFlecsConnection } from "@common/flecsConnection/useFlecsConnection.ts";
 
 interface LandingPageProps {
   onTestsUploaded : () => void;
@@ -26,17 +26,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onTestsUploaded }) => 
   const [errorMessage, setErrorMessage] = useState<string>("");
   
   const { connection } = useFlecsConnection();
-
-  /*useEffect(() => {
-    if (heartbeat) {
-      console.log("Heartbeat:", heartbeat);
-    }
-  }, [heartbeat]);*/
-  
-  // 🔍 Check backend connection after mount
-  // useEffect(() => {
-  
-  //     });
   
   const onTestsParsed = (tests: UnitTest[]) => {
     setTests(tests);
@@ -77,7 +66,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onTestsUploaded }) => 
           <TestsList>
             {tests.map((t) => (
               <li key={t.name}>
-                <strong>{t.name}</strong> – {t.systems.map((s) => s.name).join(", ")}
+                <strong>{t.name}</strong> - {t.systems.map((s) => s.name).join(", ")}
               </li>
             ))}
           </TestsList>

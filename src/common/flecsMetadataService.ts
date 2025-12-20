@@ -1,5 +1,5 @@
 // Service for fetching Flecs metadata like available systems and components
-import type { FlecsAsync } from "../context/flecsConnection/flecsAsync";
+import type { FlecsAsync } from "./flecsConnection/flecsAsync";
 
 export interface FlecsSystem {
   name: string;
@@ -38,25 +38,16 @@ export class FlecsMetadataService {
       // Traverse up the parent hierarchy
       while (true) {
         const entityInfo = await connection.entity(currentName, {builtin:true});
-        console.log("entityInfo: ", entityInfo);
+        //console.log("entityInfo: ", entityInfo);
         
-        // Check if entity has a parent (ChildOf relationship)
-        //if (entityInfo.is_a && entityInfo.is_a.length > 0) {
+        // TODO: throw error if something is missing?
         if (entityInfo.parent) {
-          // Get parent name - it should be in the is_a array
           const parentName = entityInfo.parent;
           
           // Stop if we hit a root entity (no name or special entity)
           if (!parentName || parentName === 'flecs' || parentName === '$') {
             break;
           }
-          
-          // Fetch parent info to get its name
-          /*const parentInfo = await connection.entity(parentName, {});
-          
-          if (!parentInfo.name || parentInfo.name === 'flecs' || parentInfo.name === '$') {
-            break;
-          }*/
           
           // Add parent name to path
           pathParts.unshift(parentName);
@@ -103,15 +94,10 @@ export class FlecsMetadataService {
           
           console.log(`  - Built full path: ${fullPath}`);
           
-          if (fullPath && fullPath !== 'TestableModule' && 
-              fullPath !== 'TestRunner.TestableModule') {
-            //const parts = fullPath.split('.');
-            //const name = parts[parts.length - 1] || fullPath;
-            modules.push({
-              name: entityName,
-              fullPath
-            });
-          }
+          modules.push({
+            name: entityName,
+            fullPath
+          });
         }
       }
       
@@ -215,7 +201,7 @@ export class FlecsMetadataService {
                 
                 components.push({
                   name: componentName,
-                  module: modulePath,//this.extractModule(componentName),
+                  module: modulePath,
                   fields
                 });
               }
@@ -237,7 +223,7 @@ export class FlecsMetadataService {
   }
 
   /**
-   * Get detailed information about a specific component including its fields
+   * Get detailed information about a specific component fields
    */
   static async getComponentInfo(
     connection: FlecsAsync, 
