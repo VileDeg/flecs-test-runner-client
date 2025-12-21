@@ -91,7 +91,7 @@ const AppContent = () => {
   const renderTopBar = () => (
     <TopBar>
       <TopBarLeft>
-        <AppTitle>Unit Test Runner</AppTitle>
+        <AppTitle>Flecs Test Runner</AppTitle>
         <ConnectionBadge $status={status}>
           {status === "Connected" && "✅ Connected"}
           {(status === "Connecting" || status === "RetryConnecting") && "🔄 Connecting..."}
