@@ -11,6 +11,7 @@ import {
   Select,
   RemoveButton,
   AddButton,
+  ButtonContainer,
   ComponentBuilder,
   ComponentItem,
 } from "./styles.ts";
@@ -106,11 +107,15 @@ export const EntityBuilderComponent: React.FC<EntityBuilderProps> = ({
               <AddButton onClick={() => onAddComponent(entityIndex)}>Add Component</AddButton>
             </ComponentBuilder>
             
-            <RemoveButton onClick={() => onRemoveEntity(entityIndex)}>Remove Entity</RemoveButton>
+            <ButtonContainer>
+              <RemoveButton onClick={() => onRemoveEntity(entityIndex)}>Remove Entity</RemoveButton>
+            </ButtonContainer>
           </EntityItem>
         ))}
       </EntityBuilderStyled>
-      <AddButton onClick={onAddEntity}>Add Entity</AddButton>
+      <ButtonContainer>
+        <AddButton onClick={onAddEntity}>Add Entity</AddButton>
+      </ButtonContainer>
     </>
   );
 };

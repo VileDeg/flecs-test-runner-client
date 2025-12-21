@@ -8,6 +8,7 @@ import {
   Input,
   RemoveButton,
   AddButton,
+  ButtonContainer,
 } from "./styles.ts";
 
 import type * as Core from "@common/coreTypes.ts";
@@ -64,7 +65,9 @@ export const SystemsList: React.FC<SystemsListProps> = ({
           </SystemItem>
         ))}
       </SystemList>
-      <AddButton onClick={onAdd}>Add System</AddButton>
+      <ButtonContainer>
+        <AddButton onClick={onAdd}>Add System</AddButton>
+      </ButtonContainer>
     </>
   );
 };

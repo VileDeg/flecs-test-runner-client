@@ -24,12 +24,60 @@ export {
   Button,
   AddButton,
   RemoveButton,
+  ButtonContainer,
   PreviewBox,
   ErrorBox,
   InfoText,
   List,
   ListItem,
 } from "@theme/components";
+
+// ComponentFields specific styled components
+export const EmptyStateMessage = styled.div`
+  font-style: italic;
+  color: ${theme.colors.textSecondary};
+`;
+
+export const FieldRow = styled.div`
+  margin-bottom: ${theme.spacing.lg};
+  display: flex;
+  gap: ${theme.spacing.sm};
+  align-items: center;
+`;
+
+export const FieldLabel = styled.label`
+  display: block;
+  margin-bottom: ${theme.spacing.xs};
+  font-weight: ${theme.typography.fontWeight.semibold};
+  color: ${theme.colors.text};
+  font-size: ${theme.typography.fontSize.sm};
+  flex: 0 0 100px;
+`;
+
+export const FieldInput = styled.input`
+  width: 100%;
+  padding: ${theme.spacing.sm};
+  border: 1px solid ${theme.colors.input.border};
+  border-radius: ${theme.borderRadius.sm};
+  font-size: ${theme.typography.fontSize.sm};
+  box-sizing: border-box;
+  background-color: ${theme.colors.input.bg};
+  color: ${theme.colors.input.text};
+  font-family: ${theme.typography.fontFamily.sans};
+  transition: border-color ${theme.transitions.normal}, box-shadow ${theme.transitions.normal};
+  flex: 1;
+  
+  &:focus {
+    outline: none;
+    border-color: ${theme.colors.input.focus};
+    box-shadow: 0 0 0 1px ${theme.colors.input.focus};
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
 
 // Builder-specific components
 export const SystemList = styled.div`
@@ -149,8 +197,15 @@ export const ModuleLabel = styled.label`
   color: ${theme.colors.text};
 `;
 
+export const ModulePathText = styled.span`
+  color: ${theme.colors.textSecondary};
+  font-size: ${theme.typography.fontSize.sm};
+  margin-left: ${theme.spacing.sm};
+`;
+
 export const ModuleButtonGroup = styled.div`
   display: flex;
+  justify-content: center;
   gap: ${theme.spacing.md};
   margin-bottom: ${theme.spacing.lg};
 `;
@@ -160,4 +215,34 @@ export const ModuleInfoText = styled.p`
   color: ${theme.colors.text};
   opacity: 0.8;
   font-size: ${theme.typography.fontSize.sm};
+`;
+
+// Builder page specific messages and status components
+export const LoadingMessage = styled.div`
+  text-align: center;
+  color: ${theme.colors.textSecondary};
+`;
+
+export const EmptyMessage = styled.div`
+  text-align: center;
+  color: ${theme.colors.textSecondary};
+  font-style: italic;
+`;
+
+export const GeneratingStatusBox = styled.div`
+  padding: ${theme.spacing.md};
+  margin-bottom: ${theme.spacing.lg};
+  background-color: ${theme.colors.info.light};
+  color: ${theme.colors.info.dark};
+  border-radius: ${theme.borderRadius.sm};
+  text-align: center;
+  font-weight: ${theme.typography.fontWeight.medium};
+`;
+
+export const FillButtonContainer = styled.div`
+  margin-bottom: ${theme.spacing.lg};
+`;
+
+export const FullWidthButton = styled(Button)`
+  width: 100%;
 `;

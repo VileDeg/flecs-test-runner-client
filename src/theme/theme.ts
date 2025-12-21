@@ -42,11 +42,18 @@ export const theme = {
     },
     info: {
       main: '#17a2b8',
+      light: '#e3f2fd',
+      dark: '#1976d2',
       hover: '#138496',
     },
     
     // Neutral colors (referenced from CSS variables)
     text: 'var(--color-text)',
+    textSecondary: '#666',
+    link: {
+      default: '#646cff',
+      hover: '#535bf2',
+    },
     background: 'var(--color-background)',
     surface: 'var(--color-surface)',
     border: 'var(--color-border)',

@@ -7,6 +7,7 @@ import {
   ModuleItem,
   ModuleCheckbox,
   ModuleLabel,
+  ModulePathText,
   ModuleButtonGroup,
   Button,
   ModuleInfoText
@@ -84,9 +85,9 @@ export const ModuleSelector: React.FC<ModuleSelectorProps> = ({
             <ModuleLabel htmlFor={`module-${module.fullPath}`}>
               <strong>{module.name}</strong>
               {module.fullPath !== module.name && (
-                <span style={{ color: '#666', fontSize: '0.9em', marginLeft: '8px' }}>
+                <ModulePathText>
                   ({module.fullPath})
-                </span>
+                </ModulePathText>
               )}
             </ModuleLabel>
           </ModuleItem>

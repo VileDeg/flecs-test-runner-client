@@ -179,6 +179,13 @@ export const Button = styled.button<ButtonProps>`
 export const AddButton = styled(Button).attrs({ $variant: 'success' })``;
 export const RemoveButton = styled(Button).attrs({ $variant: 'error', $size: 'sm' })``;
 
+// Button Container for centering
+export const ButtonContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  margin-top: ${theme.spacing.lg};
+`;
+
 // List Components
 export const List = styled.div`
   display: flex;

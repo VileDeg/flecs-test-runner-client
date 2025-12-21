@@ -10,8 +10,6 @@ import { type TestBuilderPersistedState } from '@hooks/useTestBuilderState.ts';
 
 import { useFlecsConnection } from "./common/flecsConnection/useFlecsConnection.ts";
 
-import './App.css'  
-
 import { 
   TopBar, 
   TopBarLeft, 
@@ -22,7 +20,9 @@ import {
   CenteredContent, 
   MainContent, 
   Header,
-  StatusBar 
+  StatusBar,
+  AppContainer,
+  AppInnerContainer
 } from './styles'
 import { FLECS_PORT } from './common/constants.ts'
 
@@ -135,8 +135,8 @@ const AppContent = () => {
   );
 
   return (
-    <div style={{ display: "block" }}>
-      <div>
+    <AppContainer>
+      <AppInnerContainer>
         {status === "Connected" ? (
           <>
             {renderTopBar()}
@@ -157,8 +157,8 @@ const AppContent = () => {
         ) : (
           renderCenteredContent()
         )}
-      </div>
-    </div>
+      </AppInnerContainer>
+    </AppContainer>
   );
 }
 

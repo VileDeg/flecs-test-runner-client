@@ -4,6 +4,15 @@ import { theme } from "@theme/theme";
 // Re-export common components
 export { Button, Container } from "@theme/components";
 
+// App container component
+export const AppContainer = styled.div`
+  display: block;
+`;
+
+export const AppInnerContainer = styled.div`
+  /* Wrapper for main content */
+`;
+
 export const Output = styled.pre`
   background: rgb(0, 0, 0);
   padding: ${theme.spacing.md};

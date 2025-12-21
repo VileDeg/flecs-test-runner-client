@@ -22,6 +22,11 @@ import {
   ActionButtons,
   SaveJsonButton,
   RunTestButton,
+  LoadingMessage,
+  EmptyMessage,
+  GeneratingStatusBox,
+  FillButtonContainer,
+  FullWidthButton,
 } from "./styles.ts";
 
 export interface TestBuilderProps {
@@ -454,22 +459,22 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
 
       {loadingMetadata ? (
         <Section>
-          <div style={{ textAlign: 'center', color: '#666' }}>
+          <LoadingMessage>
             Loading metadata...
-          </div>
+          </LoadingMessage>
         </Section>
       ) : (
         <>
         <Section>
           <SectionHeader>Systems to Run</SectionHeader>
           {selectedModules.length === 0 ? (
-            <div style={{ textAlign: 'center', color: '#666', fontStyle: 'italic' }}>
+            <EmptyMessage>
               Please select at least one module to see available systems
-            </div>
+            </EmptyMessage>
           ) : availableSystems.length === 0 ? (
-            <div style={{ textAlign: 'center', color: '#666', fontStyle: 'italic' }}>
+            <EmptyMessage>
               No systems found in selected modules
-            </div>
+            </EmptyMessage>
           ) : (
             <SystemsList
               systems={systems}
@@ -483,9 +488,9 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
         <Section>
           <SectionHeader>Initial State (Entities & Components)</SectionHeader>
             {selectedModules.length === 0 ? (
-              <div style={{ textAlign: 'center', color: '#666', fontStyle: 'italic' }}>
+              <EmptyMessage>
                 Please select at least one module to see available components
-              </div>
+              </EmptyMessage>
             ) : (
               <EntityBuilderComponent
                 entities={initialEntities}
@@ -508,32 +513,24 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
           <Section>
             <SectionHeader>Expected State (After System Execution)</SectionHeader>
             {isGeneratingExpected && (
-              <div style={{ 
-                padding: '12px', 
-                marginBottom: '16px', 
-                backgroundColor: '#e3f2fd', 
-                color: '#1976d2', 
-                borderRadius: '4px',
-                textAlign: 'center'
-              }}>
+              <GeneratingStatusBox>
                 {generatingMessage}
-              </div>
+              </GeneratingStatusBox>
             )}
             {!isGeneratingExpected && initialEntities.length > 0 && systems.length > 0 && (
-              <div style={{ marginBottom: '16px' }}>
-                <Button 
+              <FillButtonContainer>
+                <FullWidthButton 
                   onClick={fillExpectedFromInitial}
                   disabled={isGeneratingExpected}
-                  style={{ width: '100%' }}
                 >
                   Fill Expected State from Initial (Run Test)
-                </Button>
-              </div>
+                </FullWidthButton>
+              </FillButtonContainer>
             )}
             {selectedModules.length === 0 ? (
-              <div style={{ textAlign: 'center', color: '#666', fontStyle: 'italic' }}>
+              <EmptyMessage>
                 Please select at least one module to see available components
-              </div>
+              </EmptyMessage>
             ) : (
               <EntityBuilderComponent
                 entities={expectedEntities}
