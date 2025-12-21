@@ -27,6 +27,9 @@ import {
   GeneratingStatusBox,
   FillButtonContainer,
   FullWidthButton,
+  BuilderLayout,
+  MainColumn,
+  SideColumn,
 } from "./styles.ts";
 
 export interface TestBuilderProps {
@@ -437,34 +440,36 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
     <Container>
       <Header>Test Builder</Header>
 
-      <ModuleSelector
-        modules={availableModules}
-        selectedModules={selectedModules}
-        onSelectionChange={setSelectedModules}
-        loading={false}
-      />
-
-      <Section>
-        <SectionHeader>Test Name</SectionHeader>
-        <FormGroup>
-          {/* <Label>Test Name</Label> */}
-          <Input
-            type="text"
-            value={testName}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTestName(e.target.value)}
-            placeholder="Enter test name"
+      <BuilderLayout>
+        <MainColumn>
+          <ModuleSelector
+            modules={availableModules}
+            selectedModules={selectedModules}
+            onSelectionChange={setSelectedModules}
+            loading={false}
           />
-        </FormGroup>
-      </Section>
 
-      {loadingMetadata ? (
-        <Section>
-          <LoadingMessage>
-            Loading metadata...
-          </LoadingMessage>
-        </Section>
-      ) : (
-        <>
+          <Section>
+            <SectionHeader>Test Name</SectionHeader>
+            <FormGroup>
+              {/* <Label>Test Name</Label> */}
+              <Input
+                type="text"
+                value={testName}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTestName(e.target.value)}
+                placeholder="Enter test name"
+              />
+            </FormGroup>
+          </Section>
+
+          {loadingMetadata ? (
+            <Section>
+              <LoadingMessage>
+                Loading metadata...
+              </LoadingMessage>
+            </Section>
+          ) : (
+            <>
         <Section>
           <SectionHeader>Systems to Run</SectionHeader>
           {selectedModules.length === 0 ? (
@@ -551,21 +556,28 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
           </Section>
         </>
       )}
-     
-      <ActionButtons>
-        <SaveJsonButton onClick={downloadJson}>Save Test File</SaveJsonButton>
-        <RunTestButton onClick={runTest}>Run Test</RunTestButton>
-        <Button onClick={clearForm}>Clear Form</Button>
-      </ActionButtons>
+        </MainColumn>
 
-      {jsonPreview && (
-        <Section>
-          <SectionHeader>JSON Preview</SectionHeader>
-          <PreviewBox>
-            <pre>{jsonPreview}</pre>
-          </PreviewBox>
-        </Section>
-      )}
+        <SideColumn>
+          <Section>
+            <SectionHeader>Actions</SectionHeader>
+            <ActionButtons>
+              <SaveJsonButton onClick={downloadJson}>Save Test File</SaveJsonButton>
+              <RunTestButton onClick={runTest}>Run Test</RunTestButton>
+              <Button onClick={clearForm}>Clear Form</Button>
+            </ActionButtons>
+          </Section>
+
+          {jsonPreview && (
+            <Section>
+              <SectionHeader>JSON Preview</SectionHeader>
+              <PreviewBox>
+                <pre>{jsonPreview}</pre>
+              </PreviewBox>
+            </Section>
+          )}
+        </SideColumn>
+      </BuilderLayout>
     </Container>
   );
 };

@@ -80,6 +80,31 @@ export const FieldInput = styled.input`
 `;
 
 // Builder-specific components
+
+// Two column layout for builder page
+export const BuilderLayout = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: ${theme.spacing.xxl};
+  align-items: start;
+
+  @media (max-width: 1200px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const MainColumn = styled.div`
+  /* Main content column */
+`;
+
+export const SideColumn = styled.div`
+  position: sticky;
+  top: calc(88px + ${theme.spacing.lg});
+  display: flex;
+  flex-direction: column;
+  gap: ${theme.spacing.lg};
+`;
+
 export const SystemList = styled.div`
   display: flex;
   flex-direction: column;
@@ -129,12 +154,8 @@ export const ComponentItem = styled.div`
 
 export const ActionButtons = styled.div`
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: ${theme.spacing.md};
-  justify-content: center;
-  padding: ${theme.spacing.xl} 0;
-  border-top: 1px solid ${theme.colors.border};
-  margin-top: ${theme.spacing.xl};
 `;
 
 export const SaveJsonButton = styled(Button).attrs({ $variant: 'info' })``;
