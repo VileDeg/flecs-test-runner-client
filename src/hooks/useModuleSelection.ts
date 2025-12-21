@@ -39,6 +39,7 @@ export const useModuleSelection = (selectedModules: string[]) => {
         setAvailableSystems([]);
         setAvailableComponents([]);
         setLoadingMetadata(false);
+        console.log("*** useEffect in useModuleSelection set avail systems to empty");
         return;
       }
 
@@ -51,6 +52,7 @@ export const useModuleSelection = (selectedModules: string[]) => {
         
         setAvailableSystems(systemsData);
         setAvailableComponents(componentsData);
+        console.log("*** useEffect in useModuleSelection set avail systems to: ", systemsData);
       } catch (error: any) {
         console.error('Failed to load metadata:', error);
       } finally {

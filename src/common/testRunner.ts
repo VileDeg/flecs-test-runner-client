@@ -262,16 +262,17 @@ export class TestRunner {
             const values = result.fields?.values;
             if (result.name === testName && values) {
               // Look for the Executed component with worldExpectedSerialized
-              const executedComponent = values[0];
+              //const executedComponent = values[0];
+              const incompleteComponent: Core.UnitTest.Incomplete = values[1];
               
               // .find(
               //   (v: any) => v && v[1] === UNIT_TEST_EXECUTED_TAG_NAME
               // );
               
-              if (executedComponent && executedComponent?.worldExpectedSerialized) {
+              if (incompleteComponent && incompleteComponent?.worldExpectedSerialized) {
                 return {
                   success: true,
-                  worldSerialized: executedComponent.worldExpectedSerialized
+                  worldSerialized: incompleteComponent.worldExpectedSerialized
                 };
               }
             }

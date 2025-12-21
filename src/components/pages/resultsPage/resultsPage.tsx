@@ -21,6 +21,12 @@ import { Timer } from "@ui/timer/timer.tsx";
 import { useFlecsConnection } from "@common/flecsConnection/useFlecsConnection.ts";
 import * as Core from "@common/coreTypes.ts";
 
+import { 
+  UNIT_TEST_EXECUTED_TAG_NAME, 
+  UNIT_TEST_PASSED_TAG_NAME, 
+  UNIT_TEST_INCOMPLETE_TAG_NAME 
+} from "@common/constants.ts";
+
 interface TestResult {
   name: string;
   statusMessage?: string;
@@ -46,21 +52,22 @@ export const ResultsPage: React.FC = () => {
         if (!connection) return;
 
         // Get pending tests (UnitTest but not Executed)
+        // TODO: remove. Use a client-side list instead to track pending tests
         const pendingQuery = await connection.query(
-          "TestRunner.UnitTest, !TestRunner.UnitTest.Executed", {}
+          `TestRunner.UnitTest, !${UNIT_TEST_EXECUTED_TAG_NAME}, !${UNIT_TEST_INCOMPLETE_TAG_NAME}`, {}
         );
         const newPendingTests = parseQueryResults(pendingQuery, "Not executed yet");
         //console.log("Getting Pending Tests...");
 
         // Get passed tests (UnitTest with Executed and Passed components)
         const passedQuery = await connection.query(
-          "TestRunner.UnitTest, TestRunner.UnitTest.Executed, TestRunner.UnitTest.Passed", {}
+          `TestRunner.UnitTest, ${UNIT_TEST_EXECUTED_TAG_NAME}, ${UNIT_TEST_PASSED_TAG_NAME}, !${UNIT_TEST_INCOMPLETE_TAG_NAME}`, {}
         );
         const newPassedTests = parseQueryResults(passedQuery, "Test passed");
 
         // Get failed tests (UnitTest with Executed but without Passed component)
         const failedQuery = await connection.query(
-          "TestRunner.UnitTest, TestRunner.UnitTest.Executed, !TestRunner.UnitTest.Passed", {}
+          `TestRunner.UnitTest, ${UNIT_TEST_EXECUTED_TAG_NAME}, !${UNIT_TEST_PASSED_TAG_NAME}, !${UNIT_TEST_INCOMPLETE_TAG_NAME}`, {}
         );
         const newFailedTests = parseQueryResults(failedQuery, "Test failed");
 

@@ -14,8 +14,11 @@ export namespace UnitTest {
   export interface Executed {
     statusMessage: string;
   }
-
   export interface Passed {}
+  export interface Incomplete {
+    worldExpectedSerialized: string;
+  }
+
 }
 
 export interface ComponentData {

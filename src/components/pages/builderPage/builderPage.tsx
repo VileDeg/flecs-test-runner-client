@@ -76,7 +76,9 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
 
   useEffect(() => {
     // Don't run until modules have finished loading
-    if (loadingModules) return;
+    if (loadingModules) { 
+      return;
+    }
 
     // If not persisted, initialize selectedModules with all modules
     if(persistedState?.selectedModules === undefined) {
@@ -96,27 +98,29 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
 
   // Clear systems from modules that are no longer selected
   useEffect(() => {
-    // Don't run until modules have finished loading
-    if (loadingMetadata) return;
+    if (loadingModules || loadingMetadata) { 
+      return;
+    }
 
     if (systems.length > 0) {
       const availableSystemNames = new Set(availableSystems.map(s => s.module + "." + s.name));
       const filteredSystems = systems.filter(s => availableSystemNames.has(s.name));
+      console.log("*** Filtering systems, systems before filtering: ", systems);
+      console.log("*** Filtering systems, availableSystemNames: ", availableSystemNames);
+      console.log("*** Filtering systems, filteredSystems: ", filteredSystems);
       if (filteredSystems.length !== systems.length) {
         setSystems(filteredSystems);
       }
     }
-  }, [availableSystems, loadingMetadata]);
+  }, [availableSystems, loadingModules, loadingMetadata, setSystems]);
 
   // Clear components from entities that are no longer available in selected modules
   useEffect(() => {
-    // Don't run until modules have finished loading
-    if (loadingMetadata) return;
+    if (loadingModules || loadingMetadata) { 
+      return;
+    }
 
-    //if (availableComponents.length === 0) return;
-    
     const availableComponentNames = new Set(availableComponents.map(c => c.name));
-    
     const filterEntities = (entities: Core.EntityData[]) => {
       return entities.map(entity => ({
         ...entity,
@@ -133,7 +137,7 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
     if (JSON.stringify(filteredExpected) !== JSON.stringify(expectedEntities)) {
       setExpectedEntities(filteredExpected);
     }
-  }, [availableComponents, loadingMetadata]);
+  }, [availableComponents, loadingModules, loadingMetadata, setInitialEntities, setExpectedEntities]);
 
   // System management
   const addSystem = () => {
