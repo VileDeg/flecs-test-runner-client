@@ -1,20 +1,17 @@
 import React, { createContext, useState, useCallback } from 'react';
-import type { Toast } from '../../../types/toast.types.ts';
 import { ToastContainer as StyledToastContainer, Toast as StyledToast, ToastIcon, ToastMessage, ToastCloseButton } from './styles.ts';
 
 interface ToastContextValue {
   showToast: (message: string, type: 'success' | 'error') => void;
 }
 
-export const ToastContext = createContext<ToastContextValue | undefined>(undefined);
+export interface Toast {
+  id: number;
+  message: string;
+  type: 'success' | 'error';
+}
 
-// export const useToast = () => {
-//   const context = useContext(ToastContext);
-//   if (!context) {
-//     throw new Error('useToast must be used within ToastProvider');
-//   }
-//   return context;
-// };
+export const ToastContext = createContext<ToastContextValue | undefined>(undefined);
 
 interface ToastProviderProps {
   children: React.ReactNode;
