@@ -1,7 +1,7 @@
 import React from "react";
 import { ComponentFields } from "./componentFields.tsx";
 import { type FlecsMetadata } from "@common/flecsMetadataService.ts";
-import type { FlecsCore } from "@common/testRunner.ts";
+import type * as Core from "@common/coreTypes.ts";
 import {
   EntityBuilder as EntityBuilderStyled,
   EntityItem,
@@ -17,7 +17,7 @@ import {
 
 
 export interface EntityBuilderProps {
-  entities: FlecsCore.EntityData[];
+  entities: Core.EntityData[];
   availableComponents: FlecsMetadata.Component[];
   isInitial: boolean;
   onUpdateEntityName: (index: number, name: string) => void;

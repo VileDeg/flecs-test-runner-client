@@ -10,13 +10,13 @@ import {
   AddButton,
 } from "./styles.ts";
 
-import type { FlecsCore } from "@common/testRunner.ts";
+import type * as Core from "@common/coreTypes.ts";
 import type { FlecsMetadata } from "@common/flecsMetadataService.ts";
 
 export interface SystemsListProps {
-  systems: FlecsCore.SystemInvocation[];
+  systems: Core.SystemInvocation[];
   availableSystems: FlecsMetadata.System[];
-  onUpdate: (index: number, field: keyof FlecsCore.SystemInvocation, value: string | number) => void;
+  onUpdate: (index: number, field: keyof Core.SystemInvocation, value: string | number) => void;
   onRemove: (index: number) => void;
   onAdd: () => void;
 }

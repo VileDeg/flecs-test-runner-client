@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { useFlecsConnection } from "@common/flecsConnection/useFlecsConnection.ts";
 import { FlecsMetadataService } from "@common/flecsMetadataService.ts";
-import { TestRunner, type FlecsCore } from "@common/testRunner.ts";
+import { TestRunner } from "@common/testRunner.ts";
+import type * as Core from "@common/coreTypes.ts";
 import { ModuleSelector } from "./moduleSelector.tsx";
 import { SystemsList } from "./systemsList.tsx";
 import { EntityBuilderComponent } from "./entityBuilder.tsx";
 import { useToast } from "@ui/toast/useToast.ts";
 import { useTestBuilderState } from "@hooks/useTestBuilderState.ts";
 import { useModuleSelection } from "@hooks/useModuleSelection.ts";
+import { type TestBuilderPersistedState} from "@hooks/useTestBuilderState.ts";
 import {
   Container,
   Header,
@@ -22,20 +24,11 @@ import {
   RunTestButton,
 } from "./styles.ts";
 
-export interface TestBuilderPersistedState {
-  testName: string;
-  systems: FlecsCore.SystemInvocation[];
-  initialEntities: FlecsCore.EntityData[];
-  expectedEntities: FlecsCore.EntityData[];
-  selectedModules: string[];
-}
-
 export interface TestBuilderProps {
   onTestCreated?: () => void;
   persistedState?: TestBuilderPersistedState;
   onStateChange?: (state: TestBuilderPersistedState) => void;
 }
-
 
 export const TestBuilder: React.FC<TestBuilderProps> = ({ 
   onTestCreated, 
@@ -116,7 +109,7 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
     
     const availableComponentNames = new Set(availableComponents.map(c => c.name));
     
-    const filterEntities = (entities: FlecsCore.EntityData[]) => {
+    const filterEntities = (entities: Core.EntityData[]) => {
       return entities.map(entity => ({
         ...entity,
         components: entity.components.filter(comp => availableComponentNames.has(comp.name))
@@ -139,7 +132,7 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
     setSystems([...systems, { name: "", timesToRun: 1 }]);
   };
 
-  const updateSystem = (index: number, field: keyof FlecsCore.SystemInvocation, value: string | number) => {
+  const updateSystem = (index: number, field: keyof Core.SystemInvocation, value: string | number) => {
     const newSystems = [...systems];
     newSystems[index] = { ...newSystems[index], [field]: value };
     setSystems(newSystems);
@@ -151,7 +144,7 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
 
   // Entity management
   const addEntity = (isInitial: boolean) => {
-    const newEntity: FlecsCore.EntityData = { entity: "", components: [] };
+    const newEntity: Core.EntityData = { entity: "", components: [] };
     if (isInitial) {
       setInitialEntities([...initialEntities, newEntity]);
     } else {
@@ -181,7 +174,7 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
 
   // Component management
   const addComponent = (entityIndex: number, isInitial: boolean) => {
-    const newComponent: FlecsCore.ComponentData = { name: "", module: "" };
+    const newComponent: Core.ComponentData = { name: "", module: "" };
     if (isInitial) {
       const newEntities = [...initialEntities];
       newEntities[entityIndex].components.push(newComponent);
@@ -198,14 +191,14 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
     componentIndex: number,
     field: string,
     value: any,
-    entities: FlecsCore.EntityData[]
-  ): FlecsCore.EntityData[] => {
+    entities: Core.EntityData[]
+  ): Core.EntityData[] => {
     const newEntities = [...entities];
     
     if (field === 'name') {
       // When component name changes, reset fields to defaults
       const component = availableComponents.find(c => c.name === value);
-      const newComponentData: FlecsCore.ComponentData = { 
+      const newComponentData: Core.ComponentData = { 
         name: value,
         module: component?.module || ""
       };
@@ -248,11 +241,13 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
   const removeComponent = (entityIndex: number, componentIndex: number, isInitial: boolean) => {
     if (isInitial) {
       const newEntities = [...initialEntities];
-      newEntities[entityIndex].components = newEntities[entityIndex].components.filter((_, i) => i !== componentIndex);
+      newEntities[entityIndex].components = 
+        newEntities[entityIndex].components.filter((_: any, i: number) => i !== componentIndex);
       setInitialEntities(newEntities);
     } else {
       const newEntities = [...expectedEntities];
-      newEntities[entityIndex].components = newEntities[entityIndex].components.filter((_, i) => i !== componentIndex);
+      newEntities[entityIndex].components = 
+      newEntities[entityIndex].components.filter((_: any, i: number) => i !== componentIndex);
       setExpectedEntities(newEntities);
     }
   };

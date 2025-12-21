@@ -1,17 +1,11 @@
 import { useCallback } from "react";
 import { useDropzone } from "react-dropzone";
-import { TestRunner, type UnitTest } from "@common/testRunner.ts";
+import { TestRunner } from "@common/testRunner.ts";
 
-export namespace UnitTest {
-  export interface Executed {
-    statusMessage: string;
-  }
-  export interface Passed {
-  }
-}
+import type * as Core from "@common/coreTypes.ts";
 
 interface UploaderProps {
-  onTestsParsed : (tests: UnitTest[]) => void;
+  onTestsParsed : (tests: Core.UnitTest[]) => void;
 }
 
 // TODO: allow supplying multiple files, merge all files to get a list of the tests
@@ -24,7 +18,7 @@ JSON may start with `tests` array or may only contain one test element
 export const Uploader: React.FC<UploaderProps> = ({ onTestsParsed  }) => {
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
-      const allTests: UnitTest[] = [];
+      const allTests: Core.UnitTest[] = [];
 
       for (const file of acceptedFiles) {
         try {

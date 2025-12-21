@@ -5,7 +5,8 @@ import { ToastProvider } from "@ui/toast/toastProvider.tsx";
 
 import {LandingPage} from './components/pages/landingPage/landingPage.tsx'
 import {ResultsPage} from './components/pages/resultsPage/resultsPage.tsx'
-import {TestBuilder, type TestBuilderPersistedState} from '@pages/builderPage/builderPage.tsx'
+import {TestBuilder} from '@pages/builderPage/builderPage.tsx'
+import { type TestBuilderPersistedState } from '@hooks/useTestBuilderState.ts';
 
 import { useFlecsConnection } from "./common/flecsConnection/useFlecsConnection.ts";
 
@@ -19,9 +20,10 @@ import {
   ConnectionBadge, 
   NavButton, 
   CenteredContent, 
-  MainContent 
+  MainContent, 
+  Header,
+  StatusBar 
 } from './styles'
-import { Header, StatusBar } from './App.styles.ts'
 import { FLECS_PORT } from './common/constants.ts'
 
 // Main App Component

@@ -15,11 +15,11 @@ import {
   Button,
 } from "./styles.ts";
 
-import type { FlecsCore } from "@common/testRunner.ts";
+
 import { Timer } from "@ui/timer/timer.tsx";
 
 import { useFlecsConnection } from "@common/flecsConnection/useFlecsConnection.ts";
-
+import * as Core from "@common/coreTypes.ts";
 
 interface TestResult {
   name: string;
@@ -144,8 +144,8 @@ export const ResultsPage: React.FC = () => {
     if (queryResult && queryResult.results) {
       for (const entity of queryResult.results) {
         const components = entity.fields.values;
-        const unitTest: UnitTest = components[0];
-        const executed: UnitTest.Executed | undefined = components[1];
+        const unitTest: Core.UnitTest = components[0];
+        const executed: Core.UnitTest.Executed | undefined = components[1];
         
         results.push({
           name: unitTest.name,

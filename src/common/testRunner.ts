@@ -6,30 +6,7 @@ import {
   UNIT_TEST_EXECUTED_TAG_NAME
 } from "./constants";
 
-export namespace FlecsCore {
-  export interface SystemInvocation {
-    name: string;
-    timesToRun: number;
-  }
-
-  export interface UnitTest {
-    name: string;
-    systems: SystemInvocation[];
-    scriptActual: string;
-    scriptExpected: string;
-  }
-
-  export interface ComponentData {
-    name: string;
-    module: string; // Module path for the component (e.g., "modules.movement")
-    [key: string]: any; // Component field values
-  }
-
-  export interface EntityData {
-    entity: string;
-    components: ComponentData[];
-  }
-}
+import type * as Core from "./coreTypes.ts";
 
 export interface TestExecutionResult {
   success: boolean;
@@ -47,7 +24,7 @@ export class TestRunner {
   /**
    * Execute a test
    */
-  async executeTest(test: UnitTest): Promise<TestExecutionResult> {
+  async executeTest(test: Core.UnitTest): Promise<TestExecutionResult> {
     try {
       const testName = test.name;
       
@@ -76,7 +53,7 @@ export class TestRunner {
   /**
    * Execute multiple tests
    */
-  async executeTests(tests: UnitTest[]): Promise<TestExecutionResult[]> {
+  async executeTests(tests: Core.UnitTest[]): Promise<TestExecutionResult[]> {
     const results: TestExecutionResult[] = [];
     
     for (const test of tests) {
@@ -95,10 +72,10 @@ export class TestRunner {
    */
   static createTest(
     name: string,
-    systems: SystemInvocation[],
-    initialEntities: EntityData[],
-    expectedEntities: EntityData[]
-  ): UnitTest {
+    systems: Core.SystemInvocation[],
+    initialEntities: Core.EntityData[],
+    expectedEntities: Core.EntityData[]
+  ): Core.UnitTest {
     return {
       name,
       systems,
@@ -110,7 +87,7 @@ export class TestRunner {
   /**
    * Convert entity data array to Flecs DSL script format
    */
-  static convertEntitiesToScript(entities: EntityData[]): string {
+  static convertEntitiesToScript(entities: Core.EntityData[]): string {
     if (entities.length === 0) return "";
 
     let script = "";
@@ -217,14 +194,14 @@ export class TestRunner {
    */
   async executeIncompleteTest(
     name: string,
-    systems: SystemInvocation[],
-    initialEntities: EntityData[]
+    systems: Core.SystemInvocation[],
+    initialEntities: Core.EntityData[]
   ): Promise<TestExecutionResult> {
     try {
       const testName = name;
       
       // Create test with empty expected config
-      const incompleteTest: UnitTest = {
+      const incompleteTest: Core.UnitTest = {
         name: testName,
         systems,
         scriptActual: TestRunner.convertEntitiesToScript(initialEntities),
@@ -334,17 +311,17 @@ export class TestRunner {
    * Parse serialized world JSON into EntityData array
    * The serialized world format should contain entities with their components
    */
-  static parseWorldSerialized(worldJson: string): EntityData[] {
+  static parseWorldSerialized(worldJson: string): Core.EntityData[] {
     try {
       console.log("parseWorldSerialized, json: ", worldJson);
       const world = JSON.parse(worldJson);
-      const entities: EntityData[] = [];
+      const entities: Core.EntityData[] = [];
       
       // Assuming the serialized format has an entities array
       // Adjust this parsing logic based on your actual serialized format
       if (world.results && Array.isArray(world.results)) {
         for (const entity of world.results) {
-          const entityData: EntityData = {
+          const entityData: Core.EntityData = {
             entity: entity.name || entity.id || "",
             components: []
           };
@@ -358,7 +335,7 @@ export class TestRunner {
               console.log("component path: ", componentFullPath);
               const componentValues = value;
               const {name, module} = this.splitNameModule(componentFullPath);
-              const componentData: ComponentData = {
+              const componentData: Core.ComponentData = {
                 name: name,  //comp.type || comp.name || "",
                 module: module || ""
               };

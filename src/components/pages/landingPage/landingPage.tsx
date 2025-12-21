@@ -1,5 +1,6 @@
 import { Uploader } from "@ui/uploader/uploader.tsx";
-import { TestRunner, type FlecsCore } from "@common/testRunner.ts";
+import { TestRunner } from "@common/testRunner.ts";
+import type * as Core from "@common/coreTypes.ts";
 
 import { useState } from 'react'
 
@@ -22,18 +23,18 @@ JSON may start with `tests` array or may only contain one test element
 */
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onTestsUploaded }) => {
-  const [tests, setTests] = useState<FlecsCore.UnitTest[]>([]);
+  const [tests, setTests] = useState<Core.UnitTest[]>([]);
   const [errorMessage, setErrorMessage] = useState<string>("");
   
   const { connection } = useFlecsConnection();
   
-  const onTestsParsed = (tests: FlecsCore.UnitTest[]) => {
+  const onTestsParsed = (tests: Core.UnitTest[]) => {
     setTests(tests);
     runUnitTests(tests);
     onTestsUploaded();
   };
   
-  const runUnitTests = async (testsToRun: FlecsCore.UnitTest[]) => {
+  const runUnitTests = async (testsToRun: Core.UnitTest[]) => {
     setErrorMessage("");
     
     try {

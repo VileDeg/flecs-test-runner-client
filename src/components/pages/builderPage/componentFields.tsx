@@ -2,10 +2,10 @@ import React from "react";
 import { FlecsMetadataService, type FlecsMetadata } from "@common/flecsMetadataService.ts";
 import { FormGroup, Label, Input } from "./styles.ts";
 
-import type { FlecsCore } from "@common/testRunner.ts";
+import type * as Core from "@common/coreTypes.ts";
 
 export interface ComponentFieldsProps {
-  component: FlecsCore.ComponentData;
+  component: Core.ComponentData;
   componentSchema: FlecsMetadata.Component;
   entityIndex: number;
   componentIndex: number;
