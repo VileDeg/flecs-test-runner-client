@@ -6,27 +6,29 @@ import {
   UNIT_TEST_EXECUTED_TAG_NAME
 } from "./constants";
 
-export interface SystemInvocation {
-  name: string;
-  timesToRun: number;
-}
+export namespace FlecsCore {
+  export interface SystemInvocation {
+    name: string;
+    timesToRun: number;
+  }
 
-export interface UnitTest {
-  name: string;
-  systems: SystemInvocation[];
-  scriptActual: string;
-  scriptExpected: string;
-}
+  export interface UnitTest {
+    name: string;
+    systems: SystemInvocation[];
+    scriptActual: string;
+    scriptExpected: string;
+  }
 
-export interface ComponentData {
-  name: string;
-  module: string; // Module path for the component (e.g., "modules.movement")
-  [key: string]: any; // Component field values
-}
+  export interface ComponentData {
+    name: string;
+    module: string; // Module path for the component (e.g., "modules.movement")
+    [key: string]: any; // Component field values
+  }
 
-export interface EntityData {
-  entity: string;
-  components: ComponentData[];
+  export interface EntityData {
+    entity: string;
+    components: ComponentData[];
+  }
 }
 
 export interface TestExecutionResult {

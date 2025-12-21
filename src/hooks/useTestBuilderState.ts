@@ -1,14 +1,15 @@
 import { useState, useEffect } from "react";
-import type { TestBuilderPersistedState, SystemInvocation, EntityData } from "@pages/builderPage/builderPage.types.ts";
+import type { TestBuilderPersistedState } from "@pages/builderPage/builderPage.types.ts";
+import type { FlecsCore } from "@common/testRunner.ts";
 
 export const useTestBuilderState = (
   persistedState?: TestBuilderPersistedState,
   onStateChange?: (state: TestBuilderPersistedState) => void
 ) => {
   const [testName, setTestName] = useState(persistedState?.testName || "");
-  const [systems, setSystems] = useState<SystemInvocation[]>(persistedState?.systems || []);
-  const [initialEntities, setInitialEntities] = useState<EntityData[]>(persistedState?.initialEntities || []);
-  const [expectedEntities, setExpectedEntities] = useState<EntityData[]>(persistedState?.expectedEntities || []);
+  const [systems, setSystems] = useState<FlecsCore.SystemInvocation[]>(persistedState?.systems || []);
+  const [initialEntities, setInitialEntities] = useState<FlecsCore.EntityData[]>(persistedState?.initialEntities || []);
+  const [expectedEntities, setExpectedEntities] = useState<FlecsCore.EntityData[]>(persistedState?.expectedEntities || []);
   const [selectedModules, setSelectedModules] = useState<string[]>(persistedState?.selectedModules || []);
 
   // Persist state changes to parent component

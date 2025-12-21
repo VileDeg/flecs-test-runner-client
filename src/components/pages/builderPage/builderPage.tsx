@@ -1,21 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { useFlecsConnection } from "@common/flecsConnection/useFlecsConnection.ts";
 import { FlecsMetadataService } from "@common/flecsMetadataService.ts";
-import { TestRunner, type SystemInvocation, type EntityData, type ComponentData } from "@common/testRunner.ts";
+import { TestRunner, type FlecsCore } from "@common/testRunner.ts";
 import { ModuleSelector } from "./moduleSelector.tsx";
 import { SystemsList } from "./systemsList.tsx";
 import { EntityBuilderComponent } from "./entityBuilder.tsx";
 import { useToast } from "@ui/toast/useToast.ts";
 import { useTestBuilderState } from "@hooks/useTestBuilderState.ts";
 import { useModuleSelection } from "@hooks/useModuleSelection.ts";
-import type { TestBuilderProps } from "./builderPage.types.ts";
 import {
   Container,
   Header,
   Section,
   SectionHeader,
   FormGroup,
-  Label,
   Input,
   Button,
   PreviewBox,
@@ -24,7 +22,20 @@ import {
   RunTestButton,
 } from "./styles.ts";
 
-export type { TestBuilderPersistedState } from "./builderPage.types.ts";
+export interface TestBuilderPersistedState {
+  testName: string;
+  systems: FlecsCore.SystemInvocation[];
+  initialEntities: FlecsCore.EntityData[];
+  expectedEntities: FlecsCore.EntityData[];
+  selectedModules: string[];
+}
+
+export interface TestBuilderProps {
+  onTestCreated?: () => void;
+  persistedState?: TestBuilderPersistedState;
+  onStateChange?: (state: TestBuilderPersistedState) => void;
+}
+
 
 export const TestBuilder: React.FC<TestBuilderProps> = ({ 
   onTestCreated, 
@@ -105,7 +116,7 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
     
     const availableComponentNames = new Set(availableComponents.map(c => c.name));
     
-    const filterEntities = (entities: EntityData[]) => {
+    const filterEntities = (entities: FlecsCore.EntityData[]) => {
       return entities.map(entity => ({
         ...entity,
         components: entity.components.filter(comp => availableComponentNames.has(comp.name))
@@ -128,7 +139,7 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
     setSystems([...systems, { name: "", timesToRun: 1 }]);
   };
 
-  const updateSystem = (index: number, field: keyof SystemInvocation, value: string | number) => {
+  const updateSystem = (index: number, field: keyof FlecsCore.SystemInvocation, value: string | number) => {
     const newSystems = [...systems];
     newSystems[index] = { ...newSystems[index], [field]: value };
     setSystems(newSystems);
@@ -140,7 +151,7 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
 
   // Entity management
   const addEntity = (isInitial: boolean) => {
-    const newEntity: EntityData = { entity: "", components: [] };
+    const newEntity: FlecsCore.EntityData = { entity: "", components: [] };
     if (isInitial) {
       setInitialEntities([...initialEntities, newEntity]);
     } else {
@@ -170,7 +181,7 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
 
   // Component management
   const addComponent = (entityIndex: number, isInitial: boolean) => {
-    const newComponent: ComponentData = { name: "", module: "" };
+    const newComponent: FlecsCore.ComponentData = { name: "", module: "" };
     if (isInitial) {
       const newEntities = [...initialEntities];
       newEntities[entityIndex].components.push(newComponent);
@@ -187,14 +198,14 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
     componentIndex: number,
     field: string,
     value: any,
-    entities: EntityData[]
-  ): EntityData[] => {
+    entities: FlecsCore.EntityData[]
+  ): FlecsCore.EntityData[] => {
     const newEntities = [...entities];
     
     if (field === 'name') {
       // When component name changes, reset fields to defaults
       const component = availableComponents.find(c => c.name === value);
-      const newComponentData: ComponentData = { 
+      const newComponentData: FlecsCore.ComponentData = { 
         name: value,
         module: component?.module || ""
       };

@@ -1,5 +1,4 @@
 import React from "react";
-import type { SystemsListProps } from "./builderPage.types.ts";
 import {
   SystemList,
   SystemItem,
@@ -10,6 +9,17 @@ import {
   RemoveButton,
   AddButton,
 } from "./styles.ts";
+
+import type { FlecsCore } from "@common/testRunner.ts";
+import type { FlecsMetadata } from "@common/flecsMetadataService.ts";
+
+export interface SystemsListProps {
+  systems: FlecsCore.SystemInvocation[];
+  availableSystems: FlecsMetadata.System[];
+  onUpdate: (index: number, field: keyof FlecsCore.SystemInvocation, value: string | number) => void;
+  onRemove: (index: number) => void;
+  onAdd: () => void;
+}
 
 export const SystemsList: React.FC<SystemsListProps> = ({
   systems,

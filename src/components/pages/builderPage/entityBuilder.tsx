@@ -1,6 +1,7 @@
 import React from "react";
-import type { EntityBuilderProps } from "./builderPage.types.ts";
 import { ComponentFields } from "./componentFields.tsx";
+import { type FlecsMetadata } from "@common/flecsMetadataService.ts";
+import type { FlecsCore } from "@common/testRunner.ts";
 import {
   EntityBuilder as EntityBuilderStyled,
   EntityItem,
@@ -13,6 +14,19 @@ import {
   ComponentBuilder,
   ComponentItem,
 } from "./styles.ts";
+
+
+export interface EntityBuilderProps {
+  entities: FlecsCore.EntityData[];
+  availableComponents: FlecsMetadata.Component[];
+  isInitial: boolean;
+  onUpdateEntityName: (index: number, name: string) => void;
+  onRemoveEntity: (index: number) => void;
+  onAddEntity: () => void;
+  onUpdateComponent: (entityIndex: number, componentIndex: number, field: string, value: any) => void;
+  onRemoveComponent: (entityIndex: number, componentIndex: number) => void;
+  onAddComponent: (entityIndex: number) => void;
+}
 
 export const EntityBuilderComponent: React.FC<EntityBuilderProps> = ({
   entities,

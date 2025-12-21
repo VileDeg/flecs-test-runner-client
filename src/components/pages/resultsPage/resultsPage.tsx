@@ -15,7 +15,7 @@ import {
   Button,
 } from "./styles.ts";
 
-import { type UnitTest } from "@ui/uploader/uploader.tsx";
+import type { FlecsCore } from "@common/testRunner.ts";
 import { Timer } from "@ui/timer/timer.tsx";
 
 import { useFlecsConnection } from "@common/flecsConnection/useFlecsConnection.ts";

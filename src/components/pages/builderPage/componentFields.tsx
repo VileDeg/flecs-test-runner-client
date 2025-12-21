@@ -1,7 +1,16 @@
 import React from "react";
-import type { ComponentFieldsProps } from "./builderPage.types.ts";
-import { FlecsMetadataService } from "@common/flecsMetadataService.ts";
+import { FlecsMetadataService, type FlecsMetadata } from "@common/flecsMetadataService.ts";
 import { FormGroup, Label, Input } from "./styles.ts";
+
+import type { FlecsCore } from "@common/testRunner.ts";
+
+export interface ComponentFieldsProps {
+  component: FlecsCore.ComponentData;
+  componentSchema: FlecsMetadata.Component;
+  entityIndex: number;
+  componentIndex: number;
+  onUpdate: (entityIndex: number, componentIndex: number, field: string, value: any) => void;
+}
 
 export const ComponentFields: React.FC<ComponentFieldsProps> = ({
   component,
