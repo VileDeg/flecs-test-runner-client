@@ -1,12 +1,12 @@
 import type { SystemInvocation, EntityData, ComponentData } from "@common/testRunner.ts";
-import type { FlecsSystem, FlecsComponent, FlecsModule } from "@common/flecsMetadataService.ts";
+import type { FlecsMetadata } from "@common/flecsMetadataService.ts";
 
 export interface TestBuilderPersistedState {
   testName: string;
   systems: SystemInvocation[];
   initialEntities: EntityData[];
   expectedEntities: EntityData[];
-  selectedModules: string[];
+  selectedModules: string[] | undefined;
 }
 
 export interface TestBuilderProps {
@@ -17,7 +17,7 @@ export interface TestBuilderProps {
 
 export interface SystemsListProps {
   systems: SystemInvocation[];
-  availableSystems: FlecsSystem[];
+  availableSystems: FlecsMetadata.System[];
   onUpdate: (index: number, field: keyof SystemInvocation, value: string | number) => void;
   onRemove: (index: number) => void;
   onAdd: () => void;
@@ -25,7 +25,7 @@ export interface SystemsListProps {
 
 export interface EntityBuilderProps {
   entities: EntityData[];
-  availableComponents: FlecsComponent[];
+  availableComponents: FlecsMetadata.Component[];
   isInitial: boolean;
   onUpdateEntityName: (index: number, name: string) => void;
   onRemoveEntity: (index: number) => void;
@@ -37,11 +37,11 @@ export interface EntityBuilderProps {
 
 export interface ComponentFieldsProps {
   component: ComponentData;
-  componentSchema: FlecsComponent;
+  componentSchema: FlecsMetadata.Component;
   entityIndex: number;
   componentIndex: number;
   onUpdate: (entityIndex: number, componentIndex: number, field: string, value: any) => void;
 }
 
 // Re-export common types for convenience
-export type { SystemInvocation, EntityData, ComponentData, FlecsSystem, FlecsComponent, FlecsModule };
+export type { SystemInvocation, EntityData, ComponentData };

@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import { useFlecsConnection } from "../common/flecsConnection/useFlecsConnection.ts";
-import { FlecsMetadataService, type FlecsModule, type FlecsSystem, type FlecsComponent } from "../common/flecsMetadataService.ts";
+import { useFlecsConnection } from "@common/flecsConnection/useFlecsConnection.ts";
+import { FlecsMetadataService, type FlecsMetadata } from "@common/flecsMetadataService.ts";
 
 export const useModuleSelection = (selectedModules: string[]) => {
   const { connection } = useFlecsConnection();
-  const [availableModules, setAvailableModules] = useState<FlecsModule[]>([]);
-  const [availableSystems, setAvailableSystems] = useState<FlecsSystem[]>([]);
-  const [availableComponents, setAvailableComponents] = useState<FlecsComponent[]>([]);
+  const [availableModules, setAvailableModules] = useState<FlecsMetadata.Module[]>([]);
+  const [availableSystems, setAvailableSystems] = useState<FlecsMetadata.System[]>([]);
+  const [availableComponents, setAvailableComponents] = useState<FlecsMetadata.Component[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMetadata, setLoadingMetadata] = useState(false);
 

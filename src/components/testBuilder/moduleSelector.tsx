@@ -1,5 +1,5 @@
 import React from "react";
-import type { FlecsMetadata } from "@common/flecsMetadataService.ts";
+import type { FlecsMetadata } from "../../common/flecsMetadataService";
 import {
   ModuleSelectorContainer,
   ModuleSelectorHeader,

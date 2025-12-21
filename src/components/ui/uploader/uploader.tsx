@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { useDropzone } from "react-dropzone";
-import { TestRunner, type UnitTest } from "../../../common/testRunner.ts";
+import { TestRunner, type UnitTest } from "@common/testRunner.ts";
 
 export namespace UnitTest {
   export interface Executed {

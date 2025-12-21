@@ -14,6 +14,8 @@ export const useTestBuilderState = (
   // Persist state changes to parent component
   useEffect(() => {
     if (onStateChange) {
+      console.log("*** useTestBuilderState: state changed, notifying parent");
+      console.log("*** useTestBuilderState: selectedModules: ", selectedModules);
       onStateChange({
         testName,
         systems,

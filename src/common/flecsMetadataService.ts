@@ -1,26 +1,29 @@
 // Service for fetching Flecs metadata like available systems and components
 import type { FlecsAsync } from "./flecsConnection/flecsAsync";
 
-export interface FlecsSystem {
-  name: string;
-  module?: string;
-}
+// Namespace for Flecs metadata types
+export namespace FlecsMetadata {
+  export interface System {
+    name: string;
+    module?: string;
+  }
 
-export interface FlecsComponent {
-  name: string;
-  module?: string;
-  fields: ComponentField[];
-}
+  export interface Component {
+    name: string;
+    module?: string;
+    fields: ComponentField[];
+  }
 
-export interface ComponentField {
-  name: string;
-  type: string;
-  defaultValue?: any;
-}
+  export interface ComponentField {
+    name: string;
+    type: string;
+    defaultValue?: any;
+  }
 
-export interface FlecsModule {
-  name: string;
-  fullPath: string;
+  export interface Module {
+    name: string;
+    fullPath: string;
+  }
 }
 
 export class FlecsMetadataService {
@@ -68,11 +71,11 @@ export class FlecsMetadataService {
    * Fetch all available modules from the Flecs application
    * Only fetches modules that have the TestableModule tag
    */
-  static async getModules(connection: FlecsAsync): Promise<FlecsModule[]> {
+  static async getModules(connection: FlecsAsync): Promise<FlecsMetadata.Module[]> {
     try {
       // Query for modules that have the TestableModule tag
       const data = await connection.query('flecs.core.Module, TestRunner.TestableModule');
-      const modules: FlecsModule[] = [];
+      const modules: FlecsMetadata.Module[] = [];
       
       console.log("getModules data: ", data);
       
@@ -112,9 +115,9 @@ export class FlecsMetadataService {
   /**
    * Fetch systems filtered by selected modules
    */
-  static async getSystems(connection: FlecsAsync, selectedModules?: string[]): Promise<FlecsSystem[]> {
+  static async getSystems(connection: FlecsAsync, selectedModules?: string[]): Promise<FlecsMetadata.System[]> {
     try {
-      const systems: FlecsSystem[] = [];
+      const systems: FlecsMetadata.System[] = [];
       
       // If no modules selected, return empty array
       if (!selectedModules || selectedModules.length === 0) {
@@ -166,9 +169,9 @@ export class FlecsMetadataService {
   /**
    * Fetch components filtered by selected modules
    */
-  static async getComponents(connection: FlecsAsync, selectedModules?: string[]): Promise<FlecsComponent[]> {
+  static async getComponents(connection: FlecsAsync, selectedModules?: string[]): Promise<FlecsMetadata.Component[]> {
     try {
-      const components: FlecsComponent[] = [];
+      const components: FlecsMetadata.Component[] = [];
       
       // If no modules selected, return empty array
       if (!selectedModules || selectedModules.length === 0) {
@@ -228,22 +231,22 @@ export class FlecsMetadataService {
   static async getComponentInfo(
     connection: FlecsAsync, 
     componentName: string)
-  : Promise<ComponentField[]> {
+  : Promise<FlecsMetadata.ComponentField[]> {
     try {
       // Try to get component metadata using Flecs connection
       const data = await connection.query(
         `(ChildOf, ${componentName})`, {type_info:true, values:true});
       // TODO: get flecs.meta.member component of each member?
-      const fields: ComponentField[] = [];
+      const fields: FlecsMetadata.ComponentField[] = [];
       
-      console.log("getComponentInfo for " + componentName + ": ", data);
+      //console.log("getComponentInfo for " + componentName + ": ", data);
       
       // Try to extract field information from component metadata
       // This is a best-effort approach as Flecs REST API might not expose all field details
       for (const member of data.results) {
         const entityName = componentName + "." + member.name;
         const data = await connection.entity(entityName, {type_info:true, values:true})
-        console.log("getComponentInfo member for " + member.name + ": ", data);
+        //console.log("getComponentInfo member for " + member.name + ": ", data);
         
         const memberDef = data.components["flecs.meta.member"];
         if (!memberDef) {
@@ -252,8 +255,8 @@ export class FlecsMetadataService {
         
         const typeParts = memberDef.type.split('.');
         const memberType = typeParts[typeParts.length - 1];
-        console.log("-------- type: ", memberDef.type);
-        console.log("-------- type1: ", memberType);
+        //console.log("-------- type: ", memberDef.type);
+        //console.log("-------- type1: ", memberType);
         
         fields.push({
           name: member.name,

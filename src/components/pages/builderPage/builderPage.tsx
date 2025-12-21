@@ -52,7 +52,7 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
     availableModules,
     availableSystems,
     availableComponents,
-    loading,
+    loading: loadingModules,
     loadingMetadata,
   } = useModuleSelection(selectedModules);
   
@@ -62,27 +62,46 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
   const [isGeneratingExpected, setIsGeneratingExpected] = useState(false);
   const [generatingMessage, setGeneratingMessage] = useState("");
 
-  // Initialize selectedModules with all modules if not persisted
   useEffect(() => {
-    if (!persistedState?.selectedModules && availableModules.length > 0 && selectedModules.length === 0) {
-      setSelectedModules(availableModules.map(m => m.fullPath));
-    }
-  }, [availableModules, persistedState?.selectedModules, selectedModules.length, setSelectedModules]);
+    // Don't run until modules have finished loading
+    if (loadingModules) return;
 
-  // Clear systems that use modules that are no longer selected
+    // If not persisted, initialize selectedModules with all modules
+    if(persistedState?.selectedModules === undefined) {
+      console.log("Setting selectedModules to all available")
+      setSelectedModules(availableModules.map(m => m.fullPath));
+    } else {
+      console.log("*** useEffect, availableModules: ", availableModules);
+      // Filter out selected that are not in available 
+      const availableModuleSet = new Set(availableModules.map(m => m.fullPath));
+      const filteredSelected = selectedModules.filter(m => availableModuleSet.has(m));
+      console.log("*** useEffect, filteredSelected: ", filteredSelected);
+      if (filteredSelected.length !== selectedModules.length) {
+        setSelectedModules(filteredSelected);
+      }
+    }
+  }, [availableModules, loadingModules, setSelectedModules]); 
+
+  // Clear systems from modules that are no longer selected
   useEffect(() => {
-    if (systems.length > 0 && availableSystems.length > 0) {
+    // Don't run until modules have finished loading
+    if (loadingMetadata) return;
+
+    if (systems.length > 0) {
       const availableSystemNames = new Set(availableSystems.map(s => s.module + "." + s.name));
       const filteredSystems = systems.filter(s => availableSystemNames.has(s.name));
       if (filteredSystems.length !== systems.length) {
         setSystems(filteredSystems);
       }
     }
-  }, [availableSystems]);
+  }, [availableSystems, loadingMetadata]);
 
   // Clear components from entities that are no longer available in selected modules
   useEffect(() => {
-    if (availableComponents.length === 0) return;
+    // Don't run until modules have finished loading
+    if (loadingMetadata) return;
+
+    //if (availableComponents.length === 0) return;
     
     const availableComponentNames = new Set(availableComponents.map(c => c.name));
     
@@ -102,7 +121,7 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
     if (JSON.stringify(filteredExpected) !== JSON.stringify(expectedEntities)) {
       setExpectedEntities(filteredExpected);
     }
-  }, [availableComponents]);
+  }, [availableComponents, loadingMetadata]);
 
   // System management
   const addSystem = () => {
@@ -228,20 +247,22 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
   };
 
   // Generate UnitTest from form data
-  const generateTest = () => {
-    if (!testName.trim()) {
+  const generateTest = (validate: boolean = true) => {
+    if (validate && !testName.trim()) {
       showToast("Test name is required", 'error');
       return null;
     }
 
-    if (systems.length === 0) {
-      showToast("At least one system is required", 'error');
-      return null;
-    }
+    if(validate) { 
+      if (systems.length === 0) {
+        showToast("At least one system is required", 'error');
+        return null;
+      }
 
-    if (systems.some(s => !s.name.trim())) {
-      showToast("All systems must have names", 'error');
-      return null;
+      if (systems.some(s => !s.name.trim())) {
+        showToast("All systems must have names", 'error');
+        return null;
+      }
     }
 
     return TestRunner.createTest(
@@ -257,32 +278,34 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
 
   // Update JSON preview live whenever form data changes
   useEffect(() => {
-    const test = generateTest();
+    const test = generateTest(false);
     if (test) {
       setJsonPreview(JSON.stringify(test, null, 2));
     } else {
       setJsonPreview("");
     }
-  }, [testName, systems, initialEntities, expectedEntities]);
+  }, [testName, systems, initialEntities, expectedEntities, setJsonPreview]);
 
   const downloadJson = () => {
-    const test = generateTest();
-    if (test) {
-      const blob = new Blob([JSON.stringify(test, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${test.name}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      showToast(`JSON file "${test.name}.json" downloaded successfully!`, 'success');
+    const test = generateTest(true);
+    if (!test) {
+      return;
     }
+
+    const blob = new Blob([JSON.stringify(test, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${test.name}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast(`JSON file "${test.name}.json" downloaded successfully!`, 'success');
   };
 
   const runTest = async () => {
-    const test = generateTest();
+    const test = generateTest(true);
     if (!test) {
       return;
     }
@@ -390,7 +413,7 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
     setJsonPreview("");
   };
 
-  if (loading) {
+  if (loadingModules) {
     return (
       <Container>
         <Header>Test Builder</Header>
@@ -410,18 +433,10 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
         loading={false}
       />
 
-      {loadingMetadata && (
-        <Section>
-          <div style={{ textAlign: 'center', color: '#666' }}>
-            Loading systems and components...
-          </div>
-        </Section>
-      )}
-
       <Section>
-        <SectionHeader>Test Configuration</SectionHeader>
+        <SectionHeader>Test Name</SectionHeader>
         <FormGroup>
-          <Label>Test Name</Label>
+          {/* <Label>Test Name</Label> */}
           <Input
             type="text"
             value={testName}
@@ -431,100 +446,109 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
         </FormGroup>
       </Section>
 
-      <Section>
-        <SectionHeader>Systems to Run</SectionHeader>
-        {selectedModules.length === 0 ? (
-          <div style={{ textAlign: 'center', color: '#666', fontStyle: 'italic' }}>
-            Please select at least one module to see available systems
+      {loadingMetadata ? (
+        <Section>
+          <div style={{ textAlign: 'center', color: '#666' }}>
+            Loading metadata...
           </div>
-        ) : availableSystems.length === 0 ? (
-          <div style={{ textAlign: 'center', color: '#666', fontStyle: 'italic' }}>
-            No systems found in selected modules
-          </div>
-        ) : (
-          <SystemsList
-            systems={systems}
-            availableSystems={availableSystems}
-            onUpdate={updateSystem}
-            onRemove={removeSystem}
-            onAdd={addSystem}
-          />
-        )}
-      </Section>
+        </Section>
+      ) : (
+        <>
+        <Section>
+          <SectionHeader>Systems to Run</SectionHeader>
+          {selectedModules.length === 0 ? (
+            <div style={{ textAlign: 'center', color: '#666', fontStyle: 'italic' }}>
+              Please select at least one module to see available systems
+            </div>
+          ) : availableSystems.length === 0 ? (
+            <div style={{ textAlign: 'center', color: '#666', fontStyle: 'italic' }}>
+              No systems found in selected modules
+            </div>
+          ) : (
+            <SystemsList
+              systems={systems}
+              availableSystems={availableSystems}
+              onUpdate={updateSystem}
+              onRemove={removeSystem}
+              onAdd={addSystem} />
+          )}
+        </Section>
 
-      <Section>
-        <SectionHeader>Initial State (Entities & Components)</SectionHeader>
-        {selectedModules.length === 0 ? (
-          <div style={{ textAlign: 'center', color: '#666', fontStyle: 'italic' }}>
-            Please select at least one module to see available components
-          </div>
-        ) : (
-          <EntityBuilderComponent
-            entities={initialEntities}
-            availableComponents={availableComponents}
-            isInitial={true}
-            onUpdateEntityName={(index, name) => updateEntityName(index, name, true)}
-            onRemoveEntity={(index) => removeEntity(index, true)}
-            onAddEntity={() => addEntity(true)}
-            onUpdateComponent={(entityIndex, componentIndex, field, value) => 
-              updateComponent(entityIndex, componentIndex, field, value, true)
-            }
-            onRemoveComponent={(entityIndex, componentIndex) => 
-              removeComponent(entityIndex, componentIndex, true)
-            }
-            onAddComponent={(entityIndex) => addComponent(entityIndex, true)}
-          />
-        )}
-      </Section>
+        <Section>
+          <SectionHeader>Initial State (Entities & Components)</SectionHeader>
+            {selectedModules.length === 0 ? (
+              <div style={{ textAlign: 'center', color: '#666', fontStyle: 'italic' }}>
+                Please select at least one module to see available components
+              </div>
+            ) : (
+              <EntityBuilderComponent
+                entities={initialEntities}
+                availableComponents={availableComponents}
+                isInitial={true}
+                onUpdateEntityName={(index, name) => updateEntityName(index, name, true)}
+                onRemoveEntity={(index) => removeEntity(index, true)}
+                onAddEntity={() => addEntity(true)}
+                onUpdateComponent={(entityIndex, componentIndex, field, value) => 
+                  updateComponent(entityIndex, componentIndex, field, value, true)
+                }
+                onRemoveComponent={(entityIndex, componentIndex) => 
+                  removeComponent(entityIndex, componentIndex, true)
+                }
+                onAddComponent={(entityIndex) => addComponent(entityIndex, true)}
+              />
+            )}
+          </Section>
 
-      <Section>
-        <SectionHeader>Expected State (After System Execution)</SectionHeader>
-        {isGeneratingExpected && (
-          <div style={{ 
-            padding: '12px', 
-            marginBottom: '16px', 
-            backgroundColor: '#e3f2fd', 
-            color: '#1976d2', 
-            borderRadius: '4px',
-            textAlign: 'center'
-          }}>
-            {generatingMessage}
-          </div>
-        )}
-        {!isGeneratingExpected && initialEntities.length > 0 && systems.length > 0 && (
-          <div style={{ marginBottom: '16px' }}>
-            <Button 
-              onClick={fillExpectedFromInitial}
-              disabled={isGeneratingExpected}
-              style={{ width: '100%' }}
-            >
-              Fill Expected State from Initial (Run Test)
-            </Button>
-          </div>
-        )}
-        {selectedModules.length === 0 ? (
-          <div style={{ textAlign: 'center', color: '#666', fontStyle: 'italic' }}>
-            Please select at least one module to see available components
-          </div>
-        ) : (
-          <EntityBuilderComponent
-            entities={expectedEntities}
-            availableComponents={availableComponents}
-            isInitial={false}
-            onUpdateEntityName={(index, name) => updateEntityName(index, name, false)}
-            onRemoveEntity={(index) => removeEntity(index, false)}
-            onAddEntity={() => addEntity(false)}
-            onUpdateComponent={(entityIndex, componentIndex, field, value) => 
-              updateComponent(entityIndex, componentIndex, field, value, false)
-            }
-            onRemoveComponent={(entityIndex, componentIndex) => 
-              removeComponent(entityIndex, componentIndex, false)
-            }
-            onAddComponent={(entityIndex) => addComponent(entityIndex, false)}
-          />
-        )}
-      </Section>
-
+          <Section>
+            <SectionHeader>Expected State (After System Execution)</SectionHeader>
+            {isGeneratingExpected && (
+              <div style={{ 
+                padding: '12px', 
+                marginBottom: '16px', 
+                backgroundColor: '#e3f2fd', 
+                color: '#1976d2', 
+                borderRadius: '4px',
+                textAlign: 'center'
+              }}>
+                {generatingMessage}
+              </div>
+            )}
+            {!isGeneratingExpected && initialEntities.length > 0 && systems.length > 0 && (
+              <div style={{ marginBottom: '16px' }}>
+                <Button 
+                  onClick={fillExpectedFromInitial}
+                  disabled={isGeneratingExpected}
+                  style={{ width: '100%' }}
+                >
+                  Fill Expected State from Initial (Run Test)
+                </Button>
+              </div>
+            )}
+            {selectedModules.length === 0 ? (
+              <div style={{ textAlign: 'center', color: '#666', fontStyle: 'italic' }}>
+                Please select at least one module to see available components
+              </div>
+            ) : (
+              <EntityBuilderComponent
+                entities={expectedEntities}
+                availableComponents={availableComponents}
+                isInitial={false}
+                onUpdateEntityName={(index, name) => updateEntityName(index, name, false)}
+                onRemoveEntity={(index) => removeEntity(index, false)}
+                onAddEntity={() => addEntity(false)}
+                onUpdateComponent={(entityIndex, componentIndex, field, value) => 
+                  updateComponent(entityIndex, componentIndex, field, value, false)
+                }
+                onRemoveComponent={(entityIndex, componentIndex) => 
+                  removeComponent(entityIndex, componentIndex, false)
+                }
+                onAddComponent={(entityIndex) => addComponent(entityIndex, false)}
+              />
+            )}
+          </Section>
+        </>
+      )}
+     
       <ActionButtons>
         <SaveJsonButton onClick={downloadJson}>Save Test File</SaveJsonButton>
         <RunTestButton onClick={runTest}>Run Test</RunTestButton>
