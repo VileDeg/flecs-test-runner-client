@@ -30,6 +30,7 @@ import {
   BuilderLayout,
   MainColumn,
   SideColumn,
+  StateLayout,
 } from "./styles.ts";
 
 export interface TestBuilderProps {
@@ -73,6 +74,9 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
   // State for incomplete test execution (expected state generation)
   const [isGeneratingExpected, setIsGeneratingExpected] = useState(false);
   const [generatingMessage, setGeneratingMessage] = useState("");
+  
+  // State for layout toggle (side-by-side vs stacked)
+  const [stackedStateLayout, setStackedStateLayout] = useState(true);
 
   useEffect(() => {
     // Don't run until modules have finished loading
@@ -235,7 +239,7 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
     componentIndex: number, 
     field: string, 
     value: any, 
-    isInitial: boolean
+    isInitial: boolean // TODO: instead of boolean, store all entities in single state object
   ) => {
     if (isInitial) {
       const updatedEntities = createUpdatedComponentData(
@@ -472,94 +476,104 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
                 Loading metadata...
               </LoadingMessage>
             </Section>
-          ) : (
-            <>
-        <Section>
-          <SectionHeader>Systems to Run</SectionHeader>
-          {selectedModules.length === 0 ? (
-            <EmptyMessage>
-              Please select at least one module to see available systems
-            </EmptyMessage>
-          ) : availableSystems.length === 0 ? (
-            <EmptyMessage>
-              No systems found in selected modules
-            </EmptyMessage>
-          ) : (
-            <SystemsList
-              systems={systems}
-              availableSystems={availableSystems}
-              onUpdate={updateSystem}
-              onRemove={removeSystem}
-              onAdd={addSystem} />
-          )}
-        </Section>
+          ) : (<>
+            <Section>
+              <SectionHeader>Systems to Run</SectionHeader>
+              {selectedModules.length === 0 ? (
+                <EmptyMessage>
+                  Please select at least one module to see available systems
+                </EmptyMessage>
+              ) : availableSystems.length === 0 ? (
+                <EmptyMessage>
+                  No systems found in selected modules
+                </EmptyMessage>
+              ) : (
+                <SystemsList
+                  systems={systems}
+                  availableSystems={availableSystems}
+                  onUpdate={updateSystem}
+                  onRemove={removeSystem}
+                  onAdd={addSystem} />
+              )}
+            </Section>
 
-        <Section>
-          <SectionHeader>Initial State (Entities & Components)</SectionHeader>
-            {selectedModules.length === 0 ? (
-              <EmptyMessage>
-                Please select at least one module to see available components
-              </EmptyMessage>
-            ) : (
-              <EntityBuilderComponent
-                entities={initialEntities}
-                availableComponents={availableComponents}
-                isInitial={true}
-                onUpdateEntityName={(index, name) => updateEntityName(index, name, true)}
-                onRemoveEntity={(index) => removeEntity(index, true)}
-                onAddEntity={() => addEntity(true)}
-                onUpdateComponent={(entityIndex, componentIndex, field, value) => 
-                  updateComponent(entityIndex, componentIndex, field, value, true)
-                }
-                onRemoveComponent={(entityIndex, componentIndex) => 
-                  removeComponent(entityIndex, componentIndex, true)
-                }
-                onAddComponent={(entityIndex) => addComponent(entityIndex, true)}
-              />
-            )}
-          </Section>
-
-          <Section>
-            <SectionHeader>Expected State (After System Execution)</SectionHeader>
-            {isGeneratingExpected && (
-              <GeneratingStatusBox>
-                {generatingMessage}
-              </GeneratingStatusBox>
-            )}
-            {!isGeneratingExpected && initialEntities.length > 0 && systems.length > 0 && (
-              <FillButtonContainer>
-                <FullWidthButton 
-                  onClick={fillExpectedFromInitial}
-                  disabled={isGeneratingExpected}
+            <Section>
+              <SectionHeader>
+                Entity States
+                <Button 
+                  onClick={() => setStackedStateLayout(!stackedStateLayout)}
+                  style={{ marginLeft: 'auto', fontSize: '0.9em', padding: '4px 12px' }}
                 >
-                  Fill Expected State from Initial (Run Test)
-                </FullWidthButton>
-              </FillButtonContainer>
-            )}
-            {selectedModules.length === 0 ? (
-              <EmptyMessage>
-                Please select at least one module to see available components
-              </EmptyMessage>
-            ) : (
-              <EntityBuilderComponent
-                entities={expectedEntities}
-                availableComponents={availableComponents}
-                isInitial={false}
-                onUpdateEntityName={(index, name) => updateEntityName(index, name, false)}
-                onRemoveEntity={(index) => removeEntity(index, false)}
-                onAddEntity={() => addEntity(false)}
-                onUpdateComponent={(entityIndex, componentIndex, field, value) => 
-                  updateComponent(entityIndex, componentIndex, field, value, false)
-                }
-                onRemoveComponent={(entityIndex, componentIndex) => 
-                  removeComponent(entityIndex, componentIndex, false)
-                }
-                onAddComponent={(entityIndex) => addComponent(entityIndex, false)}
-              />
-            )}
-          </Section>
-        </>
-      )}
+                  {stackedStateLayout ? '📋 Stack View' : '⚖️ Side-by-Side'}
+                </Button>
+              </SectionHeader>
+            </Section>
+
+            <StateLayout stacked={stackedStateLayout}>
+              <Section>
+                <SectionHeader>Initial State (Entities & Components)</SectionHeader>
+                {selectedModules.length === 0 ? (
+                  <EmptyMessage>
+                    Please select at least one module to see available components
+                  </EmptyMessage>
+                ) : (
+                  <EntityBuilderComponent
+                    entities={initialEntities}
+                    availableComponents={availableComponents}
+                    onUpdateEntityName={(index, name) => updateEntityName(index, name, true)}
+                    onRemoveEntity={(index) => removeEntity(index, true)}
+                    onAddEntity={() => addEntity(true)}
+                    onUpdateComponent={(entityIndex, componentIndex, field, value) => 
+                      updateComponent(entityIndex, componentIndex, field, value, true)
+                    }
+                    onRemoveComponent={(entityIndex, componentIndex) => 
+                      removeComponent(entityIndex, componentIndex, true)
+                    }
+                    onAddComponent={(entityIndex) => addComponent(entityIndex, true)}
+                  />
+                )}
+              </Section>
+
+              <Section>
+                <SectionHeader>Expected State (After System Execution)</SectionHeader>
+                {isGeneratingExpected && (
+                  <GeneratingStatusBox>
+                    {generatingMessage}
+                  </GeneratingStatusBox>
+                )}
+                {!isGeneratingExpected && initialEntities.length > 0 && systems.length > 0 && (
+                  <FillButtonContainer>
+                    <FullWidthButton 
+                      onClick={fillExpectedFromInitial}
+                      disabled={isGeneratingExpected}
+                    >
+                      Fill Expected State from Initial (Run Test)
+                    </FullWidthButton>
+                  </FillButtonContainer>
+                )}
+                {selectedModules.length === 0 ? (
+                  <EmptyMessage>
+                    Please select at least one module to see available components
+                  </EmptyMessage>
+                ) : (
+                  <EntityBuilderComponent
+                    entities={expectedEntities}
+                    availableComponents={availableComponents}
+                    onUpdateEntityName={(index, name) => updateEntityName(index, name, false)}
+                    onRemoveEntity={(index) => removeEntity(index, false)}
+                    onAddEntity={() => addEntity(false)}
+                    onUpdateComponent={(entityIndex, componentIndex, field, value) => 
+                      updateComponent(entityIndex, componentIndex, field, value, false)
+                    }
+                    onRemoveComponent={(entityIndex, componentIndex) => 
+                      removeComponent(entityIndex, componentIndex, false)
+                    }
+                    onAddComponent={(entityIndex) => addComponent(entityIndex, false)}
+                  />
+                )}
+              </Section>
+            </StateLayout>
+          </>)}
         </MainColumn>
 
         <SideColumn>

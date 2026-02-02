@@ -105,6 +105,22 @@ export const SideColumn = styled.div`
   gap: ${theme.spacing.lg};
 `;
 
+export const StateLayout = styled.div<{stacked?: boolean}>`
+  display: grid;
+  grid-template-columns: ${props => props.stacked ? '1fr' : '1fr 1fr'}};
+  gap: ${theme.spacing.lg};
+  align-items: start;
+
+  margin-left: calc(-${theme.spacing.lg} - ${theme.spacing.md});
+  width: calc(100% + ${theme.spacing.lg} + ${theme.spacing.md});
+
+  @media (max-width: 1400px) {
+    grid-template-columns: 1fr;
+    margin-left: 0;
+    width: 100%;
+  }
+`;
+
 export const SystemList = styled.div`
   display: flex;
   flex-direction: column;

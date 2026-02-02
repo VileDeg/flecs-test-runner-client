@@ -7,16 +7,12 @@ import type * as Core from "@common/coreTypes.ts";
 export interface ComponentFieldsProps {
   component: Core.ComponentData;
   componentSchema: FlecsMetadata.Component;
-  entityIndex: number;
-  componentIndex: number;
-  onUpdate: (entityIndex: number, componentIndex: number, field: string, value: any) => void;
+  onUpdate: (field: string, value: any) => void;
 }
 
 export const ComponentFields: React.FC<ComponentFieldsProps> = ({
   component,
   componentSchema,
-  entityIndex,
-  componentIndex,
   onUpdate,
 }) => {
   if (!componentSchema || componentSchema.fields.length === 0) {
@@ -35,7 +31,7 @@ export const ComponentFields: React.FC<ComponentFieldsProps> = ({
               const value = field.type === 'bool' || field.type === 'boolean' 
                 ? e.target.checked 
                 : FlecsMetadataService.formatValueForType(e.target.value, field.type);
-              onUpdate(entityIndex, componentIndex, field.name, value);
+              onUpdate(field.name, value);
             }}
             placeholder={`${field.type} field`}
           />

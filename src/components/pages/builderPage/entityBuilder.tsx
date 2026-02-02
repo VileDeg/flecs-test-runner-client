@@ -20,7 +20,6 @@ import {
 export interface EntityBuilderProps {
   entities: Core.EntityData[];
   availableComponents: FlecsMetadata.Component[];
-  isInitial: boolean;
   onUpdateEntityName: (index: number, name: string) => void;
   onRemoveEntity: (index: number) => void;
   onAddEntity: () => void;
@@ -32,7 +31,6 @@ export interface EntityBuilderProps {
 export const EntityBuilderComponent: React.FC<EntityBuilderProps> = ({
   entities,
   availableComponents,
-  isInitial,
   onUpdateEntityName,
   onRemoveEntity,
   onAddEntity,
@@ -91,9 +89,10 @@ export const EntityBuilderComponent: React.FC<EntityBuilderProps> = ({
                         <ComponentFields
                           component={component}
                           componentSchema={componentSchema}
-                          entityIndex={entityIndex}
-                          componentIndex={componentIndex}
-                          onUpdate={onUpdateComponent}
+                          onUpdate={
+                            (field:string, value:any) => 
+                              onUpdateComponent(entityIndex, componentIndex, field, value) 
+                          }
                         />
                       </div>
                     )}
