@@ -1,17 +1,11 @@
 import React from "react";
 import type { FlecsMetadata } from "@common/flecsMetadataService.ts";
-import {
-  ModuleSelectorContainer,
-  ModuleSelectorHeader,
-  ModuleList,
-  ModuleItem,
-  ModuleCheckbox,
-  ModuleLabel,
-  ModulePathText,
-  ModuleButtonGroup,
-  Button,
-  ModuleInfoText
-} from "./styles.ts";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
+import { CheckSquare, Square } from "lucide-react";
 
 interface ModuleSelectorProps {
   modules: FlecsMetadata.Module[];
@@ -44,55 +38,91 @@ export const ModuleSelector: React.FC<ModuleSelectorProps> = ({
 
   if (loading) {
     return (
-      <ModuleSelectorContainer>
-        <ModuleSelectorHeader>Module Selection</ModuleSelectorHeader>
-        <ModuleInfoText>Loading modules...</ModuleInfoText>
-      </ModuleSelectorContainer>
+      <Card>
+        <CardHeader>
+          <CardTitle>Module Selection</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">Loading modules...</p>
+        </CardContent>
+      </Card>
     );
   }
 
   if (modules.length === 0) {
     return (
-      <ModuleSelectorContainer>
-        <ModuleSelectorHeader>Module Selection</ModuleSelectorHeader>
-        <ModuleInfoText>No modules found</ModuleInfoText>
-      </ModuleSelectorContainer>
+      <Card>
+        <CardHeader>
+          <CardTitle>Module Selection</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">No modules found</p>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <ModuleSelectorContainer>
-      <ModuleSelectorHeader>Module Selection</ModuleSelectorHeader>
-      <ModuleInfoText>
-        Select the modules to filter systems and components. 
-        Selected: {selectedModules.length} / {modules.length}
-      </ModuleInfoText>
-      
-      <ModuleButtonGroup>
-        <Button onClick={handleSelectAll}>Select All</Button>
-        <Button onClick={handleDeselectAll}>Deselect All</Button>
-      </ModuleButtonGroup>
+    <Card>
+      <CardHeader>
+        <CardTitle>Module Selection</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Select the modules to filter systems and components. 
+          Selected: {selectedModules.length} / {modules.length}
+        </p>
+        
+        <div className="flex justify-center gap-3">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={handleSelectAll}
+            className="gap-2"
+          >
+            <CheckSquare className="h-4 w-4" />
+            Select All
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={handleDeselectAll}
+            className="gap-2"
+          >
+            <Square className="h-4 w-4" />
+            Deselect All
+          </Button>
+        </div>
 
-      <ModuleList>
-        {modules.map((module) => (
-          <ModuleItem key={module.fullPath}>
-            <ModuleCheckbox
-              type="checkbox"
-              id={`module-${module.fullPath}`}
-              checked={selectedModules.includes(module.fullPath)}
-              onChange={() => handleToggleModule(module.fullPath)}
-            />
-            <ModuleLabel htmlFor={`module-${module.fullPath}`}>
-              <strong>{module.name}</strong>
-              {module.fullPath !== module.name && (
-                <ModulePathText>
-                  ({module.fullPath})
-                </ModulePathText>
-              )}
-            </ModuleLabel>
-          </ModuleItem>
-        ))}
-      </ModuleList>
-    </ModuleSelectorContainer>
+        <div className="max-h-72 overflow-y-auto p-3 bg-card border border-border rounded-md">
+          <div className="space-y-2">
+            {modules.map((module) => (
+              <div 
+                key={module.fullPath} 
+                className="flex items-center gap-3 p-2 rounded-md hover:bg-accent transition-colors"
+              >
+                <Checkbox
+                  id={`module-${module.fullPath}`}
+                  checked={selectedModules.includes(module.fullPath)}
+                  onCheckedChange={() => handleToggleModule(module.fullPath)}
+                  className="h-5 w-5"
+                />
+                <Label 
+                  htmlFor={`module-${module.fullPath}`}
+                  className="flex-1 cursor-pointer flex items-center gap-2"
+                >
+                  <span className="font-medium text-foreground">{module.name}</span>
+                  {module.fullPath !== module.name && (
+                    <span className="text-sm text-muted-foreground">
+                      ({module.fullPath})
+                    </span>
+                  )}
+                </Label>
+              </div>
+            ))}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };

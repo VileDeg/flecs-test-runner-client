@@ -3,3 +3,4 @@
 2. State management: context vs Zustand vs persistent-state?
 3. CSS styling: styled-components, css animation?
 4. Cleanup the code, split into more helper functions (especially builderPage).
+5. Use icons, re-think UX

@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import { TestRunner } from "@common/testRunner.ts";
-import { DropzoneContainer, DropzoneText, ErrorMessage } from "./styles.ts";
+import { cn } from "@/lib/utils";
 
 import type * as Core from "@common/coreTypes.ts";
 
@@ -73,21 +73,29 @@ export const Uploader: React.FC<UploaderProps> = ({ onTestsParsed  }) => {
     });
 
   return (
-    <DropzoneContainer
+    <div
       {...getRootProps()}
-      $isDragActive={isDragActive}
+      className={cn(
+        "border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all",
+        isDragActive 
+          ? "border-primary bg-primary/10" 
+          : "border-border bg-card hover:border-primary/50",
+        "hover:bg-card/80"
+      )}
     >
       <input {...getInputProps()} />
       {isDragActive ? (
-        <DropzoneText>Drop the JSON file here ...</DropzoneText>
+        <p className="text-foreground m-0">Drop the JSON file here ...</p>
       ) : (
-        <DropzoneText>Drag and drop a JSON file here, or click to select one</DropzoneText>
+        <p className="text-foreground m-0">Drag and drop a JSON file here, or click to select one</p>
       )}
 
       {fileRejections.length > 0 && (
-        <ErrorMessage>Only .json files are accepted</ErrorMessage>
+        <p className="text-destructive mt-4 text-sm font-medium">
+          Only .json files are accepted
+        </p>
       )}
-    </DropzoneContainer>
+    </div>
   );
 };
 

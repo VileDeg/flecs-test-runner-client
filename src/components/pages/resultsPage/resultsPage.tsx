@@ -1,23 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-  Container,
-  Header,
-  Table,
-  TableHead,
-  TableBody,
-  TableRow,
-  TableHeader,
-  TableCell,
-  ErrorBox,
-  Section,
-  SectionHeader,
-  EmptyMessage,
-  Button,
-} from "./styles.ts";
-
-
 import { Timer } from "@ui/timer/timer.tsx";
-
 import { useFlecsConnection } from "@common/flecsConnection/useFlecsConnection.ts";
 import * as Core from "@common/coreTypes.ts";
 
@@ -26,6 +8,13 @@ import {
   UNIT_TEST_PASSED_TAG_NAME, 
   UNIT_TEST_INCOMPLETE_TAG_NAME 
 } from "@common/constants.ts";
+
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { AlertCircle, Clock, CheckCircle, XCircle, Trash2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface TestResult {
   name: string;
@@ -41,7 +30,6 @@ export const ResultsPage: React.FC = () => {
   const [hasTimedOut, setHasTimedOut] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
 
-    
   const { connection } = useFlecsConnection();
 
   // Poll with smart timing and timeout
@@ -52,12 +40,10 @@ export const ResultsPage: React.FC = () => {
         if (!connection) return;
 
         // Get pending tests (UnitTest but not Executed)
-        // TODO: remove. Use a client-side list instead to track pending tests
         const pendingQuery = await connection.query(
           `TestRunner.UnitTest, !${UNIT_TEST_EXECUTED_TAG_NAME}, !${UNIT_TEST_INCOMPLETE_TAG_NAME}`, {}
         );
         const newPendingTests = parseQueryResults(pendingQuery, "Not executed yet");
-        //console.log("Getting Pending Tests...");
 
         // Get passed tests (UnitTest with Executed and Passed components)
         const passedQuery = await connection.query(
@@ -102,7 +88,7 @@ export const ResultsPage: React.FC = () => {
     fetchResults();
 
     // Only poll if we have pending tests and haven't timed out
-    if (!hasTimedOut) { //pendingTests.length > 0 && 
+    if (!hasTimedOut) {
       interval = setInterval(fetchResults, 1000); // 1 second interval
     }
 
@@ -165,74 +151,148 @@ export const ResultsPage: React.FC = () => {
   };
 
   // Render test table for a specific status
-  const renderTestTable = (testList: TestResult[], statusLabel: string) => {
+  const renderTestTable = (testList: TestResult[], status: "pending" | "passed" | "failed") => {
     if (testList.length === 0) {
-      return <EmptyMessage>No {statusLabel} tests</EmptyMessage>;
+      return (
+        <div className="text-center py-8 text-muted-foreground italic">
+          No {status} tests
+        </div>
+      );
     }
 
+    const statusColors = {
+      pending: "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800",
+      passed: "bg-green-500/10 text-green-600 dark:text-green-400 border-green-200 dark:border-green-800",
+      failed: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800"
+    };
+
     return (
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableHeader>Test Name</TableHeader>
-            <TableHeader>Status Message</TableHeader>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {testList.map((t) => (
-            <TableRow key={t.name}>
-              <TableCell>{t.name}</TableCell>
-              <TableCell>{t.statusMessage ?? "-"}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+      <div className="overflow-x-auto rounded-lg border border-border">
+        <table className="w-full">
+          <thead className={cn("border-b border-border", statusColors[status])}>
+            <tr>
+              <th className="text-left p-4 font-semibold">Test Name</th>
+              <th className="text-left p-4 font-semibold">Status Message</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {testList.map((t) => (
+              <tr key={t.name} className="hover:bg-muted/50 transition-colors">
+                <td className="p-4 font-medium">{t.name}</td>
+                <td className="p-4 text-muted-foreground">{t.statusMessage ?? "-"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     );
   };
 
+  const getStatusIcon = (status: "pending" | "passed" | "failed") => {
+    switch (status) {
+      case "pending": return <Clock className="h-5 w-5" />;
+      case "passed": return <CheckCircle className="h-5 w-5" />;
+      case "failed": return <XCircle className="h-5 w-5" />;
+    }
+  };
+
+  const getStatusColor = (status: "pending" | "passed" | "failed") => {
+    switch (status) {
+      case "pending": return "text-yellow-600 dark:text-yellow-400";
+      case "passed": return "text-green-600 dark:text-green-400";
+      case "failed": return "text-red-600 dark:text-red-400";
+    }
+  };
+
   return (
-    <Container>
-      <Header>Unit Test Results</Header>
+    <div className="container mx-auto px-6 py-8 max-w-6xl">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Unit Test Results</h1>
+          <p className="text-muted-foreground mt-2">
+            Monitor the execution status of your tests
+          </p>
+        </div>
+        
+        <Button 
+          variant="destructive"
+          onClick={clearAllTests}
+          disabled={isClearing || (pendingTests.length === 0 && passedTests.length === 0 && failedTests.length === 0)}
+          className="w-full md:w-auto"
+        >
+          <Trash2 className="h-4 w-4 mr-2" />
+          {isClearing ? 'Clearing...' : 'Clear All Tests'}
+        </Button>
+      </div>
 
-      {errorMessage && <ErrorBox>{errorMessage}</ErrorBox>}
-      
-      <Button 
-        $variant="error"
-        onClick={clearAllTests}
-        disabled={isClearing || (pendingTests.length === 0 && passedTests.length === 0 && failedTests.length === 0)}
-      >
-        {isClearing ? 'Clearing...' : 'Clear All'}
-      </Button>
-
-      {pendingTests.length > 0 && (
-        <Section>
-          <SectionHeader $status="pending">
-            🟡 Pending Tests ({pendingTests.length})
-            {pendingStartTime && (
-              <Timer startTime={pendingStartTime} />
-            )}
-          </SectionHeader>
-          {renderTestTable(pendingTests, "pending")}
-        </Section>
+      {errorMessage && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{errorMessage}</AlertDescription>
+        </Alert>
       )}
-      
-      <Section>
-        <SectionHeader $status="passed">
-          ✅ Passed Tests ({passedTests.length})
-        </SectionHeader>
-        {renderTestTable(passedTests, "passed")}
-      </Section>
-
-      <Section>
-        <SectionHeader $status="failed">
-          ❌ Failed Tests ({failedTests.length})
-        </SectionHeader>
-        {renderTestTable(failedTests, "failed")}
-      </Section>
 
       {hasTimedOut && (
-        <ErrorBox>Test execution timed out after 2 minutes</ErrorBox>
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>Test execution timed out after 2 minutes</AlertDescription>
+        </Alert>
       )}
-    </Container>
+
+      <div className="space-y-8">
+        {pendingTests.length > 0 && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {getStatusIcon("pending")}
+                  <CardTitle className={getStatusColor("pending")}>
+                    Pending Tests ({pendingTests.length})
+                  </CardTitle>
+                </div>
+                {pendingStartTime && (
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 dark:text-yellow-400">
+                      <Timer startTime={pendingStartTime} />
+                    </Badge>
+                  </div>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {renderTestTable(pendingTests, "pending")}
+            </CardContent>
+          </Card>
+        )}
+        
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              {getStatusIcon("passed")}
+              <CardTitle className={getStatusColor("passed")}>
+                Passed Tests ({passedTests.length})
+              </CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {renderTestTable(passedTests, "passed")}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              {getStatusIcon("failed")}
+              <CardTitle className={getStatusColor("failed")}>
+                Failed Tests ({failedTests.length})
+              </CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {renderTestTable(failedTests, "failed")}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 };

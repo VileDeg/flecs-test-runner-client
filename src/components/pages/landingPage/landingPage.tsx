@@ -3,12 +3,10 @@ import { TestRunner } from "@common/testRunner.ts";
 import type * as Core from "@common/coreTypes.ts";
 
 import { useState } from 'react'
+import { AlertCircle, Play } from "lucide-react";
 
-import {
-  ErrorBox,
-  TestsList,
-  Button,
-} from "./styles.ts";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 
 import { useFlecsConnection } from "@common/flecsConnection/useFlecsConnection.ts";
 
@@ -57,23 +55,37 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onTestsUploaded }) => 
   };
   
   return (
-    <div>
-      {errorMessage && <ErrorBox>{errorMessage}</ErrorBox>}
+    <div className="space-y-6">
+      {errorMessage && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="whitespace-pre-line">{errorMessage}</AlertDescription>
+        </Alert>
+      )}
 
       <Uploader onTestsParsed={onTestsParsed} />
     
       {tests.length > 0 && (
-        <>
-          <TestsList>
-            {tests.map((t) => (
-              <li key={t.name}>
-                <strong>{t.name}</strong> - {t.systems.map((s) => s.name).join(", ")}
-              </li>
-            ))}
-          </TestsList>
+        <div className="space-y-4">
+          <div className="bg-card border border-border rounded-lg p-6">
+            <h3 className="text-lg font-semibold mb-4 text-foreground">Uploaded Tests</h3>
+            <ul className="space-y-3">
+              {tests.map((t) => (
+                <li key={t.name} className="p-3 bg-muted/50 rounded-md border border-border">
+                  <div className="font-medium text-foreground">{t.name}</div>
+                  <div className="text-sm text-muted-foreground mt-1">
+                    Systems: {t.systems.map((s) => s.name).join(", ")}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
 
-          <Button onClick={() => runUnitTests(tests)}>Run Again</Button>
-        </>
+          <Button onClick={() => runUnitTests(tests)} className="w-full sm:w-auto">
+            <Play className="h-4 w-4 mr-2" />
+            Run Again
+          </Button>
+        </div>
       )}
     </div>
   );

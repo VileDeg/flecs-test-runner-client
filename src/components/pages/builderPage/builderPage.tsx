@@ -10,28 +10,25 @@ import { useToast } from "@ui/toast/useToast.ts";
 import { useTestBuilderState } from "@hooks/useTestBuilderState.ts";
 import { useModuleSelection } from "@hooks/useModuleSelection.ts";
 import { type TestBuilderPersistedState} from "@hooks/useTestBuilderState.ts";
-import {
-  Container,
-  Header,
-  Section,
-  SectionHeader,
-  FormGroup,
-  Input,
-  Button,
-  PreviewBox,
-  ActionButtons,
-  SaveJsonButton,
-  RunTestButton,
-  LoadingMessage,
-  EmptyMessage,
-  GeneratingStatusBox,
-  FillButtonContainer,
-  FullWidthButton,
-  BuilderLayout,
-  MainColumn,
-  SideColumn,
-  StateLayout,
-} from "./styles.ts";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
+import { 
+  Download, 
+  Play, 
+  Trash2, 
+  FileText, 
+  Layers, 
+  Grid3x3,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Loader2,
+  AlertCircle
+} from "lucide-react";
 
 export interface TestBuilderProps {
   onTestCreated?: () => void;
@@ -437,19 +434,24 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
 
   if (loadingModules) {
     return (
-      <Container>
-        <Header>Test Builder</Header>
-        <div>Loading modules...</div>
-      </Container>
+      <div className="container mx-auto px-6 py-8 max-w-7xl">
+        <h1 className="text-3xl font-bold text-foreground mb-8 text-center">Test Builder</h1>
+        <div className="flex justify-center items-center py-12">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground mb-4" />
+            <p className="text-muted-foreground">Loading modules...</p>
+          </div>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Container>
-      <Header>Test Builder</Header>
+    <div className="container mx-auto px-6 py-8 max-w-7xl">
+      <h1 className="text-3xl font-bold text-foreground mb-8">Test Builder</h1>
 
-      <BuilderLayout>
-        <MainColumn>
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8 items-start">
+        <div className="space-y-8">
           <ModuleSelector
             modules={availableModules}
             selectedModules={selectedModules}
@@ -457,145 +459,174 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
             loading={false}
           />
 
-          <Section>
-            <SectionHeader>Test Name</SectionHeader>
-            <FormGroup>
-              {/* <Label>Test Name</Label> */}
-              <Input
-                type="text"
-                value={testName}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTestName(e.target.value)}
-                placeholder="Enter test name"
-              />
-            </FormGroup>
-          </Section>
+          <Card>
+            <CardHeader>
+              <CardTitle>Test Name</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <Input
+                  type="text"
+                  value={testName}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTestName(e.target.value)}
+                  placeholder="Enter test name"
+                  className="w-full"
+                />
+              </div>
+            </CardContent>
+          </Card>
 
           {loadingMetadata ? (
-            <Section>
-              <LoadingMessage>
-                Loading metadata...
-              </LoadingMessage>
-            </Section>
+            <Card>
+              <CardContent className="py-8">
+                <div className="text-center">
+                  <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground mb-3" />
+                  <p className="text-muted-foreground">Loading metadata...</p>
+                </div>
+              </CardContent>
+            </Card>
           ) : (<>
-            <Section>
-              <SectionHeader>Systems to Run</SectionHeader>
-              {selectedModules.length === 0 ? (
-                <EmptyMessage>
-                  Please select at least one module to see available systems
-                </EmptyMessage>
-              ) : availableSystems.length === 0 ? (
-                <EmptyMessage>
-                  No systems found in selected modules
-                </EmptyMessage>
-              ) : (
-                <SystemsList
-                  systems={systems}
-                  availableSystems={availableSystems}
-                  onUpdate={updateSystem}
-                  onRemove={removeSystem}
-                  onAdd={addSystem} />
-              )}
-            </Section>
-
-            <Section>
-              <SectionHeader>
-                Entity States
-                <Button 
-                  onClick={() => setStackedStateLayout(!stackedStateLayout)}
-                  style={{ marginLeft: 'auto', fontSize: '0.9em', padding: '4px 12px' }}
-                >
-                  {stackedStateLayout ? '📋 Stack View' : '⚖️ Side-by-Side'}
-                </Button>
-              </SectionHeader>
-            </Section>
-
-            <StateLayout stacked={stackedStateLayout}>
-              <Section>
-                <SectionHeader>Initial State (Entities & Components)</SectionHeader>
+            <Card>
+              <CardHeader>
+                <CardTitle>Systems to Run</CardTitle>
+              </CardHeader>
+              <CardContent>
                 {selectedModules.length === 0 ? (
-                  <EmptyMessage>
-                    Please select at least one module to see available components
-                  </EmptyMessage>
+                  <div className="text-center py-6 text-muted-foreground italic">
+                    Please select at least one module to see available systems
+                  </div>
+                ) : availableSystems.length === 0 ? (
+                  <div className="text-center py-6 text-muted-foreground italic">
+                    No systems found in selected modules
+                  </div>
                 ) : (
-                  <EntityBuilderComponent
-                    entities={initialEntities}
-                    availableComponents={availableComponents}
-                    onUpdateEntityName={(index, name) => updateEntityName(index, name, true)}
-                    onRemoveEntity={(index) => removeEntity(index, true)}
-                    onAddEntity={() => addEntity(true)}
-                    onUpdateComponent={(entityIndex, componentIndex, field, value) => 
-                      updateComponent(entityIndex, componentIndex, field, value, true)
-                    }
-                    onRemoveComponent={(entityIndex, componentIndex) => 
-                      removeComponent(entityIndex, componentIndex, true)
-                    }
-                    onAddComponent={(entityIndex) => addComponent(entityIndex, true)}
-                  />
+                  <SystemsList
+                    systems={systems}
+                    availableSystems={availableSystems}
+                    onUpdate={updateSystem}
+                    onRemove={removeSystem}
+                    onAdd={addSystem} />
                 )}
-              </Section>
+              </CardContent>
+            </Card>
 
-              <Section>
-                <SectionHeader>Expected State (After System Execution)</SectionHeader>
-                {isGeneratingExpected && (
-                  <GeneratingStatusBox>
-                    {generatingMessage}
-                  </GeneratingStatusBox>
-                )}
-                {!isGeneratingExpected && initialEntities.length > 0 && systems.length > 0 && (
-                  <FillButtonContainer>
-                    <FullWidthButton 
-                      onClick={fillExpectedFromInitial}
-                      disabled={isGeneratingExpected}
-                    >
-                      Fill Expected State from Initial (Run Test)
-                    </FullWidthButton>
-                  </FillButtonContainer>
-                )}
-                {selectedModules.length === 0 ? (
-                  <EmptyMessage>
-                    Please select at least one module to see available components
-                  </EmptyMessage>
-                ) : (
-                  <EntityBuilderComponent
-                    entities={expectedEntities}
-                    availableComponents={availableComponents}
-                    onUpdateEntityName={(index, name) => updateEntityName(index, name, false)}
-                    onRemoveEntity={(index) => removeEntity(index, false)}
-                    onAddEntity={() => addEntity(false)}
-                    onUpdateComponent={(entityIndex, componentIndex, field, value) => 
-                      updateComponent(entityIndex, componentIndex, field, value, false)
-                    }
-                    onRemoveComponent={(entityIndex, componentIndex) => 
-                      removeComponent(entityIndex, componentIndex, false)
-                    }
-                    onAddComponent={(entityIndex) => addComponent(entityIndex, false)}
-                  />
-                )}
-              </Section>
-            </StateLayout>
+            <div className={stackedStateLayout ? "space-y-8" : "grid grid-cols-1 md:grid-cols-2 gap-8"}>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Initial State (Entities & Components)</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {selectedModules.length === 0 ? (
+                    <div className="text-center py-6 text-muted-foreground italic">
+                      Please select at least one module to see available components
+                    </div>
+                  ) : (
+                    <EntityBuilderComponent
+                      entities={initialEntities}
+                      availableComponents={availableComponents}
+                      onUpdateEntityName={(index, name) => updateEntityName(index, name, true)}
+                      onRemoveEntity={(index) => removeEntity(index, true)}
+                      onAddEntity={() => addEntity(true)}
+                      onAddComponent={(entityIndex) => addComponent(entityIndex, true)}
+                      onUpdateComponent={(entityIndex, componentIndex, field, value) => updateComponent(entityIndex, componentIndex, field, value, true)}
+                      onRemoveComponent={(entityIndex, componentIndex) => removeComponent(entityIndex, componentIndex, true)}
+                    />
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Expected State (Entities & Components)</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {selectedModules.length === 0 ? (
+                    <div className="text-center py-6 text-muted-foreground italic">
+                      Please select at least one module to see available components
+                    </div>
+                  ) : (
+                    <EntityBuilderComponent
+                      entities={expectedEntities}
+                      availableComponents={availableComponents}
+                      onUpdateEntityName={(index, name) => updateEntityName(index, name, false)}
+                      onRemoveEntity={(index) => removeEntity(index, false)}
+                      onAddEntity={() => addEntity(false)}
+                      onAddComponent={(entityIndex) => addComponent(entityIndex, false)}
+                      onUpdateComponent={(entityIndex, componentIndex, field, value) => updateComponent(entityIndex, componentIndex, field, value, false)}
+                      onRemoveComponent={(entityIndex, componentIndex) => removeComponent(entityIndex, componentIndex, false)}
+                    />
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </>)}
-        </MainColumn>
+          
+          <div className="flex flex-wrap gap-4">
+            <Button 
+              variant="outline" 
+              onClick={clearForm}
+              className="gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Clear Form
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              onClick={fillExpectedFromInitial}
+              disabled={isGeneratingExpected || !testName.trim() || systems.length === 0 || initialEntities.length === 0}
+              className="gap-2"
+            >
+              {isGeneratingExpected ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Layers className="h-4 w-4" />
+              )}
+              {isGeneratingExpected ? generatingMessage : "Generate Expected from Initial"}
+            </Button>
+            
+            <Button 
+              variant="default" 
+              onClick={downloadJson}
+              disabled={!testName.trim() || systems.length === 0}
+              className="gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Download JSON
+            </Button>
+            
+            <Button 
+              variant="default" 
+              onClick={runTest}
+              disabled={!testName.trim() || systems.length === 0}
+              className="gap-2 bg-green-600 hover:bg-green-700"
+            >
+              <Play className="h-4 w-4" />
+              Run Test
+            </Button>
+          </div>
+        </div>
 
-        <SideColumn>
-          <Section>
-            <SectionHeader>Actions</SectionHeader>
-            <ActionButtons>
-              <SaveJsonButton onClick={downloadJson}>Save Test File</SaveJsonButton>
-              <RunTestButton onClick={runTest}>Run Test</RunTestButton>
-              <Button onClick={clearForm}>Clear Form</Button>
-            </ActionButtons>
-          </Section>
-
-          {jsonPreview && (
-            <Section>
-              <SectionHeader>JSON Preview</SectionHeader>
-              <PreviewBox>
-                <pre>{jsonPreview}</pre>
-              </PreviewBox>
-            </Section>
-          )}
-        </SideColumn>
-      </BuilderLayout>
-    </Container>
+        <Card className="sticky top-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              JSON Preview
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {jsonPreview ? (
+              <pre className="bg-black dark:bg-gray-900 text-white dark:text-gray-200 p-4 rounded-md overflow-auto text-sm max-h-[500px]">
+                {jsonPreview}
+              </pre>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground italic">
+                Fill in the form to see JSON preview
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
-};
+}
