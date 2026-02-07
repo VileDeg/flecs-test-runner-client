@@ -24,3 +24,4 @@ dist-ssr
 *.sw?
 
 untracked/
+memory-bank/

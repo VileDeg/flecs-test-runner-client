@@ -13,6 +13,7 @@ import { useFlecsConnection } from "./common/flecsConnection/useFlecsConnection.
 import { FLECS_PORT } from './common/constants.ts'
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { cn } from "@/lib/utils";
 import { CheckCircle, RefreshCw, XCircle, Upload, BarChart3, Wrench } from "lucide-react";
 
@@ -87,9 +88,9 @@ const AppContent = () => {
           variant="outline" 
           className={cn(
             "font-medium",
-            status === "Connected" && "bg-green-500/10 text-green-600 dark:text-green-400 border-green-200 dark:border-green-800",
-            (status === "Connecting" || status === "RetryConnecting") && "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800",
-            status === "Disconnected" && "bg-red-500/10 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800"
+            status === "Connected" && "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-400 border-green-200 dark:border-green-800",
+            (status === "Connecting" || status === "RetryConnecting") && "bg-yellow-50 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800",
+            status === "Disconnected" && "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-400 border-red-200 dark:border-red-800"
           )}
         >
           {status === "Connected" && <CheckCircle className="h-3 w-3 mr-1" />}
@@ -128,19 +129,21 @@ const AppContent = () => {
           <Upload className="h-4 w-4" />
           Upload Tests
         </Button>
+        <div className="h-6 w-px bg-border mx-1" />
+        <ThemeToggle />
       </div>
     </div>
   );
 
   // Render centered content when not connected
-  const renderCenteredContent = () => (
+  const renderLoadingContent = () => (
     <div className="font-sans p-12 max-w-4xl mx-auto text-center min-h-[60vh] flex flex-col justify-center items-center">
       <h1 className="text-3xl font-bold text-foreground mb-6">Unit Test Runner</h1>
       <div className={cn(
         "my-6 px-6 py-4 rounded-lg font-medium w-full max-w-md",
-        (status === "Connecting" || status === "RetryConnecting") && "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400",
-        status === "Connected" && "bg-green-500/10 text-green-600 dark:text-green-400",
-        status === "Disconnected" && "bg-red-500/10 text-red-600 dark:text-red-400"
+        (status === "Connecting" || status === "RetryConnecting") && "bg-yellow-50 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400",
+        status === "Connected" && "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-400",
+        status === "Disconnected" && "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-400"
       )}>
         {(status === "Connecting" || status === "RetryConnecting") 
             && `Trying to connect to port ${FLECS_PORT}...`}
@@ -171,7 +174,7 @@ const AppContent = () => {
             </div>
           </>
         ) : (
-          renderCenteredContent()
+          renderLoadingContent()
         )}
       </div>
     </div>

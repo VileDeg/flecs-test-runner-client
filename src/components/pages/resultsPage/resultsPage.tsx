@@ -161,9 +161,9 @@ export const ResultsPage: React.FC = () => {
     }
 
     const statusColors = {
-      pending: "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800",
-      passed: "bg-green-500/10 text-green-600 dark:text-green-400 border-green-200 dark:border-green-800",
-      failed: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800"
+      pending: "bg-yellow-50 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800",
+      passed: "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-400 border-green-200 dark:border-green-800",
+      failed: "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-400 border-red-200 dark:border-red-800"
     };
 
     return (
@@ -252,7 +252,7 @@ export const ResultsPage: React.FC = () => {
                 </div>
                 {pendingStartTime && (
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 dark:text-yellow-400">
+                    <Badge variant="outline" className="bg-yellow-50 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400">
                       <Timer startTime={pendingStartTime} />
                     </Badge>
                   </div>
