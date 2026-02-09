@@ -30,7 +30,7 @@ jobs:
         run: npm run lint # Must return non-zero exit code on error
 
       - name: Format Check
-        run: npx prettier --check .
+        run: npm run format
 
       - name: Type Check
-        run: npx tsc --noEmit
+        run: npm run type-check
