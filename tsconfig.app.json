@@ -1,5 +1,4 @@
 {
-  
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     "target": "ES2022",
@@ -26,15 +25,15 @@
     "noUncheckedSideEffectImports": true,
 
     /* Paths */
-    "baseUrl": ".", 
+    "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
       "@ui/*": ["src/components/ui/*"],
       "@pages/*": ["src/components/pages/*"],
       "@hooks/*": ["src/hooks/*"],
       "@common/*": ["src/common/*"],
-      "@theme/*": ["src/theme/*"]
+      "@components/*": ["src/components/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "untracked/entityBuilder.tsx"]
 }
