@@ -1,30 +1,30 @@
 // Service for fetching Flecs metadata like available systems and components
 import type { FlecsAsync } from "./flecsConnection/flecsAsync";
 
-// Namespace for Flecs metadata types
-export namespace FlecsMetadata {
-  export interface System {
-    name: string;
-    module?: string;
-  }
+import type { 
+  Component,
+  PrimitiveType,
+  System,
+  QueryResponse,
+  QueriedEntity,
+  MetaComponentRegistry,
+  ComponentField,
+  ComponentFieldValue,
+  ComponentFields,
+} from "@/common/types";
 
-  export interface Component {
-    name: string;
-    module?: string;
-    fields: ComponentField[];
-  }
+import { 
+  Module,
+} from "@/common/types";
 
-  export interface ComponentField {
-    name: string;
-    type: string;
-    defaultValue?: any;
-  }
+import * as Utils from "@common/utils.ts"
 
-  export interface Module {
-    name: string;
-    fullPath: string;
-  }
-}
+
+// TODO: don't use namespace
+// export namespace FlecsMetadata {
+  
+// }
+
 
 export class FlecsMetadataService {
   /**
@@ -71,11 +71,11 @@ export class FlecsMetadataService {
    * Fetch all available modules from the Flecs application
    * Only fetches modules that have the TestableModule tag
    */
-  static async getModules(connection: FlecsAsync): Promise<FlecsMetadata.Module[]> {
+  static async getModules(connection: FlecsAsync): Promise<Module[]> {
     try {
       // Query for modules that have the TestableModule tag
       const data = await connection.query('flecs.core.Module, TestRunner.TestableModule');
-      const modules: FlecsMetadata.Module[] = [];
+      const modules: Module[] = [];
       
       console.log("getModules data: ", data);
       
@@ -97,10 +97,7 @@ export class FlecsMetadataService {
           
           console.log(`  - Built full path: ${fullPath}`);
           
-          modules.push({
-            name: entityName,
-            fullPath
-          });
+          modules.push(new Module(fullPath));
         }
       }
       
@@ -115,22 +112,20 @@ export class FlecsMetadataService {
   /**
    * Fetch systems filtered by selected modules
    */
-  static async getSystems(connection: FlecsAsync, selectedModules?: string[]): Promise<FlecsMetadata.System[]> {
+  static async getSystems(connection: FlecsAsync, selectedModules: Module[]): Promise<System[]> {
     try {
-      const systems: FlecsMetadata.System[] = [];
+      const systems: System[] = [];
       
-      // If no modules selected, return empty array
-      if (!selectedModules || selectedModules.length === 0) {
+      if (selectedModules.length === 0) {
         return systems;
       }
       
       // Query systems that are children of each selected module
-      for (const modulePath of selectedModules) {
+      for (const module of selectedModules) {
         // Build query to find systems under this module
         // Format: (ChildOf, module_path), System
         // (ChildOf, modules.movement), flecs.system.System
-        const query = `(ChildOf, ${modulePath}), flecs.system.System`;
-        //const query = `System`;
+        const query = `(ChildOf, ${module.fullPath}), flecs.system.System`;
         console.log("Systems query: ", query);
         
         try {
@@ -139,13 +134,13 @@ export class FlecsMetadataService {
           
           if (data.results.length > 0) {
             for (const entity of data.results) {
-              const systemName = entity.name || entity.path;
+              const systemName = entity.name; //  || entity.path
               if (systemName && systemName !== 'System') {
                 // Check if already added (avoid duplicates if overlapping queries)
                 if (!systems.find(s => s.name === systemName)) {
                   systems.push({
                     name: systemName,
-                    module: modulePath
+                    module: module
                   });
                 }
               }
@@ -154,7 +149,7 @@ export class FlecsMetadataService {
             throw new Error("No systems found");
           }
         } catch (error) {
-          console.warn(`Could not fetch systems for module ${modulePath}:`, error);
+          console.warn(`Could not fetch systems for module ${module.fullPath}:`, error);
         }
       }
       
@@ -169,17 +164,18 @@ export class FlecsMetadataService {
   /**
    * Fetch components filtered by selected modules
    */
-  static async getComponents(connection: FlecsAsync, selectedModules?: string[]): Promise<FlecsMetadata.Component[]> {
+  static async getComponents(connection: FlecsAsync, selectedModules: Module[]): Promise<Component[]> {
     try {
-      const components: FlecsMetadata.Component[] = [];
+      const components: Component[] = [];
       
       // If no modules selected, return empty array
-      if (!selectedModules || selectedModules.length === 0) {
+      if (selectedModules.length === 0) {
         return components;
       }
       
       // Query components that are children of each selected module
-      for (const modulePath of selectedModules) {
+      for (const module of selectedModules) {
+        const modulePath = module.fullPath;
         // Build query to find components under this module
         // Format: (ChildOf, module_path), Component
         // (ChildOf, modules.movement), flecs.core.Component
@@ -190,7 +186,7 @@ export class FlecsMetadataService {
           
           if (data.results && data.results.length > 0) {
             for (const entity of data.results) {
-              const componentName = entity.name || entity.path;
+              const componentName = entity.name; //  || entity.path
               if (componentName && componentName !== 'Component') {
                 // Check if already added (avoid duplicates if overlapping queries)
                 if (components.find(c => c.name === componentName)) {
@@ -204,7 +200,7 @@ export class FlecsMetadataService {
                 
                 components.push({
                   name: componentName,
-                  module: modulePath,
+                  module,
                   fields
                 });
               }
@@ -216,6 +212,11 @@ export class FlecsMetadataService {
           console.warn(`Could not fetch components for module ${modulePath}:`, error);
         }
       }
+
+      // Validate fields types and assign default values
+      components.forEach((component) => {
+        component.fields = this.getDefaultValueForComponentFields(component.fields, components);
+      })
       
       // Sort components by name for better UX
       return components.sort((a, b) => a.name.localeCompare(b.name));
@@ -225,30 +226,38 @@ export class FlecsMetadataService {
     }
   }
 
+  private static getEntityMetaComponent<K extends keyof MetaComponentRegistry>(
+    entity: QueriedEntity, key: K
+  ): MetaComponentRegistry[K] | undefined 
+  {
+      return entity.components?.[key];
+  }
+
   /**
    * Get detailed information about a specific component fields
    */
   static async getComponentInfo(
     connection: FlecsAsync, 
     componentName: string)
-  : Promise<FlecsMetadata.ComponentField[]> {
+  : Promise<ComponentFields> {
     try {
       // Try to get component metadata using Flecs connection
       const data = await connection.query(
         `(ChildOf, ${componentName})`, {type_info:true, values:true});
       // TODO: get flecs.meta.member component of each member?
-      const fields: FlecsMetadata.ComponentField[] = [];
+      const fields: ComponentFields = {};
       
       //console.log("getComponentInfo for " + componentName + ": ", data);
       
       // Try to extract field information from component metadata
       // This is a best-effort approach as Flecs REST API might not expose all field details
-      for (const member of data.results) {
-        const entityName = componentName + "." + member.name;
-        const data = await connection.entity(entityName, {type_info:true, values:true})
+      for (const result of data.results) {
+        const entityName = componentName + "." + result.name;
+        const entity = await connection.entity(entityName, {type_info:true, values:true})
         //console.log("getComponentInfo member for " + member.name + ": ", data);
         
-        const memberDef = data.components["flecs.meta.member"];
+        const memberDef = this.getEntityMetaComponent(entity, "flecs.meta.member");
+        //entity.components["flecs.meta.member"];
         if (!memberDef) {
           throw new Error(`Member definition missing for ${entityName}`);
         }
@@ -258,11 +267,12 @@ export class FlecsMetadataService {
         //console.log("-------- type: ", memberDef.type);
         //console.log("-------- type1: ", memberType);
         
-        fields.push({
-          name: member.name,
+        fields[result.name] = {
+          //name: member.name,
           type: memberType,
-          defaultValue: this.getDefaultValueForType(memberType) // TODO: is it correct?
-        });
+          value: "<undefined>"
+          //defaultValue: this.getDefaultValueForType(memberType) // TODO: is it correct?
+        };
       }
       return fields;
     } catch (error) {
@@ -270,67 +280,127 @@ export class FlecsMetadataService {
     }
   }
 
+  // TODO: remove?
+  static isComponentType(type: string, knownComponents: Component[]): boolean {
+    return knownComponents.find((component) => { component.name == type }) != undefined;
+  }
+
+  static isBooleanType(type: string): boolean {
+    return type === "bool" || type === "boolean";
+  }
+
+  static isFloatType(type: string): boolean {
+    return type === "float" || type === "double" || type === "f32" || type === "f64";
+  }
+
+  static isIntegerType(type: string): boolean {
+    return type === "int" || type === "integer" || type === "i32" || type === "i64"; // TODO: etc.
+  }
+  static isStringType(type: string): boolean {
+    return type === "string" || type === "str";
+  }
+
+  static parseValueForPrimitiveType(type: string, value: string | null): PrimitiveType {
+    type = type.toLowerCase();
+    
+    try {
+      if (this.isBooleanType(type)) {
+        return value ? value.toLowerCase() === "true" : "false";
+      } else if (this.isIntegerType(type)) {
+        return value ? parseInt(value) : 0;
+      } else if (this.isFloatType(type)) {
+        return value ? parseFloat(value) : 0.0;
+      } else if (this.isStringType(type)) {
+        return value ? String(value) : "";
+      } else {
+        throw Error("Invalid type"); // TODO;
+      }
+    } catch(err) {
+      // TODO: better error
+      throw Error("Invalid value for type");
+    }
+  }
+
+
   /**
    * Get a default value for a component field based on its type
    */
-  static getDefaultValueForType(type: string): any {
-    switch (type.toLowerCase()) {
-      case 'float':
-      case 'double':
-      case 'f32':
-      case 'f64':
-        return 0.0;
-      case 'int':
-      case 'integer':
-      case 'i32':
-      case 'i64':
-      case 'u32':
-      case 'u64':
-      case 'int32':
-      case 'int64':
-      case 'uint32':
-      case 'uint64':
-        return 0;
-      case 'bool':
-      case 'boolean':
-        return false;
-      case 'string':
-      case 'str':
-        return "";
-      default:
-        return "";
-    }
+  static getDefaultValueForPrimitiveType(type: string): PrimitiveType {
+    return this.parseValueForPrimitiveType(type, null);
   }
+
+  
+
+  
+
+  // TODO: component name vs module.name
+  // TODO: array support
+  static getDefaultValueForField(fieldType: string, knownComponents: Component[])
+    : ComponentFieldValue 
+  {
+
+    const component = knownComponents.find((component) => { component.name == fieldType });
+    if (!component) {
+      return String(this.getDefaultValueForPrimitiveType(fieldType));
+    }
+
+    return this.getDefaultValueForComponentFields(component.fields, knownComponents);
+  }
+
+  
+
+  static getDefaultValueForComponentFields(
+    fields: ComponentFields, knownComponents: Component[]
+  ): ComponentFields
+  {
+    return Utils.mapRecord(fields, 
+      f => ({ ...f, value: this.getDefaultValueForField(f.type, knownComponents) })
+    )
+
+    // return Object.fromEntries(Object.entries(fields).map(
+    //   f => ({ ...f, value: this.getDefaultValueForField(f.type, knownComponents) })
+    // ));
+  }
+
+  // static getDefaultComponentValue(
+  //   componentName: string, knownComponents: Component[]
+  // ): ComponentFields
+  // {
+
+  //   return fields.map(
+  //     f => ({ ...f, value: this.getDefaultValueForField(f.type, knownComponents) })
+  //   );
+  // }
 
   /**
    * Format a value for JSON serialization based on its type
    */
-  static formatValueForType(value: any, type: string): any {
-    switch (type.toLowerCase()) {
-      case 'float':
-      case 'double':
-      case 'f32':
-      case 'f64':
-        return parseFloat(value) || 0.0;
-      case 'int':
-      case 'integer':
-      case 'i32':
-      case 'i64':
-      case 'u32':
-      case 'u64':
-      case 'int32':
-      case 'int64':
-      case 'uint32':
-      case 'uint64':
-        return parseInt(value) || 0;
-      case 'bool':
-      case 'boolean':
-        return value === 'true' || value === true;
-      case 'string':
-      case 'str':
-        return String(value);
-      default:
-        return value;
-    }
-  }
+  // static formatValueForType(value: string, type: string): ScalarValue {
+  //   switch (type.toLowerCase()) {
+  //     case 'float':
+  //     case 'double':
+  //     case 'f32':
+  //     case 'f64':
+  //       return parseFloat(value) || 0.0;
+  //     case 'int':
+  //     case 'integer':
+  //     case 'i32':
+  //     case 'i64':
+  //     case 'u32':
+  //     case 'u64':
+  //     case 'int32':
+  //     case 'int64':
+  //     case 'uint32':
+  //     case 'uint64':
+  //       return parseInt(value) || 0;
+  //     case 'bool':
+  //     case 'boolean':
+  //       return value.toLowerCase() === 'true';
+  //     case 'string':
+  //     case 'str':
+  //       return String(value);
+  //     default:
+  //       return value;
+  //   }
+  // }
 }

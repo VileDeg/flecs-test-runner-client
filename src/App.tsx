@@ -1,19 +1,19 @@
 import { useState, useEffect } from "react";
 
-import { FlecsConnectionProvider } from "./common/flecsConnection/flecsConnectionProvider.tsx";
+import { FlecsConnectionProvider } from "@common/flecsConnection/flecsConnectionProvider.tsx";
 import { ToastProvider } from "@ui/toast/toastProvider.tsx";
 
-import { LandingPage } from "./components/pages/landingPage/landingPage.tsx";
-import { ResultsPage } from "./components/pages/resultsPage/resultsPage.tsx";
+import { LandingPage } from "@components/pages/landingPage/landingPage.tsx";
+import { ResultsPage } from "@components/pages/resultsPage/resultsPage.tsx";
 import { TestBuilder } from "@pages/builderPage/builderPage.tsx";
 import { type TestBuilderPersistedState } from "@hooks/useTestBuilderState.ts";
 
-import { useFlecsConnection } from "./common/flecsConnection/useFlecsConnection.ts";
+import { useFlecsConnection } from "@common/flecsConnection/useFlecsConnection.ts";
 
-import { FLECS_PORT } from "./common/constants.ts";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { FLECS_PORT, DEFAULT_TEST_PROPERTIES } from "@common/constants.ts";
+import { Button } from "@components/ui/button";
+import { Badge } from "@components/ui/badge";
+import { ThemeToggle } from "@components/ui/theme-toggle";
 import { cn } from "@/lib/utils";
 import {
   CheckCircle,
@@ -55,11 +55,7 @@ const AppContent = () => {
       }
       // Default state if nothing saved
       return {
-        testName: "",
-
-        systems: [],
-        initialEntities: [],
-        expectedEntities: [],
+        testProperties: DEFAULT_TEST_PROPERTIES,
         selectedModules: [],
       };
     });
@@ -172,7 +168,7 @@ const AppContent = () => {
       >
         {(status === "Connecting" || status === "RetryConnecting") &&
           `Trying to connect to port ${FLECS_PORT}...`}
-        {status === "Connected" && `✅ Connected to port ${FLECS_PORT}`}
+        {status === "Connected" && `✅ Connected to port ${FLECS_PORT}`} 
         {status === "Disconnected" && "❌ Connection failed"}
       </div>
     </div>

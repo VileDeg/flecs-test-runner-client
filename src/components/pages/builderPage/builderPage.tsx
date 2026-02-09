@@ -2,33 +2,43 @@ import React, { useState, useEffect } from "react";
 import { useFlecsConnection } from "@common/flecsConnection/useFlecsConnection.ts";
 import { FlecsMetadataService } from "@common/flecsMetadataService.ts";
 import { TestRunner } from "@common/testRunner.ts";
-import type * as Core from "@common/coreTypes.ts";
 import { ModuleSelector } from "./moduleSelector.tsx";
 import { SystemsList } from "./systemsList.tsx";
-import { EntityBuilderComponent } from "./entityBuilder.tsx";
+import { WorldBuilderComponent } from "@pages/builderPage/worldBuilder.tsx";
 import { useToast } from "@ui/toast/useToast.ts";
 import { useTestBuilderState } from "@hooks/useTestBuilderState.ts";
 import { useModuleSelection } from "@hooks/useModuleSelection.ts";
 import { type TestBuilderPersistedState} from "@hooks/useTestBuilderState.ts";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
+import { Button } from "@components/ui/button";
+import { Input } from "@components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/card";
 import { 
   Download, 
   Play, 
   Trash2, 
   FileText, 
   Layers, 
-  Grid3x3,
-  PanelLeftClose,
-  PanelLeftOpen,
   Loader2,
-  AlertCircle
 } from "lucide-react";
+
+import type { 
+  TestProperties,
+  PrimitiveType,
+  System,
+  Component,
+  QueryResponse,
+  QueriedEntity,
+  MetaComponentRegistry,
+  ComponentField,
+  ComponentFieldValue,
+  ComponentFields,
+  EntityConfiguration,
+  WorldConfiguration,
+  ComponentsRegistry,
+  SystemInvocation,
+} from "@/common/types";
+import { error } from "console";
 
 export interface TestBuilderProps {
   onTestCreated?: () => void;
@@ -39,21 +49,17 @@ export interface TestBuilderProps {
 export const TestBuilder: React.FC<TestBuilderProps> = ({ 
   onTestCreated, 
   persistedState,
-  onStateChange 
+  onStateChange,
 }) => {
   const { showToast } = useToast();
   const { connection } = useFlecsConnection();
+
+  console.log(" BUILDER PAGE OBJECT CREATED")
   
   // Use custom hooks for state management
   const {
-    testName,
-    setTestName,
-    systems,
-    setSystems,
-    initialEntities,
-    setInitialEntities,
-    expectedEntities,
-    setExpectedEntities,
+    testProperties,
+    setTestProperties,
     selectedModules,
     setSelectedModules,
   } = useTestBuilderState(persistedState, onStateChange);
@@ -75,6 +81,26 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
   // State for layout toggle (side-by-side vs stacked)
   const [stackedStateLayout, setStackedStateLayout] = useState(true);
 
+  const setTestName = (name: string) => {
+    setTestProperties({...testProperties, name});
+  }
+
+  const setSystems = (systems: SystemInvocation[]) => {
+    setTestProperties({...testProperties, systems});
+  }
+
+  const setInitialConfiguration = (entities: WorldConfiguration) => {
+    console.log("setInitialConfiguration")
+    setTestProperties({...testProperties, initialConfiguration: entities});
+  }
+
+  const setExpectedConfiguration = (entities: WorldConfiguration) => {
+    setTestProperties({...testProperties, expectedConfiguration: entities});
+  }
+
+
+  const { name: testName, systems, initialConfiguration, expectedConfiguration } = testProperties;
+
   useEffect(() => {
     // Don't run until modules have finished loading
     if (loadingModules) { 
@@ -84,18 +110,22 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
     // If not persisted, initialize selectedModules with all modules
     if(persistedState?.selectedModules === undefined) {
       console.log("Setting selectedModules to all available")
-      setSelectedModules(availableModules.map(m => m.fullPath));
+      setSelectedModules(availableModules);
     } else {
       console.log("*** useEffect, availableModules: ", availableModules);
       // Filter out selected that are not in available 
-      const availableModuleSet = new Set(availableModules.map(m => m.fullPath));
-      const filteredSelected = selectedModules.filter(m => availableModuleSet.has(m));
+      // Compare by fullPath since Module objects from localStorage may not be the same instances
+      const availableModulePaths = new Set(availableModules.map(m => m.fullPath));
+      const filteredSelected = selectedModules.filter(m => 
+        availableModulePaths.has(m.fullPath)
+      );
+
       console.log("*** useEffect, filteredSelected: ", filteredSelected);
       if (filteredSelected.length !== selectedModules.length) {
         setSelectedModules(filteredSelected);
       }
     }
-  }, [availableModules, loadingModules, setSelectedModules]); 
+  }, [availableModules, loadingModules, setSelectedModules]); // , setSelectedModules 
 
   // Clear systems from modules that are no longer selected
   useEffect(() => {
@@ -106,6 +136,7 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
     if (systems.length > 0) {
       const availableSystemNames = new Set(availableSystems.map(s => s.module + "." + s.name));
       const filteredSystems = systems.filter(s => availableSystemNames.has(s.name));
+
       console.log("*** Filtering systems, systems before filtering: ", systems);
       console.log("*** Filtering systems, availableSystemNames: ", availableSystemNames);
       console.log("*** Filtering systems, filteredSystems: ", filteredSystems);
@@ -113,7 +144,7 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
         setSystems(filteredSystems);
       }
     }
-  }, [availableSystems, loadingModules, loadingMetadata, setSystems]);
+  }, [availableSystems, loadingModules, loadingMetadata, setTestProperties]); //, setSystems
 
   // Clear components from entities that are no longer available in selected modules
   useEffect(() => {
@@ -122,166 +153,58 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
     }
 
     const availableComponentNames = new Set(availableComponents.map(c => c.name));
-    const filterEntities = (entities: Core.EntityData[]) => {
+    const filterEntities = (entities: EntityConfiguration[]) => {
       return entities.map(entity => ({
         ...entity,
         components: entity.components.filter(comp => availableComponentNames.has(comp.name))
       }));
     };
 
-    const filteredInitial = filterEntities(initialEntities);
-    const filteredExpected = filterEntities(expectedEntities);
+    const filteredInitial = filterEntities(initialConfiguration);
+    const filteredExpected = filterEntities(expectedConfiguration);
+
+    console.log("*** Filtering ENTITIES INITIAL, BEFORE filtering: ", initialConfiguration);
+    console.log("*** Filtering ENTITIES INITIAL, AVAILABLE components: ", availableComponentNames);
+    console.log("*** Filtering ENTITIES INITIAL, AFTER filtering: ", filteredInitial);
     
-    if (JSON.stringify(filteredInitial) !== JSON.stringify(initialEntities)) {
-      setInitialEntities(filteredInitial);
+    if (JSON.stringify(filteredInitial) !== JSON.stringify(initialConfiguration)) {
+      setInitialConfiguration(filteredInitial);
     }
-    if (JSON.stringify(filteredExpected) !== JSON.stringify(expectedEntities)) {
-      setExpectedEntities(filteredExpected);
+    if (JSON.stringify(filteredExpected) !== JSON.stringify(expectedConfiguration)) {
+      setExpectedConfiguration(filteredExpected);
     }
-  }, [availableComponents, loadingModules, loadingMetadata, setInitialEntities, setExpectedEntities]);
+  }, [availableComponents, loadingModules, loadingMetadata, setTestProperties]); // , setInitialConfiguration, setExpectedConfiguration
 
-  // System management
-  const addSystem = () => {
-    setSystems([...systems, { name: "", timesToRun: 1 }]);
-  };
 
-  const updateSystem = (index: number, field: keyof Core.SystemInvocation, value: string | number) => {
-    const newSystems = [...systems];
-    newSystems[index] = { ...newSystems[index], [field]: value };
-    setSystems(newSystems);
-  };
+  
+  const validationFail = (errorMessage: string) : boolean => {
+    showToast(errorMessage, 'error');
+    return false;
+  }
 
-  const removeSystem = (index: number) => {
-    setSystems(systems.filter((_, i) => i !== index));
-  };
-
-  // Entity management
-  const addEntity = (isInitial: boolean) => {
-    const newEntity: Core.EntityData = { entity: "", components: [] };
-    if (isInitial) {
-      setInitialEntities([...initialEntities, newEntity]);
-    } else {
-      setExpectedEntities([...expectedEntities, newEntity]);
+  const validateTest = (validateExpected: boolean) : boolean => {
+    if (!testName.trim()) {
+      return validationFail("Test name is required");
     }
-  };
-
-  const updateEntityName = (index: number, name: string, isInitial: boolean) => {
-    if (isInitial) {
-      const newEntities = [...initialEntities];
-      newEntities[index] = { ...newEntities[index], entity: name };
-      setInitialEntities(newEntities);
-    } else {
-      const newEntities = [...expectedEntities];
-      newEntities[index] = { ...newEntities[index], entity: name };
-      setExpectedEntities(newEntities);
+    if (systems.length === 0) {
+      return validationFail("At least one system is required");
     }
-  };
-
-  const removeEntity = (index: number, isInitial: boolean) => {
-    if (isInitial) {
-      setInitialEntities(initialEntities.filter((_, i) => i !== index));
-    } else {
-      setExpectedEntities(expectedEntities.filter((_, i) => i !== index));
+    if (systems.some(s => !s.name.trim())) {
+      return validationFail("All systems must have names");
     }
-  };
-
-  // Component management
-  const addComponent = (entityIndex: number, isInitial: boolean) => {
-    const newComponent: Core.ComponentData = { name: "", module: "" };
-    if (isInitial) {
-      const newEntities = [...initialEntities];
-      newEntities[entityIndex].components.push(newComponent);
-      setInitialEntities(newEntities);
-    } else {
-      const newEntities = [...expectedEntities];
-      newEntities[entityIndex].components.push(newComponent);
-      setExpectedEntities(newEntities);
+    if (initialConfiguration.length === 0) {
+      return validationFail("Initial configuration can not be empty");
     }
-  };
-
-  const createUpdatedComponentData = (
-    entityIndex: number,
-    componentIndex: number,
-    field: string,
-    value: any,
-    entities: Core.EntityData[]
-  ): Core.EntityData[] => {
-    const newEntities = [...entities];
-    
-    if (field === 'name') {
-      // When component name changes, reset fields to defaults
-      const component = availableComponents.find(c => c.name === value);
-      const newComponentData: Core.ComponentData = { 
-        name: value,
-        module: component?.module || ""
-      };
-      
-      // Initialize with default values for component fields
-      if (component) {
-        component.fields.forEach(field => {
-          newComponentData[field.name] = FlecsMetadataService.getDefaultValueForType(field.type);
-        });
-      }
-      
-      newEntities[entityIndex].components[componentIndex] = newComponentData;
-    } else {
-      newEntities[entityIndex].components[componentIndex][field] = value;
+    if (validateExpected && expectedConfiguration.length === 0) {
+      return validationFail("Expected configuration can not be empty");
     }
-    
-    return newEntities;
-  };
-
-  const updateComponent = (
-    entityIndex: number, 
-    componentIndex: number, 
-    field: string, 
-    value: any, 
-    isInitial: boolean // TODO: instead of boolean, store all entities in single state object
-  ) => {
-    if (isInitial) {
-      const updatedEntities = createUpdatedComponentData(
-        entityIndex, componentIndex, field, value, initialEntities
-      );
-      setInitialEntities(updatedEntities);
-    } else {
-      const updatedEntities = createUpdatedComponentData(
-        entityIndex, componentIndex, field, value, expectedEntities
-      );
-      setExpectedEntities(updatedEntities);
-    }
-  };
-
-  const removeComponent = (entityIndex: number, componentIndex: number, isInitial: boolean) => {
-    if (isInitial) {
-      const newEntities = [...initialEntities];
-      newEntities[entityIndex].components = 
-        newEntities[entityIndex].components.filter((_: any, i: number) => i !== componentIndex);
-      setInitialEntities(newEntities);
-    } else {
-      const newEntities = [...expectedEntities];
-      newEntities[entityIndex].components = 
-      newEntities[entityIndex].components.filter((_: any, i: number) => i !== componentIndex);
-      setExpectedEntities(newEntities);
-    }
-  };
+    return true;
+  }
 
   // Generate UnitTest from form data
   const generateTest = (validate: boolean = true) => {
-    if (validate && !testName.trim()) {
-      showToast("Test name is required", 'error');
+    if (validate && !validateTest(true)) {
       return null;
-    }
-
-    if(validate) { 
-      if (systems.length === 0) {
-        showToast("At least one system is required", 'error');
-        return null;
-      }
-
-      if (systems.some(s => !s.name.trim())) {
-        showToast("All systems must have names", 'error');
-        return null;
-      }
     }
 
     return TestRunner.createTest(
@@ -290,8 +213,8 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
         name: s.name.trim(),
         timesToRun: s.timesToRun
       })),
-      initialEntities,
-      expectedEntities
+      initialConfiguration,
+      expectedConfiguration
     );
   };
 
@@ -303,7 +226,7 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
     } else {
       setJsonPreview("");
     }
-  }, [testName, systems, initialEntities, expectedEntities, setJsonPreview]);
+  }, [testProperties, setJsonPreview]);
 
   const downloadJson = () => {
     const test = generateTest(true);
@@ -347,26 +270,10 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
     }
   };
 
+
   const fillExpectedFromInitial = async () => {
-    if (!testName.trim()) {
-      showToast("Test name is required", 'error');
-      return;
-    }
-
-    if (systems.length === 0) {
-      showToast("At least one system is required", 'error');
-      return;
-    }
-
-    if (systems.some(s => !s.name.trim())) {
-      showToast("All systems must have names", 'error');
-      return;
-    }
-
-    if (initialEntities.length === 0) {
-      showToast("Initial entities are required to generate expected state", 'error');
-      return;
-    }
+    //let { name: testName , systems, initialConfiguration } = testProperties;
+    validateTest(false);
 
     setIsGeneratingExpected(true);
     setGeneratingMessage("Creating incomplete test...");
@@ -382,7 +289,7 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
           name: s.name.trim(),
           timesToRun: s.timesToRun
         })),
-        initialEntities
+        initialConfiguration
       );
       
       if (!executeResult.success) {
@@ -406,7 +313,7 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
         const parsedEntities = TestRunner.parseWorldSerialized(pollResult.worldSerialized);
         
         if (parsedEntities.length > 0) {
-          setExpectedEntities(parsedEntities);
+          setExpectedConfiguration(parsedEntities);
           showToast(`Expected state generated successfully! Found ${parsedEntities.length} entities.`, 'success');
         } else {
           showToast("Failed to parse expected state from serialized world", 'error');
@@ -427,10 +334,183 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
   const clearForm = () => {
     setTestName("");
     setSystems([]);
-    setInitialEntities([]);
-    setExpectedEntities([]);
+    setInitialConfiguration([]);
+    setExpectedConfiguration([]);
     setJsonPreview("");
   };
+
+  const renderWorldBuilder = (
+    cardTitle: string, 
+    worldConfiguration: WorldConfiguration, 
+    onUpdateWorldConfiguration: (worldConfiguration: WorldConfiguration) => void,
+  ) => (
+    <Card>
+      <CardHeader>
+        <CardTitle>{cardTitle}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {selectedModules.length === 0 ? (
+          <div className="text-center py-6 text-muted-foreground italic">
+            Please select at least one module to see available components
+          </div>
+        ) : (
+          <WorldBuilderComponent
+            worldConfiguration={worldConfiguration}
+            availableComponents={availableComponents}
+            onUpdateWorldConfiguration={onUpdateWorldConfiguration}
+          />
+        )}
+      </CardContent>
+    </Card>
+  )
+
+  const renderTestProperties = () => (
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle>Systems to Run</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {selectedModules.length === 0 ? (
+            <div className="text-center py-6 text-muted-foreground italic">
+              Please select at least one module to see available systems
+            </div>
+          ) : availableSystems.length === 0 ? (
+            <div className="text-center py-6 text-muted-foreground italic">
+              No systems found in selected modules
+            </div>
+          ) : (
+            <SystemsList
+              selectedSystems={systems}
+              availableSystems={availableSystems}
+              onUpdateSystems={(systems) => {setSystems(systems)}}
+            />
+          )}
+        </CardContent>
+      </Card>
+
+      <div className={stackedStateLayout ? "space-y-8" : "grid grid-cols-1 md:grid-cols-2 gap-8"}>
+        {
+          renderWorldBuilder(
+            "Initial State (Entities & Components)", 
+            initialConfiguration, 
+            (conf) => {setInitialConfiguration(conf)}
+          )
+        }
+
+        {
+          renderWorldBuilder(
+            "Expected State (Entities & Components)", 
+            expectedConfiguration, 
+            (conf) => {setExpectedConfiguration(conf)}
+          )
+        }
+      </div>
+    </>
+  )
+
+  const renderTestPropertiesForm = () => (
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle>Test Name</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <Input
+              type="text"
+              value={testName}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTestName(e.target.value)}
+              placeholder="Enter test name"
+              className="w-full"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {loadingMetadata ? (
+        <Card>
+          <CardContent className="py-8">
+            <div className="text-center">
+              <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground mb-3" />
+              <p className="text-muted-foreground">Loading metadata...</p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        renderTestProperties() 
+      )}
+    </>
+  )
+
+  const renderButtons = () => (
+    <div className="flex flex-wrap gap-4">
+        <Button 
+          variant="outline" 
+          onClick={clearForm}
+          className="gap-2"
+        >
+          <Trash2 className="h-4 w-4" />
+          Clear Form
+        </Button>
+        
+        <Button 
+          variant="outline" 
+          onClick={fillExpectedFromInitial}
+          disabled={isGeneratingExpected || !testName.trim() || systems.length === 0 || initialConfiguration.length === 0}
+          className="gap-2"
+        >
+          {isGeneratingExpected ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Layers className="h-4 w-4" />
+          )}
+          {isGeneratingExpected ? generatingMessage : "Generate Expected from Initial"}
+        </Button>
+        
+        <Button 
+          variant="default" 
+          onClick={downloadJson}
+          disabled={!testName.trim() || systems.length === 0}
+          className="gap-2"
+        >
+          <Download className="h-4 w-4" />
+          Download JSON
+        </Button>
+        
+        <Button 
+          variant="default" 
+          onClick={runTest}
+          disabled={!testName.trim() || systems.length === 0}
+          className="gap-2 bg-green-600 hover:bg-green-700"
+        >
+          <Play className="h-4 w-4" />
+          Run Test
+        </Button>
+      </div>
+  )
+
+  const renderPreview = () => (
+    <Card className="sticky top-8">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <FileText className="h-5 w-5" />
+          JSON Preview
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {jsonPreview ? (
+          <pre className="bg-black dark:bg-gray-900 text-white dark:text-gray-200 p-4 rounded-md overflow-auto text-sm max-h-[500px]">
+            {jsonPreview}
+          </pre>
+        ) : (
+          <div className="text-center py-8 text-muted-foreground italic">
+            Fill in the form to see JSON preview
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
 
   if (loadingModules) {
     return (
@@ -453,179 +533,24 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8 items-start">
         <div className="space-y-8">
           <ModuleSelector
-            modules={availableModules}
+            availableModules={availableModules}
             selectedModules={selectedModules}
             onSelectionChange={setSelectedModules}
             loading={false}
           />
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Test Name</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <Input
-                  type="text"
-                  value={testName}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTestName(e.target.value)}
-                  placeholder="Enter test name"
-                  className="w-full"
-                />
-              </div>
-            </CardContent>
-          </Card>
+          <>
+            { renderTestPropertiesForm() }
+          </>
 
-          {loadingMetadata ? (
-            <Card>
-              <CardContent className="py-8">
-                <div className="text-center">
-                  <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground mb-3" />
-                  <p className="text-muted-foreground">Loading metadata...</p>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (<>
-            <Card>
-              <CardHeader>
-                <CardTitle>Systems to Run</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {selectedModules.length === 0 ? (
-                  <div className="text-center py-6 text-muted-foreground italic">
-                    Please select at least one module to see available systems
-                  </div>
-                ) : availableSystems.length === 0 ? (
-                  <div className="text-center py-6 text-muted-foreground italic">
-                    No systems found in selected modules
-                  </div>
-                ) : (
-                  <SystemsList
-                    systems={systems}
-                    availableSystems={availableSystems}
-                    onUpdate={updateSystem}
-                    onRemove={removeSystem}
-                    onAdd={addSystem} />
-                )}
-              </CardContent>
-            </Card>
-
-            <div className={stackedStateLayout ? "space-y-8" : "grid grid-cols-1 md:grid-cols-2 gap-8"}>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Initial State (Entities & Components)</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {selectedModules.length === 0 ? (
-                    <div className="text-center py-6 text-muted-foreground italic">
-                      Please select at least one module to see available components
-                    </div>
-                  ) : (
-                    <EntityBuilderComponent
-                      entities={initialEntities}
-                      availableComponents={availableComponents}
-                      onUpdateEntityName={(index, name) => updateEntityName(index, name, true)}
-                      onRemoveEntity={(index) => removeEntity(index, true)}
-                      onAddEntity={() => addEntity(true)}
-                      onAddComponent={(entityIndex) => addComponent(entityIndex, true)}
-                      onUpdateComponent={(entityIndex, componentIndex, field, value) => updateComponent(entityIndex, componentIndex, field, value, true)}
-                      onRemoveComponent={(entityIndex, componentIndex) => removeComponent(entityIndex, componentIndex, true)}
-                    />
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Expected State (Entities & Components)</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {selectedModules.length === 0 ? (
-                    <div className="text-center py-6 text-muted-foreground italic">
-                      Please select at least one module to see available components
-                    </div>
-                  ) : (
-                    <EntityBuilderComponent
-                      entities={expectedEntities}
-                      availableComponents={availableComponents}
-                      onUpdateEntityName={(index, name) => updateEntityName(index, name, false)}
-                      onRemoveEntity={(index) => removeEntity(index, false)}
-                      onAddEntity={() => addEntity(false)}
-                      onAddComponent={(entityIndex) => addComponent(entityIndex, false)}
-                      onUpdateComponent={(entityIndex, componentIndex, field, value) => updateComponent(entityIndex, componentIndex, field, value, false)}
-                      onRemoveComponent={(entityIndex, componentIndex) => removeComponent(entityIndex, componentIndex, false)}
-                    />
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </>)}
-          
-          <div className="flex flex-wrap gap-4">
-            <Button 
-              variant="outline" 
-              onClick={clearForm}
-              className="gap-2"
-            >
-              <Trash2 className="h-4 w-4" />
-              Clear Form
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              onClick={fillExpectedFromInitial}
-              disabled={isGeneratingExpected || !testName.trim() || systems.length === 0 || initialEntities.length === 0}
-              className="gap-2"
-            >
-              {isGeneratingExpected ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Layers className="h-4 w-4" />
-              )}
-              {isGeneratingExpected ? generatingMessage : "Generate Expected from Initial"}
-            </Button>
-            
-            <Button 
-              variant="default" 
-              onClick={downloadJson}
-              disabled={!testName.trim() || systems.length === 0}
-              className="gap-2"
-            >
-              <Download className="h-4 w-4" />
-              Download JSON
-            </Button>
-            
-            <Button 
-              variant="default" 
-              onClick={runTest}
-              disabled={!testName.trim() || systems.length === 0}
-              className="gap-2 bg-green-600 hover:bg-green-700"
-            >
-              <Play className="h-4 w-4" />
-              Run Test
-            </Button>
-          </div>
+          <>
+            { renderButtons() }
+          </>
         </div>
 
-        <Card className="sticky top-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              JSON Preview
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {jsonPreview ? (
-              <pre className="bg-black dark:bg-gray-900 text-white dark:text-gray-200 p-4 rounded-md overflow-auto text-sm max-h-[500px]">
-                {jsonPreview}
-              </pre>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground italic">
-                Fill in the form to see JSON preview
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <>
+          { renderPreview() }
+        </>
       </div>
     </div>
   );

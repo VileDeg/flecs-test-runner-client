@@ -6,7 +6,26 @@ import {
   UNIT_TEST_EXECUTED_TAG_NAME
 } from "./constants";
 
-import type * as Core from "./coreTypes.ts";
+import type { 
+  UnitTest,
+  Component,
+  System,
+  QueriedEntity,
+  MetaComponentRegistry,
+  ComponentField,
+  ComponentFieldValue,
+  ComponentFields,
+  EntityConfiguration,
+  WorldConfiguration,
+  ComponentsRegistry,
+  SystemInvocation,
+} from "@/common/types";
+
+import { 
+  Module
+} from "@/common/types";
+
+
 
 export interface TestExecutionResult {
   success: boolean;
@@ -24,7 +43,7 @@ export class TestRunner {
   /**
    * Execute a test
    */
-  async executeTest(test: Core.UnitTest): Promise<TestExecutionResult> {
+  async executeTest(test: UnitTest): Promise<TestExecutionResult> {
     try {
       const testName = test.name;
       
@@ -53,7 +72,7 @@ export class TestRunner {
   /**
    * Execute multiple tests
    */
-  async executeTests(tests: Core.UnitTest[]): Promise<TestExecutionResult[]> {
+  async executeTests(tests: UnitTest[]): Promise<TestExecutionResult[]> {
     const results: TestExecutionResult[] = [];
     
     for (const test of tests) {
@@ -72,10 +91,10 @@ export class TestRunner {
    */
   static createTest(
     name: string,
-    systems: Core.SystemInvocation[],
-    initialEntities: Core.EntityData[],
-    expectedEntities: Core.EntityData[]
-  ): Core.UnitTest {
+    systems: SystemInvocation[],
+    initialEntities: EntityConfiguration[],
+    expectedEntities: EntityConfiguration[]
+  ): UnitTest {
     return {
       name,
       systems,
@@ -87,7 +106,7 @@ export class TestRunner {
   /**
    * Convert entity data array to Flecs DSL script format
    */
-  static convertEntitiesToScript(entities: Core.EntityData[]): string {
+  static convertEntitiesToScript(entities: EntityConfiguration[]): string {
     if (entities.length === 0) return "";
 
     let script = "";
@@ -97,7 +116,7 @@ export class TestRunner {
     entities.forEach(entity => {
       entity.components.forEach(component => {
         if (component.module) {
-          modules.add(component.module);
+          modules.add(component.module.fullPath);
         }
       });
     });
@@ -194,14 +213,14 @@ export class TestRunner {
    */
   async executeIncompleteTest(
     name: string,
-    systems: Core.SystemInvocation[],
-    initialEntities: Core.EntityData[]
+    systems: SystemInvocation[],
+    initialEntities: EntityConfiguration[]
   ): Promise<TestExecutionResult> {
     try {
       const testName = name;
       
       // Create test with empty expected config
-      const incompleteTest: Core.UnitTest = {
+      const incompleteTest: UnitTest = {
         name: testName,
         systems,
         scriptActual: TestRunner.convertEntitiesToScript(initialEntities),
@@ -263,7 +282,7 @@ export class TestRunner {
             if (result.name === testName && values) {
               // Look for the Executed component with worldExpectedSerialized
               //const executedComponent = values[0];
-              const incompleteComponent: Core.UnitTest.Incomplete = values[1];
+              const incompleteComponent: UnitTest.Incomplete = values[1];
               
               // .find(
               //   (v: any) => v && v[1] === UNIT_TEST_EXECUTED_TAG_NAME
@@ -299,30 +318,30 @@ export class TestRunner {
     /**
    * Extract module name from entity path (e.g., "modules.movement.Position" -> "modules.movement")
    */
-  private static splitNameModule(entityPath: string): { name: string, module: string | undefined } {
+  private static splitNameModule(entityPath: string): { name: string, module: string } {
     const parts = entityPath.split('.');
     if (parts.length > 1) {
       return { name: parts.slice(-1)[0], module: parts.slice(0, -1).join('.')};
     }
     
-    return { name: "", module: undefined };
+    return { name: "", module: "" };
   }
 
   /**
    * Parse serialized world JSON into EntityData array
    * The serialized world format should contain entities with their components
    */
-  static parseWorldSerialized(worldJson: string): Core.EntityData[] {
+  static parseWorldSerialized(worldJson: string): EntityConfiguration[] {
     try {
       console.log("parseWorldSerialized, json: ", worldJson);
       const world = JSON.parse(worldJson);
-      const entities: Core.EntityData[] = [];
+      const entities: EntityConfiguration[] = [];
       
       // Assuming the serialized format has an entities array
       // Adjust this parsing logic based on your actual serialized format
       if (world.results && Array.isArray(world.results)) {
         for (const entity of world.results) {
-          const entityData: Core.EntityData = {
+          const entityData: EntityConfiguration = {
             entity: entity.name || entity.id || "",
             components: []
           };
@@ -336,15 +355,16 @@ export class TestRunner {
               console.log("component path: ", componentFullPath);
               const componentValues = value;
               const {name, module} = this.splitNameModule(componentFullPath);
-              const componentData: Core.ComponentData = {
+              const componentData: Component = {
                 name: name,  //comp.type || comp.name || "",
-                module: module || ""
+                module: new Module(module) || "",
+                fields: {}
               };
               
               // Add component field values
               if (componentValues) {
                 Object.entries(componentValues).forEach(([key, value]) => {
-                  componentData[key] = value;
+                  componentData.fields[key] = value;
                 });
               }
               

@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { Timer } from "@ui/timer/timer.tsx";
 import { useFlecsConnection } from "@common/flecsConnection/useFlecsConnection.ts";
-import * as Core from "@common/coreTypes.ts";
+import type { 
+  UnitTest,
+  QueryResponse,
+  QueriedEntity,
+} from "@/common/types";
 
 import { 
   UNIT_TEST_EXECUTED_TAG_NAME, 
@@ -9,10 +13,10 @@ import {
   UNIT_TEST_INCOMPLETE_TAG_NAME 
 } from "@common/constants.ts";
 
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@components/ui/alert";
+import { Button } from "@components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/card";
+import { Badge } from "@components/ui/badge";
 import { AlertCircle, Clock, CheckCircle, XCircle, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -79,8 +83,9 @@ export const ResultsPage: React.FC = () => {
         setPassedTests(newPassedTests);
         setFailedTests(newFailedTests);
         setErrorMessage("");
-      } catch (err: any) {
-        setErrorMessage(`Error fetching results: ${err.message}`);
+      } catch (err: unknown) {
+        if (err instanceof Error) 
+          setErrorMessage(`Error fetching results: ${err.message}`);
       }
     };
 
@@ -110,7 +115,7 @@ export const ResultsPage: React.FC = () => {
       
       if (allTestsQuery && allTestsQuery.results) {
         // Delete each test entity
-        const deletePromises = allTestsQuery.results.map((entity: any) => 
+        const deletePromises = allTestsQuery.results.map((entity: QueriedEntity) => 
           connection.delete(entity.name)
         );
         
@@ -123,22 +128,26 @@ export const ResultsPage: React.FC = () => {
         setPendingStartTime(null);
         setHasTimedOut(false);
       }
-    } catch (err: any) {
-      setErrorMessage(`Error clearing tests: ${err.message}`);
+    } catch (err: unknown) {
+      if (err instanceof Error) 
+        setErrorMessage(`Error clearing tests: ${err.message}`);
     } finally {
       setIsClearing(false);
     }
   };
 
   // Helper function to parse query results into TestResult array
-  const parseQueryResults = (queryResult: any, defaultStatusMessage: string): TestResult[] => {
+  const parseQueryResults = (queryResult: QueryResponse, defaultStatusMessage: string): TestResult[] => {
     const results: TestResult[] = [];
     
     if (queryResult && queryResult.results) {
       for (const entity of queryResult.results) {
         const components = entity.fields.values;
-        const unitTest: Core.UnitTest = components[0];
-        const executed: Core.UnitTest.Executed | undefined = components[1];
+
+
+        
+        const unitTest: UnitTest = components[0] as UnitTest; // TODO: safer option?
+        const executed: UnitTest.Executed | undefined = components[1] as UnitTest.Executed ?? undefined;
         
         results.push({
           name: unitTest.name,

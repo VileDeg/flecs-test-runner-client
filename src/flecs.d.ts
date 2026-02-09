@@ -1,4 +1,4 @@
-// flecs.d.ts
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 export interface ConnectionParams {
   host?: string;

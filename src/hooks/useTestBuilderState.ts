@@ -1,24 +1,44 @@
 import { useState, useEffect } from "react";
-import type { SystemInvocation, EntityData } from "@pages/builderPage/builderPage.types.ts";
-import type * as Core from "@common/coreTypes.ts";
+
+import { DEFAULT_TEST_PROPERTIES} from "@common/constants";
+
+import type { 
+  TestProperties,
+  PrimitiveType,
+  System,
+  Module,
+  QueryResponse,
+  QueriedEntity,
+  MetaComponentRegistry,
+  ComponentField,
+  ComponentFieldValue,
+  ComponentFields,
+  EntityConfiguration,
+  WorldConfiguration,
+  ComponentsRegistry,
+} from "@/common/types";
 
 export interface TestBuilderPersistedState {
-  testName: string;
-  systems: Core.SystemInvocation[];
-  initialEntities: Core.EntityData[];
-  expectedEntities: Core.EntityData[];
-  selectedModules: string[];
+  testProperties: TestProperties,
+
+  // testName: string;
+  // systems: SystemInvocation[];
+  // initialEntities: EntityConfiguration[];
+  // expectedEntities: EntityConfiguration[];
+  selectedModules: Module[];
 }
 
 export const useTestBuilderState = (
   persistedState?: TestBuilderPersistedState,
   onStateChange?: (state: TestBuilderPersistedState) => void
 ) => {
-  const [testName, setTestName] = useState(persistedState?.testName || "");
-  const [systems, setSystems] = useState<SystemInvocation[]>(persistedState?.systems || []);
-  const [initialEntities, setInitialEntities] = useState<EntityData[]>(persistedState?.initialEntities || []);
-  const [expectedEntities, setExpectedEntities] = useState<EntityData[]>(persistedState?.expectedEntities || []);
-  const [selectedModules, setSelectedModules] = useState<string[]>(persistedState?.selectedModules || []);
+  const [testProperties, setTestProperties] 
+    = useState(persistedState?.testProperties ?? DEFAULT_TEST_PROPERTIES);
+  // const [systems, setSystems] = useState<SystemInvocation[]>(persistedState?.systems || []);
+  // const [initialEntities, setInitialEntities] = useState<EntityData[]>(persistedState?.initialEntities || []);
+  // const [expectedEntities, setExpectedEntities] = useState<EntityData[]>(persistedState?.expectedEntities || []);
+  const [selectedModules, setSelectedModules] 
+    = useState<Module[]>(persistedState?.selectedModules || []);
 
   // Persist state changes to parent component
   useEffect(() => {
@@ -26,24 +46,16 @@ export const useTestBuilderState = (
       console.log("*** useTestBuilderState: state changed, notifying parent");
       console.log("*** useTestBuilderState: selectedModules: ", selectedModules);
       onStateChange({
-        testName,
-        systems,
-        initialEntities,
-        expectedEntities,
+        testProperties,
         selectedModules,
       });
     }
-  }, [testName, systems, initialEntities, expectedEntities, selectedModules, onStateChange]);
+  }, [testProperties, selectedModules, onStateChange]);
 
   return {
-    testName,
-    setTestName,
-    systems,
-    setSystems,
-    initialEntities,
-    setInitialEntities,
-    expectedEntities,
-    setExpectedEntities,
+    testProperties,
+    setTestProperties,
+ 
     selectedModules,
     setSelectedModules,
   };

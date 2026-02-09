@@ -9,6 +9,11 @@
 
 import {flecs} from "../../flecs.js";
 
+import type {
+  QueriedEntity,
+  QueryResponse
+} from "@common/types.ts";
+
 export class FlecsAsync {
   connection;
   isConnected : boolean = false;
@@ -44,7 +49,7 @@ export class FlecsAsync {
   }
 
   // Generic method wrapper
-  _wrapMethod(methodName : string, ...args) {
+  _wrapMethod(methodName : string, ...args): unknown{
     return new Promise<any>((resolve, reject) => {
       const method = (this.connection as any)[methodName];
       if (!method) {
@@ -52,11 +57,10 @@ export class FlecsAsync {
         return;
       }
       
-      let newArgs: any[];
       //if(methodName != "set") {
         // TODO: other methods without recv, err
         // Add success and error callbacks
-      newArgs = [...args, resolve, reject];
+      const newArgs = [...args, resolve, reject];
       method.apply(this.connection, newArgs);
       // } else {
       //   newArgs = [...args];
@@ -67,7 +71,7 @@ export class FlecsAsync {
   }
 
   // Entity operations
-  async entity(path, params = {}) {
+  async entity(path, params = {}) : Promise<QueriedEntity> {
     return this._wrapMethod('entity', path, params);
   }
 
@@ -118,7 +122,7 @@ export class FlecsAsync {
   // }
 
   // Query operations
-  async query(queryString, params = {}) {
+  async query(queryString, params = {}): Promise<QueryResponse> {
     return this._wrapMethod('query', queryString, params);
   }
 

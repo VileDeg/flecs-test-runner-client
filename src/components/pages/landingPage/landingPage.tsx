@@ -1,12 +1,12 @@
 import { Uploader } from "@ui/uploader/uploader.tsx";
 import { TestRunner } from "@common/testRunner.ts";
-import type * as Core from "@common/coreTypes.ts";
+import type * as Core from "@/common/types";
 
 import { useState } from 'react'
 import { AlertCircle, Play } from "lucide-react";
 
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@components/ui/alert";
+import { Button } from "@components/ui/button";
 
 import { useFlecsConnection } from "@common/flecsConnection/useFlecsConnection.ts";
 
@@ -21,18 +21,18 @@ JSON may start with `tests` array or may only contain one test element
 */
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onTestsUploaded }) => {
-  const [tests, setTests] = useState<Core.UnitTest[]>([]);
+  const [tests, setTests] = useState<UnitTest[]>([]);
   const [errorMessage, setErrorMessage] = useState<string>("");
   
   const { connection } = useFlecsConnection();
   
-  const onTestsParsed = (tests: Core.UnitTest[]) => {
+  const onTestsParsed = (tests: UnitTest[]) => {
     setTests(tests);
     runUnitTests(tests);
     onTestsUploaded();
   };
   
-  const runUnitTests = async (testsToRun: Core.UnitTest[]) => {
+  const runUnitTests = async (testsToRun: UnitTest[]) => {
     setErrorMessage("");
     
     try {

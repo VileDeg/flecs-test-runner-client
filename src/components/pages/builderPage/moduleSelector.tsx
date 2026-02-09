@@ -1,40 +1,51 @@
 import React from "react";
-import type { FlecsMetadata } from "@common/flecsMetadataService.ts";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
+import type { FlecsMetadataService } from "@common/flecsMetadataService.ts";
+import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/card";
+import { Button } from "@components/ui/button";
+import { Checkbox } from "@components/ui/checkbox";
+import { Label } from "@components/ui/label";
 import { cn } from "@/lib/utils";
 import { CheckSquare, Square } from "lucide-react";
 
+import {
+
+  Module
+} from "@common/types.ts"
+
 interface ModuleSelectorProps {
-  modules: FlecsMetadata.Module[];
-  selectedModules: string[];
-  onSelectionChange: (selectedModules: string[]) => void;
+  availableModules: Module[];
+  selectedModules: Module[];
+  onSelectionChange: (selectedModules: Module[]) => void;
   loading?: boolean;
 }
 
 export const ModuleSelector: React.FC<ModuleSelectorProps> = ({
-  modules,
+  availableModules,
   selectedModules,
   onSelectionChange,
   loading = false
 }) => {
-  const handleToggleModule = (moduleFullPath: string) => {
-    if (selectedModules.includes(moduleFullPath)) {
-      onSelectionChange(selectedModules.filter(m => m !== moduleFullPath));
+  const handleToggleModule = (module: Module) => {
+    // Compare by fullPath since Module objects from localStorage may not be the same instances
+    const isSelected = selectedModules.some(m => m.fullPath === module.fullPath);
+    if (isSelected) {
+      onSelectionChange(selectedModules.filter(m => m.fullPath !== module.fullPath));
     } else {
-      onSelectionChange([...selectedModules, moduleFullPath]);
+      onSelectionChange([...selectedModules, module]);
     }
   };
 
   const handleSelectAll = () => {
-    onSelectionChange(modules.map(m => m.fullPath));
+    onSelectionChange(availableModules);
   };
 
   const handleDeselectAll = () => {
     onSelectionChange([]);
   };
+
+  const isAllSelected = () :boolean => {
+    return JSON.stringify(selectedModules) === JSON.stringify(availableModules);
+  }
 
   if (loading) {
     return (
@@ -49,7 +60,7 @@ export const ModuleSelector: React.FC<ModuleSelectorProps> = ({
     );
   }
 
-  if (modules.length === 0) {
+  if (availableModules.length === 0) {
     return (
       <Card>
         <CardHeader>
@@ -70,20 +81,29 @@ export const ModuleSelector: React.FC<ModuleSelectorProps> = ({
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
           Select the modules to filter systems and components. 
-          Selected: {selectedModules.length} / {modules.length}
+          Selected: {selectedModules.length} / {availableModules.length}
         </p>
         
         <div className="flex justify-center gap-3">
           <Button 
             variant="outline" 
             size="sm"
-            onClick={handleSelectAll}
+            onClick={isAllSelected() ? handleDeselectAll : handleSelectAll}
             className="gap-2"
           >
-            <CheckSquare className="h-4 w-4" />
-            Select All
+            {isAllSelected() ? (
+              <>
+                <Square className="h-4 w-4" />
+                Deselect All
+              </>
+            ) : (
+              <>
+                <CheckSquare className="h-4 w-4" />
+                Select All
+              </>
+            )}
           </Button>
-          <Button 
+          {/* <Button 
             variant="outline" 
             size="sm"
             onClick={handleDeselectAll}
@@ -91,28 +111,28 @@ export const ModuleSelector: React.FC<ModuleSelectorProps> = ({
           >
             <Square className="h-4 w-4" />
             Deselect All
-          </Button>
+          </Button> */}
         </div>
 
         <div className="max-h-72 overflow-y-auto p-3 bg-card border border-border rounded-md">
           <div className="space-y-2">
-            {modules.map((module) => (
+            {availableModules.map((module) => (
               <div 
                 key={module.fullPath} 
                 className="flex items-center gap-3 p-2 rounded-md hover:bg-accent transition-colors"
               >
                 <Checkbox
                   id={`module-${module.fullPath}`}
-                  checked={selectedModules.includes(module.fullPath)}
-                  onCheckedChange={() => handleToggleModule(module.fullPath)}
+                  checked={selectedModules.some(m => m.fullPath === module.fullPath)}
+                  onCheckedChange={() => handleToggleModule(module)}
                   className="h-5 w-5"
                 />
                 <Label 
                   htmlFor={`module-${module.fullPath}`}
                   className="flex-1 cursor-pointer flex items-center gap-2"
                 >
-                  <span className="font-medium text-foreground">{module.name}</span>
-                  {module.fullPath !== module.name && (
+                  <span className="font-medium text-foreground">{module.getName()}</span>
+                  {module.fullPath !== module.getName() && (
                     <span className="text-sm text-muted-foreground">
                       ({module.fullPath})
                     </span>

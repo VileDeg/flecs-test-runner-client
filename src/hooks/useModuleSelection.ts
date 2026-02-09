@@ -1,12 +1,18 @@
 import { useState, useEffect } from "react";
 import { useFlecsConnection } from "@common/flecsConnection/useFlecsConnection.ts";
-import { FlecsMetadataService, type FlecsMetadata } from "@common/flecsMetadataService.ts";
+import { FlecsMetadataService } from "@common/flecsMetadataService.ts";
 
-export const useModuleSelection = (selectedModules: string[]) => {
+import type { 
+  Module,
+  System,
+  Component,
+} from "@/common/types";
+
+export const useModuleSelection = (selectedModules: Module[]) => {
   const { connection } = useFlecsConnection();
-  const [availableModules, setAvailableModules] = useState<FlecsMetadata.Module[]>([]);
-  const [availableSystems, setAvailableSystems] = useState<FlecsMetadata.System[]>([]);
-  const [availableComponents, setAvailableComponents] = useState<FlecsMetadata.Component[]>([]);
+  const [availableModules, setAvailableModules] = useState<Module[]>([]);
+  const [availableSystems, setAvailableSystems] = useState<System[]>([]);
+  const [availableComponents, setAvailableComponents] = useState<Component[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMetadata, setLoadingMetadata] = useState(false);
 
@@ -34,6 +40,7 @@ export const useModuleSelection = (selectedModules: string[]) => {
 
   // Load systems and components when selected modules change
   useEffect(() => {
+    console.log("*** useEffect useModuleSeelction selectedModules");
     const loadMetadata = async () => {
       if (!connection || selectedModules.length === 0) {
         setAvailableSystems([]);
@@ -59,6 +66,7 @@ export const useModuleSelection = (selectedModules: string[]) => {
         setLoadingMetadata(false);
       }
     };
+
 
     loadMetadata();
   }, [connection, selectedModules]);

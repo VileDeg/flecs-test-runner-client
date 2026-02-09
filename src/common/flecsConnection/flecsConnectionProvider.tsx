@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import {flecs} from "../../flecs.js";
 import { FlecsAsync } from "./flecsAsync.ts"
-
 
 type FlecsConnection = any | null; // ReturnType<typeof flecs.connect>
 
