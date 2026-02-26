@@ -11,11 +11,31 @@ import {flecs} from "../../flecs.js";
 
 import type {
   QueriedEntity,
-  QueryResponse
+  QueryResponse,
+  TypeInfoResponse,
 } from "@common/types.ts";
 
+export function flecsErrorMessage(error: any): string {
+  let errorMessage = error.toString();
+  let errorData = null;
+
+  // Attempt to parse if it's a JSON string
+  try {
+    errorData = typeof error === "string" ? JSON.parse(error) : error;
+  } catch (e) {
+    // Not JSON, fallback to raw error
+  }
+
+  const detailedError = errorData?.error || errorMessage;
+  return detailedError
+}
+
+export function flecsError(error: any, prefix: string): Error {
+  return Error(`${prefix}: ${flecsErrorMessage(error)}`)
+}
+
 export class FlecsAsync {
-  connection;
+  connection: any;
   isConnected : boolean = false;
   
   constructor(params: any) {
@@ -50,7 +70,7 @@ export class FlecsAsync {
 
   // Generic method wrapper
   _wrapMethod(methodName : string, ...args): unknown{
-    return new Promise<any>((resolve, reject) => {
+    return new Promise<string>((resolve, reject) => {
       const method = (this.connection as any)[methodName];
       if (!method) {
         reject(new Error(`Method ${methodName} not found`));
@@ -60,7 +80,8 @@ export class FlecsAsync {
       //if(methodName != "set") {
         // TODO: other methods without recv, err
         // Add success and error callbacks
-      const newArgs = [...args, resolve, reject];
+      // what about on_abort parameter?
+      const newArgs = [...args, resolve, reject]; 
       method.apply(this.connection, newArgs);
       // } else {
       //   newArgs = [...args];
@@ -73,6 +94,10 @@ export class FlecsAsync {
   // Entity operations
   async entity(path, params = {}) : Promise<QueriedEntity> {
     return this._wrapMethod('entity', path, params);
+  }
+
+  async typeInfo(path) : Promise<TypeInfoResponse> { // , params = {}
+    return this._wrapMethod('typeInfo', path); // , params
   }
 
   async create(path) {

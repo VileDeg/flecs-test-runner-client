@@ -1,14 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useFlecsConnection } from "@common/flecsConnection/useFlecsConnection.ts";
-import { FlecsMetadataService } from "@common/flecsMetadataService.ts";
 import { TestRunner } from "@common/testRunner.ts";
+import { useWorkspace } from "@/contexts/workspaceContext.tsx";
 import { ModuleSelector } from "./moduleSelector.tsx";
 import { SystemsList } from "./systemsList.tsx";
 import { WorldBuilderComponent } from "@pages/builderPage/worldBuilder.tsx";
-import { useToast } from "@ui/toast/useToast.ts";
-import { useTestBuilderState } from "@hooks/useTestBuilderState.ts";
-import { useModuleSelection } from "@hooks/useModuleSelection.ts";
-import { type TestBuilderPersistedState} from "@hooks/useTestBuilderState.ts";
+import { useToast } from "@/components/common/toast/useToast.ts";
 
 import { Button } from "@components/ui/button";
 import { Input } from "@components/ui/input";
@@ -20,478 +17,454 @@ import {
   FileText, 
   Layers, 
   Loader2,
+  ChevronLeft, 
+  ChevronRight 
 } from "lucide-react";
 
-import type { 
-  TestProperties,
-  PrimitiveType,
-  System,
-  Component,
-  QueryResponse,
-  QueriedEntity,
-  MetaComponentRegistry,
-  ComponentField,
-  ComponentFieldValue,
-  ComponentFields,
-  EntityConfiguration,
-  WorldConfiguration,
-  ComponentsRegistry,
-  SystemInvocation,
+import {
+  type Module,
+  type EntityConfiguration,
+  type WorldConfiguration,
+  type SystemInvocation,
+  MessageType,
 } from "@/common/types";
-import { error } from "console";
+
+
+import * as Utils from "@/common/testUtils.ts"
+
+import {
+  DEFAULT_TEST_PROPERTIES,
+} from "@common/constants.ts";
+import { TestStatus, type WorkspaceTest } from "@/common/workspaceTypes.ts";
+import { useBuilder } from "@/contexts/builderContext.tsx";
 
 export interface TestBuilderProps {
-  onTestCreated?: () => void;
-  persistedState?: TestBuilderPersistedState;
-  onStateChange?: (state: TestBuilderPersistedState) => void;
+  goToWorkspacePage: () => void;
 }
 
-export const TestBuilder: React.FC<TestBuilderProps> = ({ 
-  onTestCreated, 
-  persistedState,
-  onStateChange,
+export const TestBuilder: React.FC<TestBuilderProps> = ({
+  goToWorkspacePage
 }) => {
   const { showToast } = useToast();
   const { connection } = useFlecsConnection();
+  const { 
+    currentTestId: maybeCurrentTestId, 
+    getWorkspaceTest,
+    saveToWorkspace,
+    //updateWorkspaceTest,
+    //runTest,
+    runTestIncomplete,
+    //validateTest,
+  } = useWorkspace();
 
-  console.log(" BUILDER PAGE OBJECT CREATED")
   
-  // Use custom hooks for state management
-  const {
-    testProperties,
-    setTestProperties,
-    selectedModules,
-    setSelectedModules,
-  } = useTestBuilderState(persistedState, onStateChange);
+  const renderEmptyDisplay = (content: any) => (
+    <div className="container mx-auto px-6 py-8 max-w-7xl">
+      <h1 className="text-3xl font-bold text-foreground mb-8">Test Builder</h1>
+      <div className="text-center py-12">
+        <div className="bg-muted rounded-lg p-8 max-w-md mx-auto">
+          {content}
+        </div>
+      </div>
+    </div>
+  )
+
+  const renderLoadingDisplay = (text: any) => (
+    renderEmptyDisplay(
+      //<h2 className="text-xl font-semibold mb-4">Test Is Currently Running. Wait...</h2>
+      <div className="text-center">
+      <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground mb-4" />
+      <p className="text-muted-foreground">{text}</p>
+    </div>
+    )
+  )
+
+  if (!maybeCurrentTestId) {
+    return renderEmptyDisplay(<>
+      <h2 className="text-xl font-semibold mb-4">No Test Selected</h2>
+      <p className="text-muted-foreground mb-6">
+        Please select a test from the workspace to edit, or create a new test in the workspace first.
+      </p>
+      <Button 
+        variant="outline" 
+        onClick={goToWorkspacePage}
+      >
+        Go to Workspace
+      </Button>
+    </>)
+  }
+  
+  const currentTestId = maybeCurrentTestId!;
+  const currentStatus = getWorkspaceTest(currentTestId)!.status;
+
+  if (currentStatus === TestStatus.RUNNING) { //  
+    return renderLoadingDisplay("Test Is Currently Running. Wait...")
+  }
 
   const {
     availableModules,
     availableSystems,
-    availableComponents,
-    loading: loadingModules,
+    //availableComponents,
     loadingMetadata,
-  } = useModuleSelection(selectedModules);
-  
+    testProperties,//: contextTestProperties,
+    updateTestProperties,
+    updateUnitTest,
+  } = useBuilder();
+
+  if (loadingMetadata) {
+    return renderLoadingDisplay("Loading Metadata...")
+  }
+
+    // Create a ref to track the latest properties
+  // const latestPropertiesRef = useRef(latestPcontextTestPropertiesroperties);
+
+  // // Sync ref on every render
+  // useEffect(() => {
+  //   latestPropertiesRef.current = testProperties;
+  // }, [testProperties]);
+
+  const {test, selectedModules} = testProperties;
+
+  // useEffect(() => {
+  //   console.log("testProperties: ", testProperties)
+  // }, [testProperties]);
+    
+
+  // Helper setters
+  const setSelectedModules = (selectedModules: Module[]) => {
+    console.log(`setSelectedModules: `, testProperties, selectedModules)
+    updateTestProperties({...testProperties, selectedModules}) // setTestProperties
+  }
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [jsonPreview, setJsonPreview] = useState("");
   
   // State for incomplete test execution (expected state generation)
-  const [isGeneratingExpected, setIsGeneratingExpected] = useState(false);
-  const [generatingMessage, setGeneratingMessage] = useState("");
-  
-  // State for layout toggle (side-by-side vs stacked)
-  const [stackedStateLayout, setStackedStateLayout] = useState(true);
+  const [genStatus, setGenStatus] = useState<{ loading: boolean; msg: string }>({
+    loading: false,
+    msg: ""
+  });
 
+  
   const setTestName = (name: string) => {
-    setTestProperties({...testProperties, name});
+    updateUnitTest({name});
   }
 
   const setSystems = (systems: SystemInvocation[]) => {
-    setTestProperties({...testProperties, systems});
+    updateUnitTest({systems});
   }
 
   const setInitialConfiguration = (entities: WorldConfiguration) => {
-    console.log("setInitialConfiguration")
-    setTestProperties({...testProperties, initialConfiguration: entities});
+    //console.log("setInitialConfiguration")
+    updateUnitTest({initialConfiguration: entities});
   }
 
   const setExpectedConfiguration = (entities: WorldConfiguration) => {
-    setTestProperties({...testProperties, expectedConfiguration: entities});
+    updateUnitTest({expectedConfiguration: entities});
   }
 
+  const { name: testName, systems, initialConfiguration, expectedConfiguration } = test;
 
-  const { name: testName, systems, initialConfiguration, expectedConfiguration } = testProperties;
-
-  useEffect(() => {
-    // Don't run until modules have finished loading
-    if (loadingModules) { 
-      return;
-    }
-
-    // If not persisted, initialize selectedModules with all modules
-    if(persistedState?.selectedModules === undefined) {
-      console.log("Setting selectedModules to all available")
-      setSelectedModules(availableModules);
-    } else {
-      console.log("*** useEffect, availableModules: ", availableModules);
-      // Filter out selected that are not in available 
-      // Compare by fullPath since Module objects from localStorage may not be the same instances
-      const availableModulePaths = new Set(availableModules.map(m => m.fullPath));
-      const filteredSelected = selectedModules.filter(m => 
-        availableModulePaths.has(m.fullPath)
-      );
-
-      console.log("*** useEffect, filteredSelected: ", filteredSelected);
-      if (filteredSelected.length !== selectedModules.length) {
-        setSelectedModules(filteredSelected);
-      }
-    }
-  }, [availableModules, loadingModules, setSelectedModules]); // , setSelectedModules 
-
-  // Clear systems from modules that are no longer selected
-  useEffect(() => {
-    if (loadingModules || loadingMetadata) { 
-      return;
-    }
-
-    if (systems.length > 0) {
-      const availableSystemNames = new Set(availableSystems.map(s => s.module + "." + s.name));
-      const filteredSystems = systems.filter(s => availableSystemNames.has(s.name));
-
-      console.log("*** Filtering systems, systems before filtering: ", systems);
-      console.log("*** Filtering systems, availableSystemNames: ", availableSystemNames);
-      console.log("*** Filtering systems, filteredSystems: ", filteredSystems);
-      if (filteredSystems.length !== systems.length) {
-        setSystems(filteredSystems);
-      }
-    }
-  }, [availableSystems, loadingModules, loadingMetadata, setTestProperties]); //, setSystems
-
-  // Clear components from entities that are no longer available in selected modules
-  useEffect(() => {
-    if (loadingModules || loadingMetadata) { 
-      return;
-    }
-
-    const availableComponentNames = new Set(availableComponents.map(c => c.name));
-    const filterEntities = (entities: EntityConfiguration[]) => {
-      return entities.map(entity => ({
-        ...entity,
-        components: entity.components.filter(comp => availableComponentNames.has(comp.name))
-      }));
-    };
-
-    const filteredInitial = filterEntities(initialConfiguration);
-    const filteredExpected = filterEntities(expectedConfiguration);
-
-    console.log("*** Filtering ENTITIES INITIAL, BEFORE filtering: ", initialConfiguration);
-    console.log("*** Filtering ENTITIES INITIAL, AVAILABLE components: ", availableComponentNames);
-    console.log("*** Filtering ENTITIES INITIAL, AFTER filtering: ", filteredInitial);
-    
-    if (JSON.stringify(filteredInitial) !== JSON.stringify(initialConfiguration)) {
-      setInitialConfiguration(filteredInitial);
-    }
-    if (JSON.stringify(filteredExpected) !== JSON.stringify(expectedConfiguration)) {
-      setExpectedConfiguration(filteredExpected);
-    }
-  }, [availableComponents, loadingModules, loadingMetadata, setTestProperties]); // , setInitialConfiguration, setExpectedConfiguration
-
-
-  
-  const validationFail = (errorMessage: string) : boolean => {
-    showToast(errorMessage, 'error');
-    return false;
-  }
-
-  const validateTest = (validateExpected: boolean) : boolean => {
-    if (!testName.trim()) {
-      return validationFail("Test name is required");
-    }
-    if (systems.length === 0) {
-      return validationFail("At least one system is required");
-    }
-    if (systems.some(s => !s.name.trim())) {
-      return validationFail("All systems must have names");
-    }
-    if (initialConfiguration.length === 0) {
-      return validationFail("Initial configuration can not be empty");
-    }
-    if (validateExpected && expectedConfiguration.length === 0) {
-      return validationFail("Expected configuration can not be empty");
-    }
-    return true;
-  }
-
-  // Generate UnitTest from form data
-  const generateTest = (validate: boolean = true) => {
-    if (validate && !validateTest(true)) {
-      return null;
-    }
-
-    return TestRunner.createTest(
-      testName.trim(),
-      systems.map(s => ({
-        name: s.name.trim(),
-        timesToRun: s.timesToRun
-      })),
-      initialConfiguration,
-      expectedConfiguration
-    );
-  };
+ 
 
   // Update JSON preview live whenever form data changes
   useEffect(() => {
-    const test = generateTest(false);
-    if (test) {
-      setJsonPreview(JSON.stringify(test, null, 2));
-    } else {
-      setJsonPreview("");
-    }
+    setJsonPreview(JSON.stringify(testProperties, null, 2));
   }, [testProperties, setJsonPreview]);
 
-  const downloadJson = () => {
-    const test = generateTest(true);
-    if (!test) {
-      return;
-    }
+  // const downloadWorkspaceTest = () => {
+  //   if(!currentTestId) {
+  //     throw Error("Missing current test ID")
+  //   }
+  //   /*
+  //   updateWorkspaceTest(currentTestId, {testProperties})
+  //   */
+  //   let wsTest = getWorkspaceTest(currentTestId)
+  //   if(!wsTest) {
+  //     throw Error("No workspace test found with ID: " + currentTestId)
+  //   }
+  //   wsTest = {...wsTest, testProperties, lastUpdated: Date.now() }
 
-    const blob = new Blob([JSON.stringify(test, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${test.name}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    showToast(`JSON file "${test.name}.json" downloaded successfully!`, 'success');
-  };
+  //   const filename = wsTest.testProperties.test.name;
+  //   Utils.downloadJson(wsTest, filename)
+  //   showToast(`File "${filename}.json" downloaded successfully!`, 'success');
+  // };
 
-  const runTest = async () => {
-    const test = generateTest(true);
-    if (!test) {
-      return;
-    }
+  // const saveToWorkspace = () => {
+  //   try {
+  //     if(!validateTest(test, true)) {
+  //       showToast(`Test "${test.name}" was not saved`, 'warning');
+  //       return;
+  //     }
+  //     updateWorkspaceTest(currentTestId!, { testProperties });
+  //     showToast(`Test "${test.name}" saved to workspace`, 'success');
+  //   } catch (error: any) {
+  //     console.error("Error saving test to workspace:", error);
+  //     showToast(`Error saving test to workspace: ${error.message}`, 'error');
+  //   }
+  // };
 
-    try {
-      const testRunner = new TestRunner(connection);
-      const result = await testRunner.executeTest(test);
-      
-      if (result.success) {
-        showToast(result.message, 'success');
-        if (onTestCreated) {
-          onTestCreated();
-        }
-      } else {
-        showToast(result.message, 'error');
-      }
-    } catch (error: any) {
-      console.error("Error running test:", error);
-      showToast(`Error running test "${test.name}": ${error.message}`, 'error');
-    }
-  };
+  // const handleRunTest = async () => {
+  //   let wsTest = getWorkspaceTest(currentTestId!);
+  //   if (!wsTest) {
+  //     console.error("Test not found");
+  //     return
+  //   }
+  //   saveToWorkspace(currentTestId!, testProperties)
+    
+  //   //saveToWorkspace(); // save current test
+  //   wsTest = {...wsTest, testProperties}
+  //   runTest(wsTest);
+    
+  //   // const messages = Utils.validateTest(test, true)
+  //   // if(messages.length > 0) {
+  //   //   messages.forEach(msg => showToast(msg, 'warning'))
+  //   //   return;
+  //   // }
 
+  //   // const result = await Utils.runTest(connection!, test)
+  //   // if(result.success) {
+  //   //   showToast(`Test "${testName}" started successfully`, 'success');
+  //   // } else {
+  //   //   showToast(`Error running test: ${result.message ?? "unknown"}`, 'error');
+  //   // }
+  // };
 
-  const fillExpectedFromInitial = async () => {
-    //let { name: testName , systems, initialConfiguration } = testProperties;
-    validateTest(false);
+  // const fillExpectedFromInitial = async () => {
+  //   //let { name: testName , systems, initialConfiguration } = testProperties;
 
-    setIsGeneratingExpected(true);
-    setGeneratingMessage("Creating incomplete test...");
+  //   if(!validateTest(test, false)) {
+  //     setGenStatus({loading: false, msg: "Invalid"});
+  //     return;
+  //   }
+  //   // const messages = Utils.validateTest(test, false);
+  //   // if(messages.length > 0) {
+  //   //   messages.forEach(msg => showToast(msg, 'warning'))
+  //   //   return;
+  //   // }
 
-    try {
-      const testRunner = new TestRunner(connection);
-      const incompleteTestName = `${testName.trim()}_incomplete_${Date.now()}`;
+  //   setGenStatus({loading: true, msg: "Executing..."});
+
+  //   try {
+  //     const testRunner = new TestRunner(connection!); // TODO: what if conn == null?
+  //     const incompleteTestName = `${testName.trim()}_incomplete_${Date.now()}`;
       
-      // Execute incomplete test
-      const executeResult = await testRunner.executeIncompleteTest(
-        incompleteTestName,
-        systems.map(s => ({
-          name: s.name.trim(),
-          timesToRun: s.timesToRun
-        })),
-        initialConfiguration
-      );
+  //     // Execute incomplete test
+  //     await testRunner.executeIncompleteTest( // const executeResult = 
+  //       incompleteTestName,
+  //       systems.map(s => ({
+  //         name: s.name.trim(),
+  //         timesToRun: s.timesToRun
+  //       })),
+  //       initialConfiguration
+  //     );
       
-      if (!executeResult.success) {
-        showToast(executeResult.message, 'error');
-        setIsGeneratingExpected(false);
-        setGeneratingMessage("");
-        return;
-      }
+  //     // if (!executeResult.success) {
+  //     //   showToast(executeResult.message, 'error');
+  //     //   setGenStatus({loading: false, msg: ""});
+  //     //   return;
+  //     // }
       
-      setGeneratingMessage("Test running... Waiting for results...");
+  //     setGenStatus({loading: true, msg: "Waiting for results..."});
       
-      // Poll for results
-      const pollResult = await testRunner.pollForIncompleteTestResult(
-        incompleteTestName,
-        30000, // 30 second timeout
-        500    // poll every 500ms
-      );
+  //     // Poll for results
+  //     // TODO: get values from constants
+  //     const pollResult = await testRunner.pollForIncompleteTestResult(
+  //       incompleteTestName,
+  //       15000,
+  //       500    // poll every 500ms
+  //     );
       
-      if (pollResult.success && pollResult.worldSerialized) {
-        // Parse the serialized world into EntityData array
-        const parsedEntities = TestRunner.parseWorldSerialized(pollResult.worldSerialized);
-        
-        if (parsedEntities.length > 0) {
-          setExpectedConfiguration(parsedEntities);
-          showToast(`Expected state generated successfully! Found ${parsedEntities.length} entities.`, 'success');
-        } else {
-          showToast("Failed to parse expected state from serialized world", 'error');
-        }
-      } else {
-        showToast(pollResult.error || "Failed to retrieve expected state from test execution", 'error');
-      }
+  //     if ("error" in pollResult) {
+  //       showToast(pollResult.error, 'error');
+  //       return;
+  //     }
+
+  //     const {incomplete, executed, passed} = pollResult;
+
+  //     const status = executed.statusMessage;
+
+  //     if(!passed) {
+  //       showToast("Failed to execute incomplete test: " + status, 'error');
+  //       return;
+  //     }
+
+  //     // Parse the serialized world into EntityData array
+  //     const parsedEntities = TestRunner.parseWorldSerialized(incomplete.worldExpectedSerialized, availableComponents);
       
-    } catch (error: any) {
-      console.error("Error generating expected state:", error);
-      showToast(`Error generating expected state: ${error.message}`, 'error');
-    } finally {
-      setIsGeneratingExpected(false);
-      setGeneratingMessage("");
-    }
-  };
+  //     if (parsedEntities.length > 0) {
+  //       setExpectedConfiguration(parsedEntities);
+  //       showToast(`Expected state generated successfully!`, 'success');
+  //     } else {
+  //       showToast("Failed to parse expected state from serialized world", 'error');
+  //     }
+      
+  //   } catch (error: any) {
+  //     console.error("Error generating expected state:", error);
+  //     showToast(`Error generating expected state: ${error.message}`, 'error');
+  //   }
+  //   setGenStatus({loading: false, msg: ""});
+  // };
 
   const clearForm = () => {
-    setTestName("");
-    setSystems([]);
-    setInitialConfiguration([]);
-    setExpectedConfiguration([]);
-    setJsonPreview("");
+    updateTestProperties(DEFAULT_TEST_PROPERTIES);
   };
 
   const renderWorldBuilder = (
-    cardTitle: string, 
+    //cardTitle: string, 
     worldConfiguration: WorldConfiguration, 
     onUpdateWorldConfiguration: (worldConfiguration: WorldConfiguration) => void,
+    isExpectedConfig: boolean = false
   ) => (
+    // <Card>
+    //   <CardHeader>
+    //     <CardTitle>{cardTitle}</CardTitle>
+    //   </CardHeader>
+    //   <CardContent>
+    <>
+        {selectedModules.length === 0 ? (
+          <div className="text-center py-6 text-muted-foreground italic">
+            Select at least one module to see available components
+          </div>
+        ) : (
+          <WorldBuilderComponent
+            configuration={worldConfiguration}
+            onUpdate={onUpdateWorldConfiguration}
+            isExpected={isExpectedConfig}
+          />
+        )}
+    </>
+      //</CardContent>
+    //</Card>
+  )
+
+  const renderSystemsRegion = () => (
     <Card>
       <CardHeader>
-        <CardTitle>{cardTitle}</CardTitle>
+        <CardTitle>Systems to Run</CardTitle>
       </CardHeader>
       <CardContent>
         {selectedModules.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground italic">
-            Please select at least one module to see available components
+            Please select at least one module to see available systems
+          </div>
+        ) : availableSystems.length === 0 ? (
+          <div className="text-center py-6 text-muted-foreground italic">
+            No systems found in selected modules
           </div>
         ) : (
-          <WorldBuilderComponent
-            worldConfiguration={worldConfiguration}
-            availableComponents={availableComponents}
-            onUpdateWorldConfiguration={onUpdateWorldConfiguration}
+          <SystemsList
+            selectedSystems={systems}
+            availableSystems={availableSystems}
+            onUpdateSystems={(systems) => {setSystems(systems)}}
           />
         )}
       </CardContent>
     </Card>
   )
 
-  const renderTestProperties = () => (
-    <>
-      <Card>
-        <CardHeader>
-          <CardTitle>Systems to Run</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {selectedModules.length === 0 ? (
-            <div className="text-center py-6 text-muted-foreground italic">
-              Please select at least one module to see available systems
-            </div>
-          ) : availableSystems.length === 0 ? (
-            <div className="text-center py-6 text-muted-foreground italic">
-              No systems found in selected modules
-            </div>
-          ) : (
-            <SystemsList
-              selectedSystems={systems}
-              availableSystems={availableSystems}
-              onUpdateSystems={(systems) => {setSystems(systems)}}
-            />
-          )}
-        </CardContent>
-      </Card>
-
-      <div className={stackedStateLayout ? "space-y-8" : "grid grid-cols-1 md:grid-cols-2 gap-8"}>
-        {
-          renderWorldBuilder(
-            "Initial State (Entities & Components)", 
-            initialConfiguration, 
-            (conf) => {setInitialConfiguration(conf)}
-          )
-        }
-
-        {
-          renderWorldBuilder(
-            "Expected State (Entities & Components)", 
-            expectedConfiguration, 
-            (conf) => {setExpectedConfiguration(conf)}
-          )
-        }
-      </div>
-    </>
+  const renderWorldBuilders = () => (
+    <div className={"grid grid-cols-2 gap-4"}>
+      {
+        renderWorldBuilder(
+          //"Initial State (Entities & Components)", 
+          initialConfiguration, 
+          (conf) => {setInitialConfiguration(conf)}
+        )
+      }
+      {
+        renderWorldBuilder(
+          //"Expected State (Entities & Components)", 
+          expectedConfiguration, 
+          (conf) => {setExpectedConfiguration(conf)},
+          true // isExpectedConfig
+        )
+      }
+    </div>
   )
 
-  const renderTestPropertiesForm = () => (
-    <>
-      <Card>
-        <CardHeader>
-          <CardTitle>Test Name</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <Input
-              type="text"
-              value={testName}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTestName(e.target.value)}
-              placeholder="Enter test name"
-              className="w-full"
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {loadingMetadata ? (
-        <Card>
-          <CardContent className="py-8">
-            <div className="text-center">
-              <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground mb-3" />
-              <p className="text-muted-foreground">Loading metadata...</p>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        renderTestProperties() 
-      )}
-    </>
+  const renderTestName = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle>Test Name</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-2">
+          <Input
+            type="text"
+            value={testName}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTestName(e.target.value)}
+            placeholder="Enter test name"
+            className="w-full"
+          />
+        </div>
+      </CardContent>
+    </Card>
   )
+
+  const handleSaveToWorkspace = () => {
+    saveToWorkspace(currentTestId, testProperties);
+    showToast(`Test ${testName} saved to workspace`, MessageType.INFO)
+  }
 
   const renderButtons = () => (
-    <div className="flex flex-wrap gap-4">
-        <Button 
-          variant="outline" 
-          onClick={clearForm}
-          className="gap-2"
-        >
-          <Trash2 className="h-4 w-4" />
-          Clear Form
-        </Button>
-        
-        <Button 
-          variant="outline" 
-          onClick={fillExpectedFromInitial}
-          disabled={isGeneratingExpected || !testName.trim() || systems.length === 0 || initialConfiguration.length === 0}
-          className="gap-2"
-        >
-          {isGeneratingExpected ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Layers className="h-4 w-4" />
-          )}
-          {isGeneratingExpected ? generatingMessage : "Generate Expected from Initial"}
-        </Button>
-        
-        <Button 
-          variant="default" 
-          onClick={downloadJson}
-          disabled={!testName.trim() || systems.length === 0}
-          className="gap-2"
-        >
-          <Download className="h-4 w-4" />
-          Download JSON
-        </Button>
-        
-        <Button 
-          variant="default" 
-          onClick={runTest}
-          disabled={!testName.trim() || systems.length === 0}
-          className="gap-2 bg-green-600 hover:bg-green-700"
-        >
-          <Play className="h-4 w-4" />
-          Run Test
-        </Button>
-      </div>
+    <div className="flex flex-col flex-wrap gap-4 items-start justify-end">
+      <Button 
+        variant="destructive" 
+        onClick={clearForm}
+        className="gap-2"
+      >
+        <Trash2 className="h-4 w-4" />
+        Clear Form
+      </Button>
+      
+      <Button 
+        variant="outline" 
+        onClick={() => runTestIncomplete(currentTestId, testProperties)}
+        disabled={genStatus.loading} //  || !testName.trim() || systems.length === 0 || initialConfiguration.length === 0
+        className="gap-2"
+      >
+        {genStatus.loading ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Layers className="h-4 w-4" />
+        )}
+        {genStatus.loading ? genStatus.msg : "Generate Expected from Initial"}
+      </Button>
+      
+      {/* <Button 
+        variant="default" 
+        onClick={downloadWorkspaceTest}
+        disabled={!testName.trim()} //  || systems.length === 0
+        className="gap-2"
+      >
+        <Download className="h-4 w-4" />
+        Download JSON
+      </Button> */}
+      
+      <Button 
+        variant="default" 
+        onClick={handleSaveToWorkspace}
+        disabled={!testName.trim()} //  || systems.length === 0
+        className="gap-2"
+      >
+        <FileText className="h-4 w-4" />
+        Save to Workspace
+      </Button>
+      
+      {/* <Button 
+        variant="default"
+        onClick={handleRunTest}
+        disabled={!testName.trim()} //  || systems.length === 0
+        className="gap-2 bg-green-600 hover:bg-green-700"
+      >
+        <Play className="h-4 w-4" />
+        Run Test
+      </Button> */}
+    </div>
   )
 
   const renderPreview = () => (
-    <Card className="sticky top-8">
+    <Card className="w-full"> {/**sticky top-24 */}
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <FileText className="h-5 w-5" />
@@ -512,45 +485,79 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
     </Card>
   )
 
-  if (loadingModules) {
-    return (
-      <div className="container mx-auto px-6 py-8 max-w-7xl">
-        <h1 className="text-3xl font-bold text-foreground mb-8 text-center">Test Builder</h1>
-        <div className="flex justify-center items-center py-12">
-          <div className="text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">Loading modules...</p>
-          </div>
+  const renderLoadingMetadata = () => (
+    <Card>
+      <CardContent className="py-8">
+        <div className="text-center">
+          <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground mb-3" />
+          <p className="text-muted-foreground">Loading metadata...</p>
         </div>
+      </CardContent>
+    </Card>
+  )
+
+  const renderTopRow = () => (
+    <>
+    {/* Top Grid: Metadata, Buttons, and Preview */}
+    <div 
+      className={`grid gap-12 items-start ${
+        isPreviewOpen 
+          ? 'lg:grid-cols-[auto_auto_1fr]' // 1. Columns hug content, Preview takes rest
+          : 'lg:grid-cols-[auto_auto_auto]' // 2. Everything hugs content
+      }`}
+    >
+      {/* Column 1: Metadata Builders */}
+      <div className="space-y-6 w-fit justify-self-end">
+        <ModuleSelector
+          availableModules={availableModules}
+          selectedModules={selectedModules}
+          onSelectionChange={setSelectedModules}
+          loading={false}
+        />
+
+        {renderTestName()}
+
+        {loadingMetadata && renderLoadingMetadata()}
+        {!loadingMetadata && renderSystemsRegion()}
       </div>
-    );
-  }
+
+      {/* Column 2: Action Buttons */}
+      <div className="flex flex-col h-full items-start">
+        <div className="grow" />
+        {renderButtons()}
+      </div>
+
+      {/* Column 3: The Collapsible Preview */}
+      <div className="flex items-start gap-2 sticky top-24 justify-self-end">
+        <Button
+          variant="secondary"
+          size="icon"
+          className="rounded-full shadow-md border flex-shrink-0"
+          onClick={() => setIsPreviewOpen(!isPreviewOpen)}
+        >
+          {isPreviewOpen ? <ChevronRight /> : <ChevronLeft />}
+        </Button>
+
+        {isPreviewOpen && (
+          <div className="w-full animate-in slide-in-from-right-4 duration-200">
+            {renderPreview()}
+          </div>
+        )}
+      </div>
+    </div>
+    </>
+  )
+
+  
 
   return (
-    <div className="container mx-auto px-6 py-8 max-w-7xl">
-      <h1 className="text-3xl font-bold text-foreground mb-8">Test Builder</h1>
-
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8 items-start">
-        <div className="space-y-8">
-          <ModuleSelector
-            availableModules={availableModules}
-            selectedModules={selectedModules}
-            onSelectionChange={setSelectedModules}
-            loading={false}
-          />
-
-          <>
-            { renderTestPropertiesForm() }
-          </>
-
-          <>
-            { renderButtons() }
-          </>
-        </div>
-
-        <>
-          { renderPreview() }
-        </>
+    <div className="space-y-8">
+      {renderTopRow()}
+  
+      {/* Bottom Section: World Builders (Full Width) */}
+      
+      <div className="pt-4 border-t">
+        {renderWorldBuilders()}
       </div>
     </div>
   );

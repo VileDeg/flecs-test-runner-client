@@ -35,5 +35,5 @@
       "@components/*": ["src/components/*"]
     }
   },
-  "include": ["src", "untracked/entityBuilder.tsx"]
+  "include": ["src"]
 }

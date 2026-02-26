@@ -56,8 +56,8 @@ export const SystemsList: React.FC<SystemsListProps> = ({
               >
                 <option value="">Select a system...</option>
                 {availableSystems.map(sys => (
-                  <option key={sys.name} value={sys.module + "." + sys.name}>
-                    {sys.name} {sys.module && `(${sys.module})`}
+                  <option key={sys.name} value={sys.module.fullPath + "." + sys.name}>
+                    {sys.name} {sys.module && `(${sys.module.fullPath})`}
                   </option>
                 ))}
               </select>

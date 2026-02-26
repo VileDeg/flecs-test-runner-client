@@ -37,19 +37,14 @@ export const FlecsConnectionProvider = ({
   const connectionRef = useRef<FlecsConnection>(null);
 
   useEffect(() => {
-    
-    
     // Initialize persistent connection
     connectionRef.current = new FlecsAsync({
       host,
       poll_interval_ms: pollIntervalMs,
+      timeout_ms: 15000, 
 
       on_fallback: onFallback,
 
-      // on_status: (s) => {
-      //   setStatus(s.toString()); // convert enum to string
-      // },
-      
       on_status: (s : any) => {
         setStatus(flecs.ConnectionStatus.toString(s)); // convert enum to string
       },

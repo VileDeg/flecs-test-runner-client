@@ -26,7 +26,6 @@ export const ModuleSelector: React.FC<ModuleSelectorProps> = ({
   loading = false
 }) => {
   const handleToggleModule = (module: Module) => {
-    // Compare by fullPath since Module objects from localStorage may not be the same instances
     const isSelected = selectedModules.some(m => m.fullPath === module.fullPath);
     if (isSelected) {
       onSelectionChange(selectedModules.filter(m => m.fullPath !== module.fullPath));

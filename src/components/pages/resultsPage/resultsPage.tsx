@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Timer } from "@ui/timer/timer.tsx";
+import { Timer } from "@/components/common/timer/timer";
 import { useFlecsConnection } from "@common/flecsConnection/useFlecsConnection.ts";
 import type { 
   UnitTest,

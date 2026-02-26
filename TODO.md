@@ -4,6 +4,17 @@
 4. Validate test by checking that initial and expected have entities with same name and components
 5. Make sure nested components work, including arrays
 6. Add supports for different comparison operators <, >, !=
+7. Use iter.count() to check if system has affected any entities. If not, produce warning.
+8. Return only the serialized entities that were changed.
+9. What about singleton?
+10. String JSON comparison is slow, maybe compare components one by one? But what if components dont have equality operator defined?
+11. Add option to specify delta time in system 
+12. Allow to copy initial from expected
+13. Add an visual indicator in Expected when entity/component is the same as intial. (maybe just toned down colors?)
+14. Poll for results on any page, store results in root, to make accessible to be display in builder (as toast) and in workspace page for each test
+15. Add ability to drag components (swap places). Make initial and expected maintain same order of components and entities (better UX).
+16. Make initial and expected side by side.
+17. In JSON preview should initial/expected configuration as normal JSON, not as string. Then rename to just test preview as it no longer reflects the real JSON 1:1.
 
 Check unused dependencies and dev vs prod
 

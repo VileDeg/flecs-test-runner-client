@@ -238,6 +238,30 @@ export const flecs = {
               }
             }, abort, params.poll_interval_ms);
         },
+
+        // Request entity
+        typeInfo: function(path, recv, err, abort) { // params, 
+          path = this._.escapePath(path);
+          return this._.request(this, "GET", "type_info/" + path, {}, 
+            (msg) => {
+              if (msg[0] == '{' || msg[0] == '[') {
+                msg = JSON.parse(msg);
+                recv(msg);
+              } else {
+                if (err) {
+                  err(JSON.parse(msg));
+                }
+              }
+            }, (msg) => {
+              if (err) {
+                if (msg && (msg[0] == '{' || msg[0] == '[')) {
+                  err(JSON.parse(msg));
+                } else {
+                  err({error: msg});
+                }
+              }
+            }, abort, params.poll_interval_ms);
+        },
   
         // Request query
         query: function(query, params, recv, err, abort) {
@@ -263,7 +287,7 @@ export const flecs = {
         },
 
         // Set component
-        set: function(path, component, value, recv, err, ) {
+        set: function(path, component, value, recv, err) {
           path = this._.escapePath(path);
           if (typeof value == "object") {
             value = JSON.stringify(value);

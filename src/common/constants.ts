@@ -1,18 +1,63 @@
-import type { TestProperties } from "./types";
+import type { Component, UnitTest, UnitTestProps } from "./types";
+import { Module } from "./types";
+import { TestStatus, type WorkspaceState, type WorkspaceTest } from "./workspaceTypes";
 
 export const FLECS_PORT = 27750
 export const BASE_URL = `http://localhost:${FLECS_PORT}`;
-export const UNIT_TEST_COMPONENT_NAME = "TestRunner.UnitTest";
-export const UNIT_TEST_READY_TAG_NAME = "TestRunner.UnitTest.Ready";
-export const UNIT_TEST_INCOMPLETE_TAG_NAME = "TestRunner.UnitTest.Incomplete";
-export const UNIT_TEST_EXECUTED_TAG_NAME = "TestRunner.UnitTest.Executed";
-export const UNIT_TEST_PASSED_TAG_NAME = "TestRunner.UnitTest.Passed";
+export const TEST_RUNNER_NAME = "TestRunner";
+export const TEST_RUNNER_NAME_2 = "TestRunnerImpl";
+export const UNIT_TEST_NAME = "UnitTest";
+export const UNIT_TEST_COMPONENT_NAME = `${TEST_RUNNER_NAME}.${UNIT_TEST_NAME}`;
+// export const UNIT_TEST_READY_TAG_NAME = `${UNIT_TEST_COMPONENT_NAME}.Ready`;
+// export const UNIT_TEST_INCOMPLETE_TAG_NAME = `${UNIT_TEST_COMPONENT_NAME}.Incomplete`;
+// export const UNIT_TEST_EXECUTED_TAG_NAME = `${UNIT_TEST_COMPONENT_NAME}.Executed`;
+// export const UNIT_TEST_PASSED_TAG_NAME = `${UNIT_TEST_COMPONENT_NAME}.Passed`;
+export const UNIT_TEST_READY_TAG_NAME = `${TEST_RUNNER_NAME}.Ready`;
+export const UNIT_TEST_INCOMPLETE_TAG_NAME = `${TEST_RUNNER_NAME}.Incomplete`;
+export const UNIT_TEST_EXECUTED_TAG_NAME = `${TEST_RUNNER_NAME}.Executed`;
+export const UNIT_TEST_PASSED_TAG_NAME = `${TEST_RUNNER_NAME}.Passed`;
 
-export const DEFAULT_TEST_PROPERTIES: TestProperties = {
-  name: "",
+export const TEST_EXECUTION_TIMEOUT_MS = 10000;
+
+
+export const SUPPORTER_OPERATORS_COMPONENT_NAME = `${TEST_RUNNER_NAME}.SupportedOperators`;
+
+export const OPERATOR_PATH_SEP = '/';
+export const MODULE_PATH_SEP = '.';
+
+export const DEFAULT_UNIT_TEST: UnitTest = {
+  name: "Test",
   systems: [],
   initialConfiguration: [],
   expectedConfiguration: [],
+  operators: [],
 };
+
+export const DEFAULT_TEST_PROPERTIES: UnitTestProps = {
+  test: DEFAULT_UNIT_TEST,
+  selectedModules: [],
+};
+
+
+/**
+ * Default workspace state
+ */
+export const DEFAULT_WORKSPACE_STATE: WorkspaceState = {
+  tests: [],
+  //currentTestId: null,
+  //lastSyncTime: null,
+};
+
+// export const DEFAULT_WORKSPACE_TEST: WorkspaceTest = {
+//   id: crypto.randomUUID(),
+//   status: TestStatus.IDLE,
+  
+// }
+
+export const DEFAULT_COMPONENT: Component = {
+  name: "", module: new Module(""), fields: {}, supportedOperators: {equals: false, cmp: false}
+};
+
+
 
 // TODO: move content to testRunner file?

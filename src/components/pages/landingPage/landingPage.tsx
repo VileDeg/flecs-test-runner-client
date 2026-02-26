@@ -1,4 +1,4 @@
-import { Uploader } from "@ui/uploader/uploader.tsx";
+import { Uploader } from "@/components/common/uploader/uploader";
 import { TestRunner } from "@common/testRunner.ts";
 import type * as Core from "@/common/types";
 

@@ -1,12 +1,11 @@
 import { useState, useEffect } from "react";
 
 import { FlecsConnectionProvider } from "@common/flecsConnection/flecsConnectionProvider.tsx";
-import { ToastProvider } from "@ui/toast/toastProvider.tsx";
+import { ToastProvider } from "@/components/common/toast/toastProvider";
+import { WorkspaceProvider } from "@/contexts/workspaceContext";
 
-import { LandingPage } from "@components/pages/landingPage/landingPage.tsx";
-import { ResultsPage } from "@components/pages/resultsPage/resultsPage.tsx";
+import WorkspacePage from "@components/pages/workspacePage/workspacePage.tsx";
 import { TestBuilder } from "@pages/builderPage/builderPage.tsx";
-import { type TestBuilderPersistedState } from "@hooks/useTestBuilderState.ts";
 
 import { useFlecsConnection } from "@common/flecsConnection/useFlecsConnection.ts";
 
@@ -19,69 +18,46 @@ import {
   CheckCircle,
   RefreshCw,
   XCircle,
-  Upload,
-  BarChart3,
   Wrench,
+  FolderOpen,
 } from "lucide-react";
+import { BuilderProvider } from "@/contexts/builderContext";
+import { TooltipProvider } from "@components/ui/tooltip";
+import { MetadataLoaderProvider } from "./contexts/metadataLoaderContext";
 
 // Main App Component
 export const App = () => {
   return (
-    <FlecsConnectionProvider>
+    <TooltipProvider>
       <ToastProvider>
-        <AppContent />
+        <FlecsConnectionProvider>
+          <MetadataLoaderProvider>
+            <WorkspaceProvider>
+                <AppContent />
+            </WorkspaceProvider>
+          </MetadataLoaderProvider>
+        </FlecsConnectionProvider>
       </ToastProvider>
-    </FlecsConnectionProvider>
+    </TooltipProvider>
   );
 };
 
 // App content with connection context
 const AppContent = () => {
   const [currentPage, setCurrentPage] = useState<
-    "landing" | "results" | "builder"
-  >("builder");
-
-  // Persist TestBuilder state with localStorage
-  const [testBuilderState, setTestBuilderState] =
-    useState<TestBuilderPersistedState>(() => {
-      // Load from localStorage on initial mount
-      const saved = localStorage.getItem("testBuilderState");
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch (e) {
-          console.error("Failed to parse saved test builder state:", e);
-        }
-      }
-      // Default state if nothing saved
-      return {
-        testProperties: DEFAULT_TEST_PROPERTIES,
-        selectedModules: [],
-      };
-    });
-
+    "workspace" | "builder"
+  >("workspace");
+  
   const { status } = useFlecsConnection();
 
-  // Save to localStorage whenever state changes
-  useEffect(() => {
-    localStorage.setItem("testBuilderState", JSON.stringify(testBuilderState));
-  }, [testBuilderState]);
-
-  // Comes from LandingPage
-  const onTestsUploaded = () => {
-    setCurrentPage("results"); // Automatically switch to results page after tests are uploaded
-  };
-
   // Navigation functions
-  const goToLandingPage = () => {
-    setCurrentPage("landing");
-  };
-
-  const goToResultsPage = () => {
-    setCurrentPage("results");
+  const goToWorkspacePage = () => {
+    //window.location.hash === "#workspace";
+    setCurrentPage("workspace");
   };
 
   const goToBuilderPage = () => {
+    //window.location.hash = "#builder";
     setCurrentPage("builder");
   };
 
@@ -117,15 +93,6 @@ const AppContent = () => {
       </div>
       <div className="flex items-center gap-3">
         <Button
-          variant={currentPage === "results" ? "default" : "outline"}
-          size="sm"
-          onClick={goToResultsPage}
-          className="gap-2"
-        >
-          <BarChart3 className="h-4 w-4" />
-          View Results
-        </Button>
-        <Button
           variant={currentPage === "builder" ? "default" : "outline"}
           size="sm"
           onClick={goToBuilderPage}
@@ -135,13 +102,13 @@ const AppContent = () => {
           Test Builder
         </Button>
         <Button
-          variant={currentPage === "landing" ? "default" : "outline"}
+          variant={currentPage === "workspace" ? "default" : "outline"}
           size="sm"
-          onClick={goToLandingPage}
+          onClick={goToWorkspacePage}
           className="gap-2"
         >
-          <Upload className="h-4 w-4" />
-          Upload Tests
+          <FolderOpen className="h-4 w-4" />
+          Workspace
         </Button>
         <div className="h-6 w-px bg-border mx-1" />
         <ThemeToggle />
@@ -180,18 +147,22 @@ const AppContent = () => {
         {status === "Connected" ? (
           <>
             {renderTopBar()}
-            <div className="font-sans pt-20 px-8 pb-8 max-w-7xl mx-auto">
-              {currentPage === "builder" ? (
-                <TestBuilder
-                  onTestCreated={onTestsUploaded}
-                  persistedState={testBuilderState}
-                  onStateChange={setTestBuilderState}
-                />
-              ) : currentPage === "landing" ? (
-                <LandingPage onTestsUploaded={onTestsUploaded} />
-              ) : (
-                <ResultsPage />
-              )}
+            <div className="font-sans pt-20 px-20 pb-20 max-w-full mx-auto">
+              
+                {currentPage === "builder" ? (
+          <BuilderProvider>
+
+                    <TestBuilder
+                      goToWorkspacePage={goToWorkspacePage}
+                    />
+          </BuilderProvider>
+
+                ) : (
+                  <WorkspacePage 
+                    goToBuilderPage={goToBuilderPage}
+                  />
+                )}
+             
             </div>
           </>
         ) : (
