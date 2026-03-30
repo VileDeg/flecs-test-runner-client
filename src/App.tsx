@@ -1,13 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
-import { FlecsConnectionProvider } from "@common/flecsConnection/flecsConnectionProvider.tsx";
-import { ToastProvider } from "@/components/common/toast/toastProvider";
+import { FlecsConnectionProvider } from "@/contexts/flecsConnectionContext";
+import { ToastProvider } from "@/contexts/toastContext";
 import { WorkspaceProvider } from "@/contexts/workspaceContext";
 
-import WorkspacePage from "@components/pages/workspacePage/workspacePage.tsx";
+import { WorkspacePage } from "@components/pages/workspacePage/workspacePage.tsx";
 import { TestBuilder } from "@pages/builderPage/builderPage.tsx";
 
-import { useFlecsConnection } from "@common/flecsConnection/useFlecsConnection.ts";
+import { useFlecsConnection } from "@contexts/flecsConnectionContext";
 
 import { FLECS_PORT, DEFAULT_TEST_PROPERTIES } from "@common/constants.ts";
 import { Button } from "@components/ui/button";

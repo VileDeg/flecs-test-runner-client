@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import {flecs} from "../../flecs.js";
-import { FlecsAsync } from "./flecsAsync.ts"
+import {flecs} from "../flecs.js";
+import { FlecsAsync } from "../common/flecsAsync.ts"
 
 type FlecsConnection = any | null; // ReturnType<typeof flecs.connect>
 
@@ -65,11 +65,6 @@ export const FlecsConnectionProvider = ({
         connectionRef.current = null;
       }
     };
-
-    // return () => {
-    //   connectionRef.current?.close?.();
-    //   connectionRef.current = null;
-    // };
   }, [host, pollIntervalMs, onFallback]);
 
   return (
@@ -85,4 +80,7 @@ export const FlecsConnectionProvider = ({
   );
 };
 
-///export default FlecsConnectionState;
+export const useFlecsConnection = (): FlecsConnectionState => {
+  return useContext(FlecsConnectionContext);
+};
+

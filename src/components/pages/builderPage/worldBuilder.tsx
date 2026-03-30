@@ -16,10 +16,6 @@ export interface WorldBuilderProps {
   isExpected: boolean;
   // Null signalizes to remove from 
   onUpdate: (worldConfiguration: WorldConfiguration) => void; // TODO: use partial?
-  // Operator management
-  //isExpectedConfig?: boolean;
-  //onOperatorChanged?: (type: OperatorType | null, fullPath: string) => void;
-  //onUpdateOperators?: (operators: Operator[]) => void;
 }
 
 export const WorldBuilderComponent: React.FC<WorldBuilderProps> = ({

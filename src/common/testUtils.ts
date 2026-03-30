@@ -15,7 +15,7 @@ import {
 
 import { FlecsMetadataService } from "@common/flecsMetadataService.ts";
 import { TestRunner } from "@common/testRunner.ts";
-import type { FlecsAsync } from "./flecsConnection/flecsAsync";
+import type { FlecsAsync } from "./flecsAsync";
 
 export function downloadJson<T> (item: T, filename: string) {
   const blob = new Blob([JSON.stringify(item, null, 2)], { type: 'application/json' });

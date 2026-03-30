@@ -5,25 +5,20 @@ import { TestStatus } from "@/common/workspaceTypes";
 import { isWorkspaceState } from "@/common/workspaceTypes";
 import { DEFAULT_WORKSPACE_STATE, DEFAULT_TEST_PROPERTIES, OPERATOR_PATH_SEP } from "@common/constants"
 
-import { useFlecsConnection } from "@common/flecsConnection/useFlecsConnection.ts";
+import { useFlecsConnection } from "@contexts/flecsConnectionContext";
 
 import * as LS from "@/common/localStorage";
-import type { Module, UnitTestProps, System, Component, WorldConfiguration, Operator, TestValidationResult } from "@/common/types";
+import type { UnitTestProps, System, Component, TestValidationResult } from "@/common/types";
 import { MessageType } from "@/common/types";
 
-
-import { FlecsAsync } from "@common/flecsConnection/flecsAsync"
-
-import { useToast } from "@/components/common/toast/useToast";
+import { useToast } from "@contexts/toastContext";
 import * as Utils from "@/common/testUtils";
 
-import { useMetadataLoader, type MetadataProps } from "@/contexts/metadataLoaderContext";
-
+import { useMetadataLoader } from "@/contexts/metadataLoaderContext";
 
 import type { 
   UnitTest,
   QueryResponse,
-  QueriedEntity,
 } from "@/common/types";
 
 import { 
@@ -32,8 +27,8 @@ import {
   UNIT_TEST_INCOMPLETE_TAG_NAME,
   TEST_EXECUTION_TIMEOUT_MS
 } from "@common/constants.ts";
-import { TestRunner } from "@/common/testRunner";
 
+import { TestRunner } from "@/common/testRunner";
 
 
 interface WorkspaceContextType {
@@ -56,12 +51,6 @@ interface WorkspaceContextType {
   runTest: (testId: string) => Promise<boolean>;
   runTestIncomplete: (testId: string, testProps: UnitTestProps) => Promise<boolean>;
   runMultipleTests: (tests: WorkspaceTest[]) => Promise<boolean>;
-  //fillExpectedFromInitial: (wsTest: WorkspaceTest) => Promise<boolean>;
-  //validateTest: (test: UnitTest, validateExpected: boolean) => boolean;
-
-
-  //setSelectedModules: (modules: Module[]) => void;
-  //getMetadataProps: () => MetadataProps;
 
   setIsPolling: (isPolling: boolean) => void;
 }
@@ -93,11 +82,6 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
 
   const { showToast } = useToast();
 
-  //const [selectedModules, setSelectedModules] = useState<Module[]>([]);
-  //const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
-
-  //const [moduleMetadataMap, setModuleMetadataMap] = useState<Record<string, ModuleMetadata>>();
-
   const refreshCurrentTestRef = useRef(false);
   
   useEffect(() => {
@@ -108,9 +92,6 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
   const {
     availableModules,
     moduleMetadataMap,
-    // availableSystems,
-    // availableComponents,
-    // loadingModules,
     loadingMetadata,
   } = useMetadataLoader();
 
@@ -132,34 +113,6 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
     return {availableSystems, availableComponents}
   }, [loadingMetadata, availableModules, moduleMetadataMap])
 
-
-  // useEffect(() => {
-  //   if(!currentTestId) {
-  //     //setSelectedModules([])
-  //     return;
-  //   }
-  //   const wsTest = getTest(currentTestId);
-  //   if(!wsTest) {
-  //     console.error("Test does not exist with id: " + currentTestId)
-  //     setCurrentTestId(null)
-  //     //setSelectedModules([])
-  //     return;
-  //   }
-  //   //setSelectedModules(wsTest.testProperties.selectedModules)
-  // }, [wsState, currentTestId]);
-
-
-
-  // const getMetadataProps = (): MetadataProps => {
-  //   return {
-  //     availableModules,
-  //     moduleMetadataMap,
-  //     loadingMetadata,
-  //   } 
-  // }
-
-  const tests = wsState.tests;
-
   const testsRef = useRef(wsState.tests);
 
   // 2. Update the ref every time the state changes
@@ -167,10 +120,6 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
     testsRef.current = wsState.tests;
   }, [wsState.tests]);
 
-  // const generateTestId = (testName: string): string => {
-  //   const slug = testName.toLowerCase().replace(/\s+/g, '-');
-  //   return `${slug}-${crypto.randomUUID()}`;
-  // };
   const generateTestId = (): string => {
     return crypto.randomUUID();
   };
@@ -179,7 +128,6 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
    * Create a workspace test from a UnitTest
    */
   const createWorkspaceTest = (props: UnitTestProps): WorkspaceTest => {
-    //const id = generateTestId(props.test.name);
     return {
       id: generateTestId(),
       testProperties: props,
@@ -276,10 +224,6 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
     setWsState((prev) => ({...prev, tests: []}))
   };
 
-  // const getEntityNameById = (unitTest: UnitTest, entityId: string): string | undefined => {
-  //   return unitTest.expectedConfiguration.find(e => e.id === entityId)?.entityName
-  // }
-
   const convertOperatorsBaseToEntityName = (unitTest: UnitTest): UnitTest => {
     return {
       ...unitTest, 
@@ -308,13 +252,6 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
       return false;
     }
     try {
-      // const messages = Utils.validateTest(unitTest, true);
-      // if(messages.length > 0) {
-      //   messages.forEach(msg => showToast(msg, 'warning'))
-      //   wsTest.statusMessage = "Invalid test"
-      //   return false;
-      // }
-      
       if (!connection) {
         throw new Error("Not connected to Flecs");
       }
@@ -322,14 +259,12 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
       // Here we can be sure that all entity names are unique (ensured by validation)
       const testToRun = convertOperatorsBaseToEntityName(unitTest);
 
-      const testCore = TestRunner.convertTestToCore(testToRun); // {...unitTest, name: testId}
+      const testCore = TestRunner.convertTestToCore(testToRun); 
       const testRunner = new TestRunner(connection!);
       await testRunner.executeTest(testCore, clearLastResult);
 
       console.log("Set to NOW for testId: ", testId);
 
-      //const result = await Utils.runTest(connection, unitTest)
-      //if (result.success) {
       updateTest(testId, { 
         status: TestStatus.RUNNING, // Will be later updated by polling
         statusMessage: "Executed successfully", 
@@ -338,13 +273,6 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
       showToast(`Test "${unitTest.name}" started successfully`, MessageType.SUCCESS);
 
       return true;
-        //}
-
-      // updateTest(testId, { 
-      //   status: TestStatus.FAILED, 
-      //   statusMessage: result.message 
-      // });
-      // showToast(`Test "${unitTest.name}" failed to run: ${result.message}`, MessageType.ERROR);
     } catch (error: any) {
       updateTest(testId, { 
         status: TestStatus.FAILED, 
@@ -372,12 +300,10 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
     }
 
     try {
-      const testRunner = new TestRunner(connection!); // TODO: what if conn == null?
-      //const incompleteTestName = unitTest.name.trim();
+      const testRunner = new TestRunner(connection!);
 
       const coreTest = TestRunner.convertTestToCore({
         ...unitTest,
-        //name: incompleteTestName,
         expectedConfiguration: [],
         operators: []
       });
@@ -428,7 +354,6 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
   ): TestValidationResult[] => {
     const test = wsTest.testProperties.test;
     let results: TestValidationResult[] = []
-    //let messages: string[] = [];
     if(findDuplicates(totalTests.map(test => test.testProperties.test.name)).includes(test.name)) {
       results.push({message: `Test with name ${test.name} already exists`});
     }
@@ -545,12 +470,8 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
     
     for (const entity of queryResult.results) {
       const [unitTest, executed, _, incomplete] = 
-       entity.fields.values as [UnitTest, UnitTest.Executed, UnitTest.Passed, UnitTest.Incomplete?];
+      entity.fields.values as [UnitTest, UnitTest.Executed, UnitTest.Passed, UnitTest.Incomplete?];
 
-      // const unitTest: UnitTest = components[0] as UnitTest; // TODO: safer option?
-      // const executed: UnitTest.Executed = components[1] as UnitTest.Executed;
-      // const incomplete = components[2] as UnitTest.Incomplete | undefined;
-      
       results.push({
         name: unitTest.name,
         statusMessage: executed.statusMessage,
@@ -598,7 +519,7 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
 
   // Start/stop polling
   useEffect(() => {
-    let timerId: NodeJS.Timeout;
+    let timerId: number;
     let isMounted = true;
   
     const runPoll = async () => {
@@ -634,12 +555,9 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
     currentTestId,
     isPolling,
     refreshCurrentTest: refreshCurrentTestRef.current,
-    //setSelectedModules,
-    //getMetadataProps,
     getWorkspaceTest: getTest,
     addEmptyWorkspaceTest: addEmptyTest,
     saveToWorkspace,
-    //updateWorkspaceTest: updateTest,
     removeWorkspaceTest: removeTest,
     setCurrentWorkspaceTestId: setCurrentTestId,
     clearWorkspaceTests: clearTests,
@@ -647,8 +565,6 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
     runTest: runSingleTest,
     runTestIncomplete,
     runMultipleTests,
-    //dfillExpectedFromInitial,
-    //validateTest,
     setIsPolling
   };
 

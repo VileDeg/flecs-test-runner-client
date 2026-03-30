@@ -1,10 +1,8 @@
 import React from "react";
-import type { FlecsMetadataService } from "@common/flecsMetadataService.ts";
 import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/card";
 import { Button } from "@components/ui/button";
 import { Checkbox } from "@components/ui/checkbox";
 import { Label } from "@components/ui/label";
-import { cn } from "@/lib/utils";
 import { CheckSquare, Square } from "lucide-react";
 
 import {
@@ -102,15 +100,6 @@ export const ModuleSelector: React.FC<ModuleSelectorProps> = ({
               </>
             )}
           </Button>
-          {/* <Button 
-            variant="outline" 
-            size="sm"
-            onClick={handleDeselectAll}
-            className="gap-2"
-          >
-            <Square className="h-4 w-4" />
-            Deselect All
-          </Button> */}
         </div>
 
         <div className="max-h-72 overflow-y-auto p-3 bg-card border border-border rounded-md">

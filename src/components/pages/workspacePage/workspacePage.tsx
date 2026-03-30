@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useCallback, useRef, type JSX } from "react";
+import React, { useState } from "react";
 import { useWorkspace } from "@/contexts/workspaceContext";
-import { Uploader } from "@/components/common/uploader/uploader";
-import { TestRunner } from "@common/testRunner.ts";
-import { useToast } from "@/components/common/toast/useToast";
+import { Uploader } from "@/components/ui/uploader";
+import { useToast } from "@contexts/toastContext";
 
 import { Button } from "@components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/card";
@@ -10,22 +9,17 @@ import { Badge } from "@components/ui/badge";
 import { Separator } from "@components/ui/separator";
 import { Checkbox } from "@components/ui/checkbox";
 import { 
-  Play, 
   PlayCircle, 
   Upload, 
   RefreshCw, 
   Trash2,
   FileText,
-  Clock,
   CheckCircle,
   XCircle,
-  AlertCircle,
-  Loader2,
   Plus,
   FolderOutput,
   ChevronDown,
   ChevronRight,
-  ArrowUpDown,
   ArrowUp,
   ArrowDown,
   Filter,
@@ -34,9 +28,7 @@ import {
   List,
   CheckSquare,
   Square,
-  Check,
   ArrowRightFromLine,
-  ArrowRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -46,22 +38,8 @@ import * as Utils from "@/common/testUtils";
 import TestListItem from "./testListItem";
 
 import type { 
-  UnitTest,
   UnitTestProps,
-  QueryResponse,
-  QueriedEntity,
 } from "@/common/types";
-
-
-import type { MessageType } from "@/common/types";
-
-import { 
-  UNIT_TEST_EXECUTED_TAG_NAME, 
-  UNIT_TEST_PASSED_TAG_NAME, 
-  UNIT_TEST_INCOMPLETE_TAG_NAME,
-  UNIT_TEST_COMPONENT_NAME
-} from "@common/constants.ts";
-import useFlecsConnection from "@/common/flecsConnection/useFlecsConnection";
 
 const statusPriority: Record<TestStatus, number> = {
   [TestStatus.PASSED]: 0,
@@ -100,26 +78,20 @@ interface TestResult {
 
 type TestResults = Record<string, TestResult>;
 
-const WorkspacePage: React.FC<WorkspacePageProps> = ({goToBuilderPage}) => {
+export const WorkspacePage: React.FC<WorkspacePageProps> = ({goToBuilderPage}) => {
   const { showToast } = useToast();
-  const { connection } = useFlecsConnection();
   const { 
     state,
     isPolling, 
     getWorkspaceTest: getTest,
     addWorkspaceTests: addTests, 
     addEmptyWorkspaceTest: addEmptyTest,
-    //updateWorkspaceTest: updateTest, 
     removeWorkspaceTest: removeTest, 
-    clearWorkspaceTests: clearTests, 
     runTest, 
     runMultipleTests,
     setCurrentWorkspaceTestId: setCurrentTestId,
-    //setIsPolling,
-    //setSelectedModules
   } = useWorkspace();
 
-  //const [isClearing, setIsClearing] = useState(false);
   const [isExpanded, setIsExpanded] = useState(true);
   
   const [sortType, setSortType] = useState<SortType>('chronological');
@@ -129,7 +101,7 @@ const WorkspacePage: React.FC<WorkspacePageProps> = ({goToBuilderPage}) => {
   // Selection state
   const [isSelectionMode, setIsSelectionMode] = useState<boolean>(false);
   const [selectedTestIds, setSelectedTestIds] = useState<Set<string>>(new Set());
-  const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(null); // TODO: remove
+  //const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(null); // TODO: remove
 
   // Selection helper functions
   const toggleSelectionMode = () => {
@@ -155,7 +127,7 @@ const WorkspacePage: React.FC<WorkspacePageProps> = ({goToBuilderPage}) => {
       newSelectedIds.add(testId);
     }
     setSelectedTestIds(newSelectedIds);
-    setLastSelectedIndex(index);
+    //setLastSelectedIndex(index);
   };
 
   const selectAllVisibleTests = () => {
@@ -165,7 +137,7 @@ const WorkspacePage: React.FC<WorkspacePageProps> = ({goToBuilderPage}) => {
 
   const clearSelection = () => {
     setSelectedTestIds(new Set());
-    setLastSelectedIndex(null);
+    //setLastSelectedIndex(null);
   };
 
   const isTestSelected = (testId: string) => selectedTestIds.has(testId);
@@ -214,23 +186,11 @@ const WorkspacePage: React.FC<WorkspacePageProps> = ({goToBuilderPage}) => {
     return [...filteredTests].sort(getSortOrder(sortType));
   };
   
-  // Helper accessor for sorted and filtered tests
   const wsTests = getSortedAndFilteredTests();
   
-  // Helper accessor for all tests (unfiltered)
-
-
-  // const getAllRunningTests = (): WorkspaceTest[] => {
-  //   return allTests.filter(test => test.status === TestStatus.RUNNING);
-  // }
-
   const getAllFinishedSelectedTests = (): WorkspaceTest[] => {
     return wsTests.filter(test => test.status === TestStatus.PASSED || test.status === TestStatus.FAILED);
   }
-
-  // const isAnyRunningTests = (): boolean => {
-  //   return getAllRunningTests().length > 0;
-  // }
 
   const isAnyFinishedSelectedTests = (): boolean => {
     return getAllFinishedSelectedTests().length > 0;
@@ -252,11 +212,6 @@ const WorkspacePage: React.FC<WorkspacePageProps> = ({goToBuilderPage}) => {
     //const wsTest = wsTests.find(test => test.id == testId)!;
     await runTest(testId)
   };
-
-  // Handle run all tests
-  // const handleRunAllTests = async () => {
-  //   await runMultipleTests(wsTests)
-  // };
 
   const getSelectedTests = () => {
     return wsTests.filter(test => selectedTestIds.has(test.id));
@@ -318,36 +273,6 @@ const WorkspacePage: React.FC<WorkspacePageProps> = ({goToBuilderPage}) => {
     showToast(`Cleared ${selectedTests.length} selected test(s)`, "success");
     clearSelection();
   };
-
-  // const handleClearAllResults = async () => {
-  //   if (!connection) {
-  //     return;
-  //   }
-        
-  //   setIsClearing(true);
-    
-  //   try {
-  //     // Query all entities with UnitTest component
-  //     const allTestsQuery = await connection.query(
-  //       UNIT_TEST_COMPONENT_NAME, {}
-  //     );
-      
-  //     // Delete each test entity
-  //     const deletePromises = allTestsQuery.results.map((entity) => 
-  //       connection.delete((entity as QueriedEntity).name)
-  //     );
-      
-  //     await Promise.all(deletePromises);
-        
-  //   } catch (err: any) {
-  //     showToast(`Error clearing tests: ${err.message}`, MessageType.ERROR);
-  //   }
-  //   setIsClearing(false);
-  // }
-
-  // const handleExportAllTests = () => {
-  //   Utils.downloadJson(wsTests, `Tests_${Date.now()}`)
-  // };
 
   const handleExportTest = async (testId: string) => {
     const wsTest = getTest(testId);
@@ -426,19 +351,6 @@ const WorkspacePage: React.FC<WorkspacePageProps> = ({goToBuilderPage}) => {
         
         {/* Row 1: Primary Actions */}
         <div className="flex flex-wrap gap-2">
-          {/* <Button 
-            variant="outline"
-            onClick={() => setIsPolling(!isPolling)}
-            // className="gap-2"
-            className={cn(
-              "gap-2",
-              !isAnyRunningTests() && "opacity-50 pointer-events-none"
-            )}
-          >
-            <RefreshCw className={cn("h-4 w-4", isPolling && "animate-spin")} />
-            {isPolling ? "Polling..." : "Start Polling"}
-          </Button> */}
-  
           <Button 
             variant="outline"
             onClick={() => {
@@ -564,97 +476,12 @@ const WorkspacePage: React.FC<WorkspacePageProps> = ({goToBuilderPage}) => {
     </div>
   )
 
-  // const renderTestListHeader = () => {
-  //   const visibleTestCount = wsTests.length;
-  //   const selectedCount = selectedTestIds.size;
-  //   const allVisibleSelected = selectedCount > 0 && selectedCount === visibleTestCount;
-  //   const someVisibleSelected = selectedCount > 0 && selectedCount < visibleTestCount;
-
-  //   return (
-  //     <CardHeader>
-  //       <div className="flex flex-row items-center justify-between w-full">
-  //         <div className="flex items-center gap-2">
-  //           {renderCollapseToggle()}
-  //           <CardTitle className="flex items-center gap-2">
-  //             {isSelectionMode ? (
-  //               <>
-  //                 <CheckSquare className="h-5 w-5" />
-  //                 Selected ({selectedCount}/{visibleTestCount}{filterStatus !== null && `/${allTests.length}`})
-  //               </>
-  //             ) : (
-  //               <>
-  //                 <FileText className="h-5 w-5" />
-  //                 Tests ({visibleTestCount}{filterStatus !== null && `/${allTests.length}`})
-  //               </>
-  //             )}
-  //           </CardTitle>
-  //           {isSelectionMode && (
-  //             <div className="flex items-center gap-2 ml-2">
-  //               <Checkbox
-  //                 checked={allVisibleSelected}
-  //                 onCheckedChange={(checked) => {
-  //                   if (checked) {
-  //                     selectAllVisibleTests();
-  //                   } else {
-  //                     clearSelection();
-  //                   }
-  //                 }}
-  //                 className={cn(
-  //                   "h-4 w-4",
-  //                   someVisibleSelected && "data-[state=checked]:bg-primary/50"
-  //                 )}
-  //               />
-  //               <span className="text-sm text-muted-foreground">
-  //                 Select all
-  //               </span>
-  //             </div>
-  //           )}
-  //         </div>
-  //         <div className="flex items-center gap-2">
-  //           {/* Sorting and filtering controls */}
-  //           <div className={cn(
-  //             "flex items-center gap-1 border-r border-border pr-2 mr-2",
-  //             isSelectionMode && "opacity-50 pointer-events-none"
-  //           )}>
-  //             {renderSortDirectionToggle()}
-  //             {renderSortTypeToggle()}
-  //           </div>
-  //           <div className={cn(
-  //             isSelectionMode && "opacity-50 pointer-events-none"
-  //           )}>
-  //             {renderStatusFilterToggle()}
-  //           </div>
-            
-  //           <Badge variant="outline" className={cn(
-  //             "font-medium",
-  //             isPolling && "bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-400"
-  //           )}>
-  //             {isPolling ? (
-  //               <>
-  //                 <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
-  //                 Polling Active
-  //               </>
-  //             ) : (
-  //               "Polling Inactive"
-  //             )}
-  //           </Badge>
-  //         </div>
-  //       </div>
-  //     </CardHeader>
-  //   );
-  // }
-
   const renderPollingBadge = () => (
     <Badge variant="outline" className={
       "font-medium bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-400"
     }>
       <RefreshCw className="h-3 w-3 mr-1 animate-spin" /> 
       Polling For Results
-      {/* {isPolling ? (
-        <><RefreshCw className="h-3 w-3 mr-1 animate-spin" /> Polling For Results</>
-      ) : (
-        "Polling Inactive"
-      )} */}
     </Badge>
   )
 
@@ -789,57 +616,10 @@ const WorkspacePage: React.FC<WorkspacePageProps> = ({goToBuilderPage}) => {
       {isExpanded && renderTestList()}
     </Card>
   )
-  
-  // const renderStats = () => (
-  //   <div className="m-4 grid grid-cols-1 md:grid-cols-4 gap-4">
-  //     <Card>
-  //       <CardContent className="pt-2">
-  //         <div className="text-center">
-  //           <div className="text-2xl font-bold text-foreground">{allTests.length}</div>
-  //           <div className="text-sm text-muted-foreground">Total Tests</div>
-  //         </div>
-  //       </CardContent>
-  //     </Card>
-      
-  //     <Card>
-  //       <CardContent className="pt-2">
-  //         <div className="text-center">
-  //           <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-  //             {allTests.filter(t => t.status === TestStatus.PASSED).length}
-  //           </div>
-  //           <div className="text-sm text-muted-foreground">Passed</div>
-  //         </div>
-  //       </CardContent>
-  //     </Card>
-      
-  //     <Card>
-  //       <CardContent className="pt-2">
-  //         <div className="text-center">
-  //           <div className="text-2xl font-bold text-red-600 dark:text-red-400">
-  //             {allTests.filter(t => t.status === TestStatus.FAILED).length}
-  //           </div>
-  //           <div className="text-sm text-muted-foreground">Failed</div>
-  //         </div>
-  //       </CardContent>
-  //     </Card>
-      
-  //     <Card>
-  //       <CardContent className="pt-2">
-  //         <div className="text-center">
-  //           <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
-  //             {allTests.filter(t => t.status === TestStatus.RUNNING).length}
-  //           </div>
-  //           <div className="text-sm text-muted-foreground">Pending/Running</div>
-  //         </div>
-  //       </CardContent>
-  //     </Card>
-  //   </div>
-  // )
 
   return (
     <div className="container mx-auto px-6 py-8 max-w-6xl">
       {renderHeader()}
-      {/* {wsTests.length > 0 && renderStats()} */}
       {renderTestListCard()}
       {renderUploadSection()}
     </div>

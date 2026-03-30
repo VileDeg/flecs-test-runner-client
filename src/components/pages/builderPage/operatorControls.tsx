@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { X } from "lucide-react"; // Import Lucide icon
+import { X } from "lucide-react";
 import { OperatorType } from "@/common/coreTypes";
 import { OperatorDropdown } from "@components/ui/operator-dropdown";
 import { LockedToggle } from "@components/ui/locked-toggle";

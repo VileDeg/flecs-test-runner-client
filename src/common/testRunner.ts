@@ -38,9 +38,9 @@ import {
 
 import * as Core from "@/common/coreTypes";
 
-import { FlecsAsync, flecsError, flecsErrorMessage } from "@common/flecsConnection/flecsAsync.ts"
+import { FlecsAsync, flecsError, flecsErrorMessage } from "@/common/flecsAsync"
 
-import { FlecsConnectionContext, type FlecsConnectionState } from "@common/flecsConnection/flecsConnectionProvider.tsx";
+import { FlecsConnectionContext, type FlecsConnectionState } from "@/contexts/flecsConnectionContext";
 
 import { 
   Module

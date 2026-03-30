@@ -10,8 +10,6 @@ export interface ComponentSelectorProps {
   onChange: (newName: string) => void;
   availableComponents: Component[]
   disabled?: boolean;
-  //className?: string;
-  //title: string;
 }
 
 export const ComponentSelector: React.FC<ComponentSelectorProps> = ({
@@ -20,8 +18,6 @@ export const ComponentSelector: React.FC<ComponentSelectorProps> = ({
   onChange,
   availableComponents,
   disabled = false,
-  //className,
-  //title,
 }) => {
 
   const maxComponentNameLength = 48;

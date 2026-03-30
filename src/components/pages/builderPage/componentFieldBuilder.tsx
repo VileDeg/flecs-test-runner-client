@@ -1,131 +1,56 @@
-import {useState, useEffect, Fragment} from "react";
+import { Fragment} from "react";
 import { Checkbox } from "@components/ui/checkbox";
 import { Button } from "@components/ui/button";
 import { Input } from "@components/ui/input";
 import { Label } from "@components/ui/label";
-import { Plus, Minus, Trash2, Package } from "lucide-react";
+import { Plus, Minus } from "lucide-react";
 
 import type { 
-  Component,
-  PrimitiveType,
-  System,
-  QueryResponse,
-  QueriedEntity,
-  MetaComponentRegistry,
   ComponentField,
   ComponentFieldValue,
   ComponentFieldsArray,
-  //ComponentFieldsArrayOfComponents,
   ComponentFields,
-  EntityConfiguration,
-  WorldConfiguration,
-  Components,
 } from "@/common/types";
 
-import { OperatorType, type ComponentFieldValuePrimitive, type Operator } from "@/common/coreTypes";
+import { OperatorType, type ComponentFieldValuePrimitive } from "@/common/coreTypes";
 
 import { 
-  Module,
-  isFieldStructureEqual,
   isComponentStructureEqual,
   isComponentFieldValueArray,
   isComponentFieldValuePrimitive
 } from "@/common/types";
 
-import { useToast } from "@/components/common/toast/useToast";
-
-//import * as Utils from "@common/utils.ts"
 
 import { FlecsMetadataService } from "@common/flecsMetadataService.ts";
 import { OperatorControls } from "@components/pages/builderPage/operatorControls";
-import { ComparisonToggle } from "@components/ui/comparison-toggle";
 import { OPERATOR_PATH_SEP } from "@/common/constants";
 import { useBuilder } from "@/contexts/builderContext";
-
-/**
- * Props needed for operator controls
- */
-// export interface ComponentFieldOperatorProps {
-//   isAffectedByAnyUpper: boolean; // passed all the way down
-//   availableComponents: Component[]; // to determine supp ops for child
-//   //onAnyLowerOperatorEnabled: () => void; // propagated all the way up
-//   //onOperatorChanged: (type: OperatorType | null, fullPath: string) => void;
-// }
 
 export interface ComponentFieldBuilderProps {
   field: ComponentField;
   onUpdate: (field: ComponentField) => void;
   fieldPath: string; // Parent path + field name
-  // Operator management
-  //operatorProps?: ComponentFieldOperatorProps;
   isExpected: boolean;
-  //entityName?: string;
 }
-// TODO: rename class
 export const ComponentFieldBuilder: React.FC<ComponentFieldBuilderProps> = ({
   field,
   onUpdate,
   fieldPath,
   isExpected,
-  //entityName = "",
 }) => {
 
   const {
     availableComponents,
     onOperatorChanged,
-    isOperatorEnabled,
     getOperatorType
   } = useBuilder();
 
-  // const [operatorEnabled, setOperatorEnabled] = useState<boolean>(
-  //   isExpected ? isOperatorEnabled(fieldPath) : false
-  // ); 
-
-  //const operatorEnabled = isOperatorEnabled(fieldPath);
-
-  // useEffect(() => {
-  //   const affected = operatorProps?.isAffectedByAnyUpper;
-  //   if(affected === undefined) {
-  //     return;
-  //   }
-  //   if(affected) {
-  //     setOperatorEnabled(false);
-  //   }
-  // }, [operatorProps, operatorProps?.isAffectedByAnyUpper, operatorEnabled]);
-
-  // useEffect(() => {
-  //   if(!operatorEnabled) {
-  //     return;
-  //   }
-
-  //   // Notify parent
-  //   operatorProps?.onAnyLowerOperatorEnabled();
-  //   // const callback = operatorProps?.onAnyLowerOperatorEnabled;
-  //   // if(callback) {
-  //   //   callback();
-  //   // }
-  // }, [operatorProps, operatorProps?.onAnyLowerOperatorEnabled, operatorEnabled]);
-
   const getFieldName = () => {
-    //console.log("getFieldName: ", fieldPath.split(OPERATOR_PATH_SEP).at(-1))
     return fieldPath.split(OPERATOR_PATH_SEP).at(-1) ?? fieldPath;
   }
 
   // Conveniece accessor
   const fieldName = getFieldName();
-  
-  // Pass signal from child
-  // const handleOnAnyLowerOperatorEnabled = () => {
-  //   setOperatorEnabled(false);
-
-  //   // Notify parent
-  //   operatorProps?.onAnyLowerOperatorEnabled();
-  //   // const callback = operatorProps?.onAnyLowerOperatorEnabled;
-  //   // if(callback) {
-  //   //   callback();
-  //   // }
-  // }
-
   
   const onUpdateValueDict = (name: string, newValue: ComponentFieldValue) => {
     console.log("onUpdateValueDict newValue: ", newValue);
@@ -172,31 +97,6 @@ export const ComponentFieldBuilder: React.FC<ComponentFieldBuilderProps> = ({
     );
   };
 
-  // const renderFieldInput = (name: string, value: ComponentFieldValuePrimitive) => (
-  //   <div className="w-auto">
-  //     <Input
-  //       id={`field-ava`} // TODO: ${field.type}
-  //       type="text"
-  //       value={value as ComponentFieldValuePrimitive}
-  //       onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-  //         //console.log("Received value: ", e.target.value);
-  //         // const newValue = parseFieldValue(field.type, e.target.value);
-  //         // if(newValue == null) {
-  //         //   return;
-  //         // }
-  //         const newField = {...field};
-  //         newField.value = e.target.value;
-
-  //         onUpdate(newField); 
-  //         // elementIndex ? onUpdateValueArrayElement(name, elementIndex, newValue)
-  //         //   :
-  //       }}
-  //       placeholder={`${name} field`} // TODO: ${field.type}
-  //       className=""
-  //     />
-  //   </div>
-  // )
-
   const renderFieldCheckbox = (name: string, value: boolean) => (
     <div className="w-full">
       <div className="flex items-center gap-2">
@@ -209,9 +109,6 @@ export const ComponentFieldBuilder: React.FC<ComponentFieldBuilderProps> = ({
             onUpdate(newField); 
           }}
         />
-        {/* <span className="text-sm text-muted-foreground">
-          {field.type}
-        </span> */}
       </div>
     </div>
   )
@@ -241,7 +138,6 @@ export const ComponentFieldBuilder: React.FC<ComponentFieldBuilderProps> = ({
                 (newField) => onUpdateValueDict(name, newField.value)
               }
               fieldPath={makeChildFieldPath(name)}
-              //operatorProps={passOperatorProps()}
               isExpected={isExpected}
             />
           </Fragment>
@@ -274,8 +170,6 @@ export const ComponentFieldBuilder: React.FC<ComponentFieldBuilderProps> = ({
               }
               fieldPath={makeChildFieldPath(`${index}`)}
               isExpected={isExpected}
-              //operatorProps={passOperatorProps()}
-              //entityName={entityName}
             />
             <Button 
               variant="outline" 
@@ -303,8 +197,6 @@ export const ComponentFieldBuilder: React.FC<ComponentFieldBuilderProps> = ({
 
   const getAllOperatorTypes = () => {
     return Object.values(OperatorType);
-    // Object.values(OperatorType)
-    //   .filter((v): v is OperatorType => typeof v === "number");
   }
 
   // TODO: save to state, otherwise done every re-render?
@@ -353,16 +245,11 @@ export const ComponentFieldBuilder: React.FC<ComponentFieldBuilderProps> = ({
   }
 
   const handleOperatorTypeChanged = (type: OperatorType | null) => {
-    //setOperatorEnabled(type !== null);
     onOperatorChanged(type, fieldPath) // operatorProps?.
-    // if(type) {
-    //   operatorProps?.onAnyLowerOperatorEnabled()
-    // }
   }
 
   const renderOperatorControls = () => (
     <OperatorControls
-      //operatorDisabled={!operatorEnabled}
       operatorType={getOperatorType(fieldPath)}
       supportedOperators={getSupportedOperators()}
       onOperatorTypeChange={handleOperatorTypeChanged}

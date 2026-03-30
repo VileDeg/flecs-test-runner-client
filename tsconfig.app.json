@@ -30,9 +30,10 @@
       "@/*": ["src/*"],
       "@ui/*": ["src/components/ui/*"],
       "@pages/*": ["src/components/pages/*"],
-      "@hooks/*": ["src/hooks/*"],
+      //"@hooks/*": ["src/hooks/*"],
       "@common/*": ["src/common/*"],
-      "@components/*": ["src/components/*"]
+      "@components/*": ["src/components/*"],
+      "@contexts/*": ["src/contexts/*"]
     }
   },
   "include": ["src"]

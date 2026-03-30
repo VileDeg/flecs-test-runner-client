@@ -1,5 +1,5 @@
 // Service for fetching Flecs metadata like available systems and components
-import type { FlecsAsync } from "./flecsConnection/flecsAsync";
+import type { FlecsAsync } from "./flecsAsync";
 
 import type { 
   Component,

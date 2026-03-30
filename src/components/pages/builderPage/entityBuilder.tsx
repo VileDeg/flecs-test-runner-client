@@ -15,23 +15,16 @@ import { ComponentSelector } from "@/components/ui/component-selector";
 import { OperatorControls } from "./operatorControls";
 import { OperatorType } from "@/common/coreTypes";
 
-
 export interface EntityBuilderProps {
   configuration: EntityConfiguration;
-  //availableComponents: Components;
-  // Null signalizes to remove from 
   isExpected: boolean;
   onUpdate: (updates: Partial<EntityConfiguration> | null) => void;
-  // Operator management
-  //onOperatorChanged?: (type: OperatorType | null, fullPath: string) => void;
 }
 
 export const EntityBuilder: React.FC<EntityBuilderProps> = ({
   configuration,
-  //availableComponents,
   isExpected,
   onUpdate
-  //onOperatorChanged,
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
 
@@ -40,7 +33,6 @@ export const EntityBuilder: React.FC<EntityBuilderProps> = ({
     changeEntityName,
     removeEntity,
     addComponent,
-    isOperatorEnabled,
     onOperatorChanged,
     getOperatorType
   } = useBuilder();
@@ -55,9 +47,6 @@ export const EntityBuilder: React.FC<EntityBuilderProps> = ({
   const getAvailableComponents = () => {
     return availableComponents.filter(comp => !isEntityHaveComponent(comp))
   }
-  // const updateEntityName = (name: string) => {
-  //   onUpdate({entityName: name});
-  // };
 
   const getSupportedOperatorTypes = () => {
     return [OperatorType.Eq, OperatorType.Neq]
@@ -77,7 +66,6 @@ export const EntityBuilder: React.FC<EntityBuilderProps> = ({
   }
   const renderOperatorControls = () => (
     <OperatorControls
-      //operatorDisabled={!operatorEnabled}
       operatorType={getOperatorType(configuration.id)}
       supportedOperators={getSupportedOperatorTypes()}
       onOperatorTypeChange={(type) => onOperatorChanged(type, configuration.id)}
@@ -147,19 +135,9 @@ export const EntityBuilder: React.FC<EntityBuilderProps> = ({
             onUpdate={(updates) => handleOnComponentUpdated(updates, componentIndex)}
           >
           </ComponentBuilder>
-          //renderComponentBuilder(component, entityIndex, componentIndex)
         )}
         
         {!isExpected && renderComponentSelector("")}
-        
-        {/* <Button 
-          variant="outline" 
-          onClick={() => addComponent(entityIndex)}
-          className="gap-2 w-full"
-        >
-          <Plus className="h-4 w-4" />
-          Add Component
-        </Button> */}
       </div>
     </div>
   )
@@ -172,7 +150,6 @@ export const EntityBuilder: React.FC<EntityBuilderProps> = ({
         size="sm"
         onClick={() => removeEntity(configuration.id)}
         className="gap-2"
-        // disabled={isExpected}
       >
         <Trash2 className="h-4 w-4" />
         Remove
@@ -197,14 +174,4 @@ export const EntityBuilder: React.FC<EntityBuilderProps> = ({
       </div>
     </div>
   );
-
-  // return (
-  //   <div 
-  //     className="p-6 border border-border rounded-lg bg-card space-y-4"
-  //   >
-  //     {renderEntityHeaderRegion(configuration)}
-  //     {renderComponentsRegion(configuration)}
-      
-  //   </div>
-  // );
 };

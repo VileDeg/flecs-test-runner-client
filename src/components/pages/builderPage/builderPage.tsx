@@ -1,18 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useFlecsConnection } from "@common/flecsConnection/useFlecsConnection.ts";
-import { TestRunner } from "@common/testRunner.ts";
 import { useWorkspace } from "@/contexts/workspaceContext.tsx";
 import { ModuleSelector } from "./moduleSelector.tsx";
 import { SystemsList } from "./systemsList.tsx";
 import { WorldBuilderComponent } from "@pages/builderPage/worldBuilder.tsx";
-import { useToast } from "@/components/common/toast/useToast.ts";
+import { useToast } from "@contexts/toastContext";
 
 import { Button } from "@components/ui/button";
 import { Input } from "@components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/card";
 import { 
-  Download, 
-  Play, 
   Trash2, 
   FileText, 
   Layers, 
@@ -23,19 +19,15 @@ import {
 
 import {
   type Module,
-  type EntityConfiguration,
   type WorldConfiguration,
   type SystemInvocation,
   MessageType,
 } from "@/common/types";
 
-
-import * as Utils from "@/common/testUtils.ts"
-
 import {
   DEFAULT_TEST_PROPERTIES,
 } from "@common/constants.ts";
-import { TestStatus, type WorkspaceTest } from "@/common/workspaceTypes.ts";
+import { TestStatus } from "@/common/workspaceTypes.ts";
 import { useBuilder } from "@/contexts/builderContext.tsx";
 
 export interface TestBuilderProps {
@@ -46,15 +38,11 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
   goToWorkspacePage
 }) => {
   const { showToast } = useToast();
-  const { connection } = useFlecsConnection();
   const { 
     currentTestId: maybeCurrentTestId, 
     getWorkspaceTest,
     saveToWorkspace,
-    //updateWorkspaceTest,
-    //runTest,
     runTestIncomplete,
-    //validateTest,
   } = useWorkspace();
 
   
@@ -71,7 +59,6 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
 
   const renderLoadingDisplay = (text: any) => (
     renderEmptyDisplay(
-      //<h2 className="text-xl font-semibold mb-4">Test Is Currently Running. Wait...</h2>
       <div className="text-center">
       <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground mb-4" />
       <p className="text-muted-foreground">{text}</p>
@@ -104,9 +91,8 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
   const {
     availableModules,
     availableSystems,
-    //availableComponents,
     loadingMetadata,
-    testProperties,//: contextTestProperties,
+    testProperties,
     updateTestProperties,
     updateUnitTest,
   } = useBuilder();
@@ -115,20 +101,7 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
     return renderLoadingDisplay("Loading Metadata...")
   }
 
-    // Create a ref to track the latest properties
-  // const latestPropertiesRef = useRef(latestPcontextTestPropertiesroperties);
-
-  // // Sync ref on every render
-  // useEffect(() => {
-  //   latestPropertiesRef.current = testProperties;
-  // }, [testProperties]);
-
   const {test, selectedModules} = testProperties;
-
-  // useEffect(() => {
-  //   console.log("testProperties: ", testProperties)
-  // }, [testProperties]);
-    
 
   // Helper setters
   const setSelectedModules = (selectedModules: Module[]) => {
@@ -154,7 +127,6 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
   }
 
   const setInitialConfiguration = (entities: WorldConfiguration) => {
-    //console.log("setInitialConfiguration")
     updateUnitTest({initialConfiguration: entities});
   }
 
@@ -164,162 +136,20 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
 
   const { name: testName, systems, initialConfiguration, expectedConfiguration } = test;
 
- 
-
   // Update JSON preview live whenever form data changes
   useEffect(() => {
     setJsonPreview(JSON.stringify(testProperties, null, 2));
   }, [testProperties, setJsonPreview]);
-
-  // const downloadWorkspaceTest = () => {
-  //   if(!currentTestId) {
-  //     throw Error("Missing current test ID")
-  //   }
-  //   /*
-  //   updateWorkspaceTest(currentTestId, {testProperties})
-  //   */
-  //   let wsTest = getWorkspaceTest(currentTestId)
-  //   if(!wsTest) {
-  //     throw Error("No workspace test found with ID: " + currentTestId)
-  //   }
-  //   wsTest = {...wsTest, testProperties, lastUpdated: Date.now() }
-
-  //   const filename = wsTest.testProperties.test.name;
-  //   Utils.downloadJson(wsTest, filename)
-  //   showToast(`File "${filename}.json" downloaded successfully!`, 'success');
-  // };
-
-  // const saveToWorkspace = () => {
-  //   try {
-  //     if(!validateTest(test, true)) {
-  //       showToast(`Test "${test.name}" was not saved`, 'warning');
-  //       return;
-  //     }
-  //     updateWorkspaceTest(currentTestId!, { testProperties });
-  //     showToast(`Test "${test.name}" saved to workspace`, 'success');
-  //   } catch (error: any) {
-  //     console.error("Error saving test to workspace:", error);
-  //     showToast(`Error saving test to workspace: ${error.message}`, 'error');
-  //   }
-  // };
-
-  // const handleRunTest = async () => {
-  //   let wsTest = getWorkspaceTest(currentTestId!);
-  //   if (!wsTest) {
-  //     console.error("Test not found");
-  //     return
-  //   }
-  //   saveToWorkspace(currentTestId!, testProperties)
-    
-  //   //saveToWorkspace(); // save current test
-  //   wsTest = {...wsTest, testProperties}
-  //   runTest(wsTest);
-    
-  //   // const messages = Utils.validateTest(test, true)
-  //   // if(messages.length > 0) {
-  //   //   messages.forEach(msg => showToast(msg, 'warning'))
-  //   //   return;
-  //   // }
-
-  //   // const result = await Utils.runTest(connection!, test)
-  //   // if(result.success) {
-  //   //   showToast(`Test "${testName}" started successfully`, 'success');
-  //   // } else {
-  //   //   showToast(`Error running test: ${result.message ?? "unknown"}`, 'error');
-  //   // }
-  // };
-
-  // const fillExpectedFromInitial = async () => {
-  //   //let { name: testName , systems, initialConfiguration } = testProperties;
-
-  //   if(!validateTest(test, false)) {
-  //     setGenStatus({loading: false, msg: "Invalid"});
-  //     return;
-  //   }
-  //   // const messages = Utils.validateTest(test, false);
-  //   // if(messages.length > 0) {
-  //   //   messages.forEach(msg => showToast(msg, 'warning'))
-  //   //   return;
-  //   // }
-
-  //   setGenStatus({loading: true, msg: "Executing..."});
-
-  //   try {
-  //     const testRunner = new TestRunner(connection!); // TODO: what if conn == null?
-  //     const incompleteTestName = `${testName.trim()}_incomplete_${Date.now()}`;
-      
-  //     // Execute incomplete test
-  //     await testRunner.executeIncompleteTest( // const executeResult = 
-  //       incompleteTestName,
-  //       systems.map(s => ({
-  //         name: s.name.trim(),
-  //         timesToRun: s.timesToRun
-  //       })),
-  //       initialConfiguration
-  //     );
-      
-  //     // if (!executeResult.success) {
-  //     //   showToast(executeResult.message, 'error');
-  //     //   setGenStatus({loading: false, msg: ""});
-  //     //   return;
-  //     // }
-      
-  //     setGenStatus({loading: true, msg: "Waiting for results..."});
-      
-  //     // Poll for results
-  //     // TODO: get values from constants
-  //     const pollResult = await testRunner.pollForIncompleteTestResult(
-  //       incompleteTestName,
-  //       15000,
-  //       500    // poll every 500ms
-  //     );
-      
-  //     if ("error" in pollResult) {
-  //       showToast(pollResult.error, 'error');
-  //       return;
-  //     }
-
-  //     const {incomplete, executed, passed} = pollResult;
-
-  //     const status = executed.statusMessage;
-
-  //     if(!passed) {
-  //       showToast("Failed to execute incomplete test: " + status, 'error');
-  //       return;
-  //     }
-
-  //     // Parse the serialized world into EntityData array
-  //     const parsedEntities = TestRunner.parseWorldSerialized(incomplete.worldExpectedSerialized, availableComponents);
-      
-  //     if (parsedEntities.length > 0) {
-  //       setExpectedConfiguration(parsedEntities);
-  //       showToast(`Expected state generated successfully!`, 'success');
-  //     } else {
-  //       showToast("Failed to parse expected state from serialized world", 'error');
-  //     }
-      
-  //   } catch (error: any) {
-  //     console.error("Error generating expected state:", error);
-  //     showToast(`Error generating expected state: ${error.message}`, 'error');
-  //   }
-  //   setGenStatus({loading: false, msg: ""});
-  // };
 
   const clearForm = () => {
     updateTestProperties(DEFAULT_TEST_PROPERTIES);
   };
 
   const renderWorldBuilder = (
-    //cardTitle: string, 
     worldConfiguration: WorldConfiguration, 
     onUpdateWorldConfiguration: (worldConfiguration: WorldConfiguration) => void,
     isExpectedConfig: boolean = false
   ) => (
-    // <Card>
-    //   <CardHeader>
-    //     <CardTitle>{cardTitle}</CardTitle>
-    //   </CardHeader>
-    //   <CardContent>
     <>
         {selectedModules.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground italic">
@@ -333,8 +163,6 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
           />
         )}
     </>
-      //</CardContent>
-    //</Card>
   )
 
   const renderSystemsRegion = () => (
@@ -366,14 +194,12 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
     <div className={"grid grid-cols-2 gap-4"}>
       {
         renderWorldBuilder(
-          //"Initial State (Entities & Components)", 
           initialConfiguration, 
           (conf) => {setInitialConfiguration(conf)}
         )
       }
       {
         renderWorldBuilder(
-          //"Expected State (Entities & Components)", 
           expectedConfiguration, 
           (conf) => {setExpectedConfiguration(conf)},
           true // isExpectedConfig
@@ -420,7 +246,7 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
       <Button 
         variant="outline" 
         onClick={() => runTestIncomplete(currentTestId, testProperties)}
-        disabled={genStatus.loading} //  || !testName.trim() || systems.length === 0 || initialConfiguration.length === 0
+        disabled={genStatus.loading}
         className="gap-2"
       >
         {genStatus.loading ? (
@@ -431,40 +257,20 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
         {genStatus.loading ? genStatus.msg : "Generate Expected from Initial"}
       </Button>
       
-      {/* <Button 
-        variant="default" 
-        onClick={downloadWorkspaceTest}
-        disabled={!testName.trim()} //  || systems.length === 0
-        className="gap-2"
-      >
-        <Download className="h-4 w-4" />
-        Download JSON
-      </Button> */}
-      
       <Button 
         variant="default" 
         onClick={handleSaveToWorkspace}
-        disabled={!testName.trim()} //  || systems.length === 0
+        disabled={!testName.trim()}
         className="gap-2"
       >
         <FileText className="h-4 w-4" />
         Save to Workspace
       </Button>
-      
-      {/* <Button 
-        variant="default"
-        onClick={handleRunTest}
-        disabled={!testName.trim()} //  || systems.length === 0
-        className="gap-2 bg-green-600 hover:bg-green-700"
-      >
-        <Play className="h-4 w-4" />
-        Run Test
-      </Button> */}
     </div>
   )
 
   const renderPreview = () => (
-    <Card className="w-full"> {/**sticky top-24 */}
+    <Card className="w-full">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <FileText className="h-5 w-5" />

@@ -7,7 +7,7 @@
 
 
 
-import {flecs} from "../../flecs.js";
+import {flecs} from "../flecs.js";
 
 import type {
   QueriedEntity,

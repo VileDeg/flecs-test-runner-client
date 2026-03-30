@@ -1,21 +1,10 @@
-import React, { useState, useEffect, type JSX, type MouseEvent } from "react";
-import { useWorkspace } from "@/contexts/workspaceContext";
-import { Uploader } from "@/components/common/uploader/uploader";
-import { TestRunner } from "@common/testRunner.ts";
-import { useFlecsConnection } from "@common/flecsConnection/useFlecsConnection.ts";
-import { useToast } from "@/components/common/toast/useToast";
-
+import React, { useState, type JSX, type MouseEvent } from "react";
 import { Button } from "@components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/card";
 import { Badge } from "@components/ui/badge";
 import { Separator } from "@components/ui/separator";
 import { 
   Play, 
-  PlayCircle, 
-  Upload, 
-  RefreshCw, 
   Trash2,
-  FileText,
   Clock,
   CheckCircle,
   XCircle,
@@ -23,38 +12,16 @@ import {
   Loader2,
   FileOutput,
   AlertTriangle,
-  ChevronDown,
-  ChevronRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-import {TestStatus} from "@/common/workspaceTypes";
-import * as Utils from "@/common/testUtils";
 
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from "@components/ui/tooltip";
 
-import type { 
-  UnitTest,
-  UnitTestProps,
-  QueryResponse,
-  QueriedEntity,
-} from "@/common/types";
-
-import { MessageType } from "@/common/types";
-
-import { 
-  UNIT_TEST_EXECUTED_TAG_NAME, 
-  UNIT_TEST_PASSED_TAG_NAME, 
-  UNIT_TEST_INCOMPLETE_TAG_NAME 
-} from "@common/constants.ts";
-
-import type { WorkspaceTest } from "@/common/workspaceTypes";
-
+import { TestStatus, type WorkspaceTest } from "@/common/workspaceTypes";
 
 interface StatusStyle {
   readonly icon: JSX.Element;
@@ -91,7 +58,6 @@ const TEST_STATUS_STYLE: Record<TestStatus, StatusStyle> = {
 
 export interface TestListItemProps {
   wsTest: WorkspaceTest;
-  //isLoading: boolean;
   onRunTest: (testId: string) => void;
   onRemoveTest: (testId: string) => void;
   onSelectTest: (testId: string) => void;
@@ -105,8 +71,6 @@ export interface TestListItemProps {
 
 const TestListItem: React.FC<TestListItemProps> = ({
   wsTest,
-  //statusStyle,
-  //isLoading,
   onRunTest,
   onRemoveTest,
   onSelectTest,
@@ -139,17 +103,6 @@ const TestListItem: React.FC<TestListItemProps> = ({
     e.stopPropagation(); // Prevents onSelectTest
     setIsExpanded(!isExpanded);
   }
-  
-  // const renderCollapseToggle = () => (
-  //   <Button 
-  //     variant="ghost" 
-  //     size="icon" 
-  //     className="h-8 w-8" 
-  //     onClick={handleOnStatusMessageExpanded}
-  //   >
-  //     {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-  //   </Button>
-  // )
 
   const renderActionButtons = () => (
     <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
@@ -214,11 +167,6 @@ const TestListItem: React.FC<TestListItemProps> = ({
               {statusStyle.icon}
               <span className="ml-1 capitalize">{wsTest.status}</span>
             </Badge>
-            {/* {isSelected && (
-              <Badge variant="default" className="bg-primary">
-                Selected
-              </Badge>
-            )} */}
           </div>
           
           <div className="text-sm text-muted-foreground mb-3">

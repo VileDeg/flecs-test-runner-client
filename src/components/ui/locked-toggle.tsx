@@ -6,19 +6,17 @@ import { cn } from "@/lib/utils";
 export interface LockedToggleProps {
   locked: boolean | null;
   onChange: (locked: boolean) => void;
-  //disabled: boolean; // TODO: remove?
   className?: string;
   title: string;
 }
 
 export const LockedToggle: React.FC<LockedToggleProps> = ({
-  locked, // true => locked
+  locked,
   onChange,
   className,
   title,
 }) => {
   const handleToggle = () => {
-    // First click sets to unlocked
     onChange(!locked);
   };
 
@@ -34,7 +32,6 @@ export const LockedToggle: React.FC<LockedToggleProps> = ({
         className
       )}
       onClick={handleToggle}
-      //disabled={disabled}
       title={title}
     >
       {locked ? (

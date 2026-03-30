@@ -1,18 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, type ReactNode, useMemo } from "react";
-import { TestStatus, type WorkspaceTest } from "@/common/workspaceTypes";
-import { isWorkspaceState } from "@/common/workspaceTypes";
-import { DEFAULT_WORKSPACE_STATE, DEFAULT_TEST_PROPERTIES } from "@common/constants"
+import { type WorkspaceTest } from "@/common/workspaceTypes";
+import { DEFAULT_TEST_PROPERTIES } from "@common/constants"
 import { useWorkspace } from "@/contexts/workspaceContext.tsx";
 
-import * as LS from "@/common/localStorage";
-import type { SystemInvocation, UnitTestProps, UnitTest, System, Component, EntityConfiguration, WorldConfiguration } from "@/common/types";
-import { Module, MessageType } from "@/common/types";
-import { OperatorType, type Operator } from "@/common/coreTypes";
+import type { UnitTestProps, UnitTest, System, Component, EntityConfiguration, WorldConfiguration } from "@/common/types";
+import { Module } from "@/common/types";
+import { OperatorType } from "@/common/coreTypes";
 
-import { FlecsAsync } from "@common/flecsConnection/flecsAsync"
-
-import { useToast } from "@/components/common/toast/useToast";
-import * as Utils from "@/common/testUtils";
 import { useMetadataLoader } from "@/contexts/metadataLoaderContext";
 
 interface BuilderContextType {
@@ -28,7 +22,6 @@ interface BuilderContextType {
   removeEntity: (id: string) => void;
   getEntity: (id: string, expected: boolean) => EntityConfiguration | undefined;
   addComponent: (entityName: string, componentId: string) => void;
-  //removeComponent: (entityName: string, index: number) => void;
   replaceComponent: (entityName: string, index: number, newComponent: string | null) => void; // null => remove
   onOperatorChanged: (type: OperatorType | null, fullPath: string) => void;
   isOperatorEnabled: (path: string) => boolean;
@@ -46,13 +39,8 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({ children }) =>
     currentTestId, 
     refreshCurrentTest,
     getWorkspaceTest,
-    //setSelectedModules,
-    //getMetadataProps,
-    //updateWorkspaceTest
   } = useWorkspace(); 
 
-  //console.log("currentTestId: ", currentTestId)
-  
   const getCurrentTest = (): WorkspaceTest | null => {
     if(!currentTestId) {
       return null;
@@ -74,42 +62,12 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({ children }) =>
   }, [refreshCurrentTest]);
   
   const {test, selectedModules} = testProperties;
-  //const {systems} = test;
-
-  // useEffect(() => {
-  //   setSelectedModules(selectedModules);
-  // }, [selectedModules]);
-
+  
   const {
     availableModules,
     moduleMetadataMap,
-    // availableSystems,
-    // availableComponents,
-    // loadingModules,
     loadingMetadata,
   } = useMetadataLoader();
-
-  // const getAvailableSystems = () => {
-  //   let systems = []
-  //   selectedModules.forEach(module => {
-  //     if(!moduleMetadataMap.has(module.fullPath)) {
-  //       console.error("Internal Error"); // Cannot happen
-  //       return;
-  //     }
-  //     systems.push(moduleMetadataMap.get(module.fullPath)?.systems)
-  //   }) 
-  // }
-
-  // const getAvailableComponents = () => {
-  //   let components = []
-  //   selectedModules.forEach(module => {
-  //     if(!moduleMetadataMap.has(module.fullPath)) {
-  //       console.error("Internal Error"); // Cannot happen
-  //       return;
-  //     }
-  //     components.push(moduleMetadataMap.get(module.fullPath)?.components)
-  //   }) 
-  // }
 
   const { availableSystems, availableComponents } = useMemo(() => {
     let availableSystems: System[] = []
@@ -125,22 +83,8 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({ children }) =>
         availableComponents.push(...md.components)
       }) 
     }
-    //console.log("availableSystems: ", availableSystems)
     return {availableSystems, availableComponents}
   }, [loadingMetadata, moduleMetadataMap, testProperties])
-
-
-
-  //const availableSystems = 
-  
-
-  // const {
-  //   availableModules,
-  //   availableSystems,
-  //   availableComponents,
-  //   loadingModules,
-  //   loadingMetadata,
-  // } = getMetadataProps();
 
   const updateTestProperties = (updates: Partial<UnitTestProps>) => {
     console.log("updateTestProperties: ", updates)
@@ -157,99 +101,7 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({ children }) =>
     });
   };
 
-  // const setSystems = (systems: SystemInvocation[]) => {
-  //   updateUnitTest({systems});
-  // }
-
-  // const setInitialConfiguration = (entities: WorldConfiguration) => {
-  //   //console.log("setInitialConfiguration")
-  //   updateUnitTest({initialConfiguration: entities});
-  // }
-
-  // const setExpectedConfiguration = (entities: WorldConfiguration) => {
-  //   updateUnitTest({expectedConfiguration: entities});
-  // }
-
-  // useEffect(() => {
-  //   // Don't run until modules have finished loading
-  //   if (loadingModules) { 
-  //     return;
-  //   }
-
-  //   //console.log("*** useEffect, availableModules: ", availableModules);
-  //   // Filter out selected that are not in available 
-  //   // Avoid comparing by reference
-  //   const filteredSelected = selectedModules.filter(sm => 
-  //     availableModules.find(am => am.equals(sm))
-  //   );
-
-  //   //console.log("*** useEffect, filteredSelected: ", filteredSelected);
-  //   setSelectedModules(filteredSelected);
-  // }, [availableModules, loadingModules]); // , setSelectedModules 
-
-  // // Clear systems from modules that are no longer selected
-  // useEffect(() => {
-  //   if (loadingModules || loadingMetadata || !currentTestId) { 
-  //     return;
-  //   }
-
-  //   const wsTest = getCurrentTest()!
-  //   // if(!wsTest) {
-  //   //   return;
-  //   // }
-  //   const unitTest = wsTest.testProperties.test;
-  //   const systems = unitTest.systems;
-
-  //   if (systems.length > 0) {
-  //     const availableSystemNames = new Set(availableSystems.map(s => s.module.fullPath + "." + s.name));
-  //     const filteredSystems = systems.filter(s => availableSystemNames.has(s.name));
-
-  //     console.log("*** Filtering systems, systems before filtering: ", systems);
-  //     console.log("*** Filtering systems, availableSystemNames: ", availableSystemNames);
-  //     console.log("*** Filtering systems, filteredSystems: ", filteredSystems);
-  //     //if (filteredSystems.length !== systems.length) {
-  //     setSystems(filteredSystems);
-  //     //}
-  //   }
-  // }, [availableSystems, loadingModules, loadingMetadata, currentTestId]); //, setSystems
-
-  // // Clear components from entities that are no longer available in selected modules
-  // useEffect(() => {
-  //   if (loadingModules || loadingMetadata || !currentTestId) { 
-  //     return;
-  //   }
-
-  //   //const availableComponentNames = availableComponents.map(c => c.name);
-  //   const filterEntityComponents = (entities: EntityConfiguration[]) => {
-  //     return entities.map(entity => ({
-  //       ...entity,
-  //       components: entity.components.filter(
-  //         comp => availableComponents.find(
-  //           ac => ac.name == comp.name 
-  //         )
-  //       )
-  //     }));
-  //   };
-
-  //   const wsTest = getCurrentTest()!
-  //   const unitTest = wsTest.testProperties.test;
-
-  //   const filteredInitial  = filterEntityComponents(unitTest.initialConfiguration);
-  //   const filteredExpected = filterEntityComponents(unitTest.expectedConfiguration);
-
-  //   console.log("*** Filtering ENTITIES INITIAL, AVAILABLE components: ", availableComponents);
-  //   console.log("*** Filtering ENTITIES INITIAL, BEFORE filtering: ", unitTest.initialConfiguration);
-  //   console.log("*** Filtering ENTITIES INITIAL, AFTER filtering: ", filteredInitial);
-    
-  //   //if (JSON.stringify(filteredInitial) !== JSON.stringify(initialConfiguration)) {
-  //   setInitialConfiguration(filteredInitial);
-  //   setExpectedConfiguration(filteredExpected);
-  // }, [availableComponents, loadingModules, loadingMetadata, currentTestId]); // , setInitialConfiguration, setExpectedConfiguration
-
   const changeEntityName = (id: string, newName: string) => {
-    //const oldName = test.initialConfiguration.find(e => e.id === id)!.entityName;
-    //const oldId = test.initialConfiguration.find(e => e.id === id)!.id;
-
     updateUnitTest(prev => ({
       initialConfiguration: prev.initialConfiguration.map(e => 
         e.id === id ? { ...e, entityName: newName } : e
@@ -258,9 +110,6 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({ children }) =>
         e.id === id ? { ...e, entityName: newName } : e
       )
     }));
-
-    //handleOnOperatorChanged(null, oldName);
-    //handleOnOperatorChanged(OperatorType.Eq, newName);
   };
 
   const getEntity = (id: string, expected: boolean) => {
@@ -282,12 +131,10 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({ children }) =>
     updateUnitTest(prevTest => ({
       initialConfiguration: [
         ...prevTest.initialConfiguration, 
-        //{id: crypto.randomUUID(), entityName: newName, components: [] }
         newEntity
       ],
       expectedConfiguration: [
         ...prevTest.expectedConfiguration, 
-        //{id: crypto.randomUUID(), entityName: newName, components: [] }
         newEntity
       ]
     }));
@@ -353,11 +200,6 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({ children }) =>
   }  
 
   const replaceComponent = (entityId: string, componentIndex: number, newComponentId: string | null) => {
-    // if(!newComponent) {
-    //   const initial = removeComponentFromWorld(test.initialConfiguration, entityId, componentIndex);
-    //   const expected = removeComponentFromWorld(test.expectedConfiguration, entityId, componentIndex);
-    // }
-
     updateUnitTest((prev: UnitTest) => {
       return {
         ...prev,
@@ -367,29 +209,7 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({ children }) =>
     })
   }
 
-  // const updateOperators = (operators: Operator[]) => {
-  //   updateUnitTest({operators})
-  // }
-
   const operators = testProperties.test.operators;
-
-  // function isChildPath(pathParent: string, pathChild: string): boolean {
-  //   const child = pathChild.split('/').filter(Boolean);
-  //   const parent = pathParent.split('/').filter(Boolean);
-  
-  //   if (parent.length > child.length) {
-  //     return false;
-  //   }
-  
-  //   return parent.every((segment, i) => segment === child[i]);
-  // }
-
-  // function arePathsRelated(path1: string, path2: string): boolean {
-  //   const segments1 = new Set(path1.split('/').filter(Boolean));
-  //   const segments2 = path2.split('/').filter(Boolean);
-  
-  //   return segments2.some(segment => segments1.has(segment));
-  // }
 
   function arePathsNested(pathA: string, pathB: string): boolean {
     const segA = pathA.split('/').filter(Boolean);
@@ -403,9 +223,6 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({ children }) =>
   
     return true;
   }
-  // const arePathsRelated = (a: string, b: string): boolean => {
-  //   return a.includes(b) || b.includes(a); // a !== b && (
-  // };
 
   const handleOnOperatorChanged = (type: OperatorType | null, fullPath: string) => {
     console.log("Add operator: ", type, fullPath)
