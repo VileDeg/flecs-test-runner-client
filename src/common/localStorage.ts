@@ -24,5 +24,3 @@ export function set<T>(key: string, value: T) {
     console.error("Failed to save " + key + " to localStorage:", error);
   }
 }; 
-
-

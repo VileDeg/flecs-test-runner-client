@@ -1,4 +1,3 @@
-// Common test execution module for script-based test format
 import { 
   UNIT_TEST_COMPONENT_NAME, 
   UNIT_TEST_READY_TAG_NAME, 
@@ -10,49 +9,25 @@ import type {
   UnitTest,
   Component,
   Operator,
-  System,
-
   QueriedEntity,
-  MetaComponentRegistry,
   ComponentField,
-  ComponentFieldValue,
   ComponentFieldsArray,
-  //ComponentFieldsArrayOfComponents,
   ComponentFields,
   EntityConfiguration,
   WorldConfiguration,
   Components,
-  SystemInvocation,
   QueryResponse,
-  QueriedEntityFields,
-  QueryResponseElement,
   
 } from "@/common/types";
 
 import {
-  isComponentFieldValuePrimitive,
   isComponentFieldValueDict,
-  isComponentFieldValueArray,
   iterateComponentFieldDict
 } from "@/common/types";
 
 import * as Core from "@/common/coreTypes";
 
 import { FlecsAsync, flecsError, flecsErrorMessage } from "@/common/flecsAsync"
-
-import { FlecsConnectionContext, type FlecsConnectionState } from "@/contexts/flecsConnectionContext";
-
-import { 
-  Module
-} from "@/common/types";
-import { compile } from "tailwindcss";
-
-
-
-// export interface TestExecutionResult {
-//   success: boolean;
-//   message: string;
-// }
 
 export interface IncompleteTestPollingResult {
   incomplete: UnitTest.Incomplete;
@@ -98,10 +73,6 @@ export class TestRunner {
         return false;
       }
 
-      //console.log("testEntity: ", testEntity)
-      // const allTestsQuery = await this.connection.query(
-      //   UNIT_TEST_COMPONENT_NAME, {}
-      // );
       await this.connection.delete(testEntity.name)
       return true;
     } catch (error: any) {
@@ -142,61 +113,10 @@ export class TestRunner {
 
       await this.connection?.add(testName, UNIT_TEST_READY_TAG_NAME);
       
-      // return {
-      //   success: true,
-      //   message: `Test "${testName}" created and is now running!`,
-      // };
     } catch (error: any) {
       throw flecsError(error, `Error executing test "${test.name}"`)
     }
   }
-
-  /**
-   * Execute multiple tests
-   */
-  // async executeTests(tests: Core.UnitTest[]): Promise<TestExecutionResult[]> {
-  //   const results: TestExecutionResult[] = [];
-    
-  //   for (const test of tests) {
-  //     const result = await this.executeTest(test);
-  //     results.push(result);
-      
-  //     // Small delay between tests to avoid overwhelming the system
-  //     await new Promise(resolve => setTimeout(resolve, 100));
-  //   }
-    
-  //   return results;
-  // }
-
-
-  /**
-   * Maps ComponentField[] to Core.ComponentFields recursively
-   */
-  // static mapFieldsEntityToCore(fields: ComponentFields): Core.ComponentFields {
-  //   const result: Core.ComponentFields = {};
-
-  //   for (const [key, field] of Object.entries(fields)) {
-  //     // Don't care about other attributes
-  //     const value = field.value;
-
-  //     if (isComponentFieldValuePrimitive(value)) {
-  //       result[key] = value;
-  //     } else if (Array.isArray(value)) {
-  //       console.log("Field value is array: ", value);
-  //       const arrayValue: Core.ComponentFieldsArray = [];
-  //       value.forEach((element) => {
-  //         arrayValue.push(TestRunner.mapFieldsEntityToCore(element))
-  //       })
-  //       console.log("Field value is array (after parsing): ", arrayValue);
-  //       result[key] = arrayValue;
-  //     } else {
-  //       // Recursively handle nested ComponentFields
-  //       result[key] = TestRunner.mapFieldsEntityToCore(value);
-  //     }
-  //   }
-
-  //   return result;
-  // }
 
   static getComponentByPath(fullPath: string, knownComponents: Components): Component {
     const parts = fullPath.split('.');
@@ -238,7 +158,6 @@ export class TestRunner {
       destination.value = arrayValue;
       console.log("\tparsed into: ", arrayValue);
     } else {
-      //let destinationValue = destination.value;
       if (!isComponentFieldValueDict(destination.value)) {
         throw Error("Expected a dict value type in destination. \
           Received component structure does not match expected one");
@@ -262,29 +181,6 @@ export class TestRunner {
     }
   }
 
-  /**
-   * Converts the General EntityConfiguration (Array-based) 
-   * to Core Entity (Map-based)
-   */
-  // static convertWorldToCore(
-  //   generalWorld: WorldConfiguration
-  // ): Core.WorldConfiguration {
-  //   return generalWorld.map((entityConf) => {
-  //     const coreComponents: Core.ComponentFields = {};
-
-  //     entityConf.components.forEach((comp) => {
-  //       // Use the full path (module + name) as the key to match Flecs expectations
-  //       const componentPath = `${comp.module.fullPath}.${comp.name}`;
-  //       coreComponents[componentPath] = TestRunner.mapFields(comp.fields);
-  //     });
-
-  //     return {
-  //       name: entityConf.entity,
-  //       components: coreComponents,
-  //     };
-  //   });
-  // }
-
   static convertEntityToCoreFnCallback(
     _: string, field: ComponentField, __: string
   ): Core.ComponentFieldValue {
@@ -306,7 +202,6 @@ export class TestRunner {
           componentPath, 
           TestRunner.convertEntityToCoreFnCallback
         )
-        //TestRunner.mapFieldsEntityToCore(comp.fields);
     });
 
     return {
@@ -343,12 +238,6 @@ export class TestRunner {
     return world.map((coreEntity) => JSON.stringify(this.convertEntityToCore(coreEntity)));
   }
 
-  // static convertEntitiesToString(
-  //   generalWorld: WorldConfiguration
-  // ): Core.SerializedEntities {
-  //   return world.map((generalWorld) => (JSON.stringify(coreEntity)));
-  // }
-
   static convertOperatorToCore(oper: Operator): Core.Operator {
     return {path: {path: oper.path }, type: oper.type}
   }
@@ -367,164 +256,6 @@ export class TestRunner {
       operators: test.operators.map(op => TestRunner.convertOperatorToCore(op))
     };
   }
-
-
-  /**
-   * Convert entity data array to Flecs DSL script format
-   */
-  // static convertEntitiesToScript(entities: EntityConfiguration[]): string {
-  //   if (entities.length === 0) return "";
-
-  //   let script = "";
-  //   const modules = new Set<string>();
-
-  //   // Collect modules from components
-  //   entities.forEach(entity => {
-  //     entity.components.forEach(component => {
-  //       if (component.module) {
-  //         modules.add(component.module.fullPath);
-  //       }
-  //     });
-  //   });
-
-  //   // Add using statements
-  //   modules.forEach(module => {
-  //     script += `using ${module}\n`;
-  //   });
-
-  //   if (modules.size > 0) {
-  //     script += "\n";
-  //   }
-
-  //   // Add entities
-  //   entities.forEach(entity => {
-  //     script += `${entity.entity} {\n`;
-  //     entity.components.forEach(component => {
-  //       const componentName = component.name;
-        
-  //       // Extract component field values (exclude 'name' and 'module' fields)
-  //       const fields = Object.entries(component).filter(([key]) => key !== 'name' && key !== 'module');
-        
-  //       if (fields.length > 0) {
-  //         const fieldsStr = fields
-  //           .map(([key, value]) => `${key}: ${TestRunner.formatValue(value)}`)
-  //           .join(', ');
-  //         script += `    ${componentName}: {${fieldsStr}}\n`;
-  //       } else {
-  //         script += `    ${componentName}\n`;
-  //       }
-  //     });
-  //     script += "}\n";
-  //   });
-
-  //   return script.trim();
-  // }
-
-  /**
-   * Format a value for Flecs DSL script
-   */
-  // private static formatValue(value: any): string {
-  //   if (typeof value === 'string') {
-  //     // If it's already a formatted string (like "hello"), keep it as-is
-  //     // Otherwise, wrap in quotes
-  //     if (value.startsWith('"') && value.endsWith('"')) {
-  //       return value;
-  //     }
-  //     return `"${value}"`;
-  //   }
-  //   return String(value);
-  // }
-
-  /**
-   * Validate test format and structure
-   */
-  // static validateTest(test: any): { valid: boolean; errors: string[] } {
-  //   const errors: string[] = [];
-
-  //   if (!test) {
-  //     errors.push("Test is null or undefined");
-  //     return { valid: false, errors };
-  //   }
-
-  //   if (!test.name || typeof test.name !== 'string') {
-  //     errors.push("Test name is required and must be a string");
-  //   }
-
-  //   if (!test.systems || !Array.isArray(test.systems)) {
-  //     errors.push("Test systems are required and must be an array");
-  //   } else {
-  //     test.systems.forEach((system: any, index: number) => {
-  //       if (!system.name || typeof system.name !== 'string') {
-  //         errors.push(`System ${index}: name is required and must be a string`);
-  //       }
-  //       if (typeof system.timesToRun !== 'number' || system.timesToRun < 1) {
-  //         errors.push(`System ${index}: timesToRun must be a positive number`);
-  //       }
-  //     });
-  //   }
-
-  //   if (typeof test.scriptActual !== 'string') {
-  //     errors.push("scriptActual must be a string");
-  //   }
-  //   if (typeof test.scriptExpected !== 'string') {
-  //     errors.push("scriptExpected must be a string");
-  //   }
-
-  //   return { valid: errors.length === 0, errors };
-  // }
-
-
-  /**
-   * Execute an incomplete test to generate expected state
-   * This creates a test with the Incomplete tag and empty expected config
-   */
-  // async executeIncompleteTest(
-  //   name: string,
-  //   systems: SystemInvocation[],
-  //   initialEntities: EntityConfiguration[],
-  //   clearLastResult: boolean = true
-  // ): Promise<void> {
-  //   try {
-  //     console.log("TestRunner: converting world before: ", initialEntities);
-
-  //     if(clearLastResult) {
-  //       await this.deleteTestEntity(name)
-  //     }
-
-  //     // Create test with empty expected config
-  //     const incompleteTest: Core.UnitTest = {
-  //       name,
-  //       systems,
-  //       initialConfiguration: TestRunner.convertEntitiesToCoreString(initialEntities),
-  //       expectedConfiguration: [], 
-  //       operators: []
-  //     };
-
-  //     console.log("TestRunner: converting world after: ", incompleteTest.initialConfiguration);
-      
-  //     // Create the entity for this test
-  //     await this.connection?.create(name);
-      
-  //     // Set the test component
-  //     await this.connection?.set(name, UNIT_TEST_COMPONENT_NAME, incompleteTest);
-      
-  //     // Add Incomplete tag to signal this is for expected state generation
-  //     await this.connection?.add(name, UNIT_TEST_INCOMPLETE_TAG_NAME);
-      
-  //     // Add Ready tag to start execution
-  //     await this.connection?.add(name, UNIT_TEST_READY_TAG_NAME);
-      
-  //     // return {
-  //     //   success: true,
-  //     //   message: `Incomplete test "${testName}" created for expected state generation`,
-  //     //   testName
-  //     // };
-  //   } catch (error: any) {
-  //     throw flecsError(error, `Error executing incomplete test "${name}"`)
-  //   }
-  // }
-
-  
 
   /**
    * Poll for incomplete test results with Executed tag
@@ -556,7 +287,7 @@ export class TestRunner {
             
             console.log("found name, ic: ", incomplete);
             
-            if (executed && incomplete) { //  && incompleteComponent?.worldExpectedSerialized
+            if (executed && incomplete) {
               console.log("polling success")
               return {
                 incomplete,
@@ -581,18 +312,6 @@ export class TestRunner {
     return {
       error: `Timeout: Test did not complete within ${timeoutMs}ms`
     };
-  }
-
-    /**
-   * Extract module name from entity path (e.g., "modules.movement.Position" -> "modules.movement")
-   */
-  private static splitNameModule(entityPath: string): { name: string, module: string } {
-    const parts = entityPath.split('.');
-    if (parts.length > 1) {
-      return { name: parts.slice(-1)[0], module: parts.slice(0, -1).join('.')};
-    }
-    
-    return { name: "", module: "" };
   }
 
   /**

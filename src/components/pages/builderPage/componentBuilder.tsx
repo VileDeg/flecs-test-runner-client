@@ -68,7 +68,6 @@ export const ComponentBuilder: React.FC<ComponentBuilderProps> = ({
   }
 
   const makeChildFieldPath = (childFieldName: string) => {
-    //console.log("Will reutrn", makePath([fullPath, childFieldName]))
     return [myFullPath, childFieldName].join(OPERATOR_PATH_SEP)
   }
 
@@ -140,7 +139,6 @@ export const ComponentBuilder: React.FC<ComponentBuilderProps> = ({
       className="gap-2 w-auto"
     >
       <Trash2 className="h-4 w-4" />
-      {/* Remove Component */}
     </Button>
   )
 

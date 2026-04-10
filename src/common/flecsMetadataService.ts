@@ -2,22 +2,17 @@
 import type { FlecsAsync } from "./flecsAsync";
 
 import type { 
-  Component,
   PrimitiveType,
   System,
-  QueryResponse,
   QueriedEntity,
-  MetaComponentRegistry,
   Components,
   ComponentField,
   ComponentFieldValue,
   ComponentFields,
   SupportedOperators,
-  TypeInfoResponse,
   TypeInfoResponseDict,
   TypeInfoResponseArray,
   TypeInfoResponseEntryValue,
-  TypeInfoResponseEntryValueLeaf,
   QueriedComponent
 } from "@/common/types";
 
@@ -180,19 +175,15 @@ export class FlecsMetadataService {
       }
 
       for (const entity of data.results as QueriedEntity[]) {
-        const componentName = entity.name; //  || entity.path
-        //if (componentName) {
-          // Check if already added (avoid duplicates if overlapping queries)
-          // if (components.find(c => c.name === componentName)) {
-          //   console.warn("Duplicated component found. Skipping...");
-          //   continue;
-          // }
-          // Try to get component metadata to discover fields
-        const fullComponentPath = modulePath + "." + componentName; // 
+        const componentName = entity.name;
+       
+        // Try to get component metadata to discover fields
+        const fullComponentPath = modulePath + "." + componentName;
         const fields = await this.getComponentFields(
           connection, fullComponentPath
         );
         if(!fields) {
+          console.warn(`Component ${fullComponentPath} skipped. Unsupported.`)
           continue
         }
 
@@ -208,16 +199,6 @@ export class FlecsMetadataService {
         });
         //}
       }
-      //   console.warn(`Could not fetch components for module ${modulePath}:`, error);
-      // }
-      /*
-      // Validate fields types and assign default values
-      components.forEach((component) => {
-        component.fields = this.getDefaultValueForComponentFields(component.fields, components);
-
-        console.log("Component fields assigned\n", component);
-      })
-      */
       
       // Sort components by name for better UX
       return components.sort((a, b) => a.name.localeCompare(b.name));
@@ -226,139 +207,131 @@ export class FlecsMetadataService {
       throw error;
     }
   }
-
-  private static getEntityMetaComponent<K extends keyof MetaComponentRegistry>(
-    entity: QueriedEntity, key: K
-  ): MetaComponentRegistry[K] | undefined 
-  {
-    return entity.components?.[key];
+  
+  static flecsNameToPath(name: string, delim: string = '/'): string {
+    return name.replaceAll('.', delim);
   }
 
-  
-    static flecsNameToPath(name: string, delim: string = '/'): string {
-      return name.replaceAll('.', delim);
-    }
+  static parseTypeInfoArray(
+    array: TypeInfoResponseArray)
+  : ComponentFields 
+  {
+    console.warn("parseTypeInfoArray is not supported");
+    const fields: ComponentFields = {};
+    return fields;
+  }
 
-    static parseTypeInfoArray(
-      array: TypeInfoResponseArray)
-    : ComponentFields 
-    {
-      console.warn("parseTypeInfoArray is not supported");
-      const fields: ComponentFields = {};
-      return fields;
-    }
+  static isCollectionType(type: string): boolean {
+    return type === "vector" || type === "array";
+  }
 
-    static isCollectionType(type: string): boolean {
-      return type === "vector" || type === "array";
-    }
+  static parseTypeInfoValue(value : TypeInfoResponseEntryValue): ComponentField {
+    let field: ComponentField = {type:"<undefined>", value:"<undefined>"} 
+    if (Array.isArray(value)) { // leaf array
+      const type = typeInfoLeafValueToString(value[0]);
 
-    static parseTypeInfoValue(value : TypeInfoResponseEntryValue): ComponentField {
-      let field: ComponentField = {type:"<undefined>", value:"<undefined>"} 
-      if (Array.isArray(value)) { // leaf array
-        const type = typeInfoLeafValueToString(value[0]);
-
-        if(!this.isCollectionType(type)) {
-          field = {
-            type,
-            value: String(this.getDefaultValueForPrimitiveType(type))
-          };
-        } else {
-          if(value.length < 2) {
-            // invalid
-            throw Error("Missing element with index 1 in: " + value);
-          }
-
-          const schema = this.parseTypeInfoValue(value[1]!);
-          //console.log("Assigned schema: ", schema);
-
-          field = {
-            type,
-            value: [],
-            schema
-          };
+      if(this.isCollectionType(type)) {
+        if(value.length < 2) {
+          // Invalid
+          throw Error("Missing element with index 1 in: " + value);
         }
-      } else if (isTypeInfoLeafValue(value)) { // leaf
-        // unsupported for now
+
+        const schema = this.parseTypeInfoValue(value[1]!);
+
         field = {
-          type: "skip", // fallback type for now
-          value: "<undefined>"
+          type,
+          value: [],
+          schema
         };
-      } else { // dict
+      } else if (this.isEnumType(type)) {
+        const enumValues = value.slice(1);
+        if(!enumValues.every(v => typeof v === "string")) {
+          throw Error(`Invalid values found in enum '${type}'`);
+        }
+        
         field = {
-          type: "component", // here we don't know which component it is
-          value: this.parseTypeInfoDict(value)
+          type,
+          value: enumValues[0], // First value as default
+          enumValues
+        };
+      } else {
+        field = {
+          type,
+          value: String(this.getDefaultValueForPrimitiveType(type))
         };
       }
-      return field;
-    } 
+    } else if (isTypeInfoLeafValue(value)) { // leaf
+      // unsupported for now
+      field = {
+        type: "skip", // fallback type for now
+        value: "<undefined>"
+      };
+    } else { // dict
+      field = {
+        type: "component", // here we don't know which component it is
+        value: this.parseTypeInfoDict(value)
+      };
+    }
+    return field;
+  } 
 
-    static parseTypeInfoDict(
-      dict: TypeInfoResponseDict)
-    : ComponentFields 
-    {
-      const fields: ComponentFields = {};
+  static parseTypeInfoDict(
+    dict: TypeInfoResponseDict)
+  : ComponentFields 
+  {
+    const fields: ComponentFields = {};
 
-      (Object.entries(dict) as [string, TypeInfoResponseEntryValue][]).forEach(([key, value]) => {
-        fields[key] = this.parseTypeInfoValue(value)
-      });
+    (Object.entries(dict) as [string, TypeInfoResponseEntryValue][]).forEach(([key, value]) => {
+      fields[key] = this.parseTypeInfoValue(value)
+    });
+
+    return fields;
+  }
+
+  static async getComponentFields(
+    connection: FlecsAsync, 
+    componentName: string)
+  : Promise<ComponentFields | null> {
+    try {
+      const typeInfo = await connection.typeInfo(
+        `${componentName}`
+      );
+
+      let fields: ComponentFields = {};
+
+      if (!Array.isArray(typeInfo)) {
+        fields = this.parseTypeInfoDict(typeInfo);
+      } else {
+        // Can be array in case of vector/array
+        // We probably don't want to support it being used as a component itself, 
+        // only as a member
+        return null;
+      }
 
       return fields;
+    } catch (error) {
+      throw new Error(`Error fetching component info for ${componentName}: ${error}`);
     }
+  } 
 
-    static async getComponentFields(
-      connection: FlecsAsync, 
-      componentName: string)
-    : Promise<ComponentFields | null> {
-      try {
-        //console.log("replace before " + componentName + " after: " + this.flecsNameToPath(componentName))
-        // Try to get component metadata using Flecs connection
-        // const typeInfo = await connection.typeInfo(
-        //   `${this.flecsNameToPath(componentName)})`
-        // );
-        const typeInfo = await connection.typeInfo(
-          `${componentName}`
-        );
+  static async getComponentSupportedOperators(
+    connection: FlecsAsync,
+    componentName: string, // full path
+  ) : Promise<SupportedOperators> {
+    try {
+      const query = `${SUPPORTER_OPERATORS_COMPONENT_NAME}(${componentName})`
+      const response = await connection.query(query);
 
-        let fields: ComponentFields = {};
-        //console.log("getComponentInfo for " + componentName + ", typeInfo: ", typeInfo);
-
-        if (!Array.isArray(typeInfo)) {
-          fields = this.parseTypeInfoDict(typeInfo);
-        } else {
-          // Can be array in case of vector/array
-          // We probably don't want to support it being used as a component itself, 
-          // only as a member
-          // Not supported
-          return null;
-          //fields = this.parseTypeInfoArray(typeInfo);
-        }
-
-        // console.log("replace before " + componentName + " after: " + this.flecsNameToPath(componentName))
-  
-        return fields;
-      } catch (error) {
-        throw new Error(`Error fetching component info for ${componentName}: ${error}`);
+      const component = response.results[0] as QueriedComponent;
+      const supportedOperators = component.fields.values[0];
+      if(!isSupportedOperators(supportedOperators)) {
+        throw Error(`Invalid response structure for object: ` + JSON.stringify(supportedOperators));
       }
-    } 
-
-    static async getComponentSupportedOperators(
-      connection: FlecsAsync,
-      componentName: string, // full path
-    ) : Promise<SupportedOperators> {
-      try {
-        const query = `${SUPPORTER_OPERATORS_COMPONENT_NAME}(${componentName})`
-        const response = await connection.query(query);
-
-        const component = response.results[0] as QueriedComponent;
-        const supportedOperators = component.fields.values[0];
-        if(!isSupportedOperators(supportedOperators)) {
-          throw Error(`Invalid response structure for object: ` + JSON.stringify(supportedOperators));
-        }
-        return supportedOperators;
-      } catch (error) {
-        throw new Error(`Error fetching supported operators for ${componentName}: ${error}`);
-      }
+      return supportedOperators;
+    } catch (error) {
+      throw new Error(`Error fetching supported operators for ${componentName}: ${error}`);
     }
+  }
 
   // TODO: remove?
   static isComponentType(type: string, knownComponents: Components): boolean {
@@ -369,21 +342,22 @@ export class FlecsMetadataService {
     const nt = type.toLowerCase();
     return nt === "bool" || nt === "boolean";
   }
-
   static isFloatType(type: string): boolean {
     const nt = type.toLowerCase();
     return nt === "float" || nt === "double" || nt === "f32" || nt === "f64";
   }
-
   static isIntegerType(type: string): boolean {
     const nt = type.toLowerCase();
     return nt === "int" || nt === "integer" || nt === "i32" || nt === "i64"; // TODO: etc.
   }
   static isStringType(type: string): boolean {
     const nt = type.toLowerCase();
-    return nt === "string" || nt === "str";
+    return nt === "string" || nt === "str" || nt === "text";
   }
-
+  static isEnumType(type: string): boolean {
+    const nt = type.toLowerCase();
+    return nt === "enum";
+  }
   static isPrimitiveType(type: string): boolean {
     return this.isBooleanType(type) || 
       this.isIntegerType(type) || 
@@ -391,7 +365,7 @@ export class FlecsMetadataService {
       this.isStringType(type);
   }
 
-  static parseValueForPrimitiveType(type: string, value: string): PrimitiveType {
+  static parseValueForPrimitiveType(type: string, value: string, enumConstants?: string[]): PrimitiveType {
     const rawValue = value?.trim() ?? "";
   
     if (this.isBooleanType(type)) {
@@ -400,7 +374,6 @@ export class FlecsMetadataService {
       if (lower === "false") return false;
       throw new Error(`Value "${value}" is not a valid boolean for type ${type}`);
     }
-  
     if (this.isIntegerType(type)) {
       // Regex ensures only digits (and optional leading sign) are present
       if (!/^-?\d+$/.test(rawValue)) {
@@ -408,7 +381,6 @@ export class FlecsMetadataService {
       }
       return parseInt(rawValue, 10);
     }
-  
     if (this.isFloatType(type)) {
       const parsed = Number(rawValue);
       // Number("") returns 0, so we check for empty string explicitly
@@ -417,7 +389,12 @@ export class FlecsMetadataService {
       }
       return parsed;
     }
-  
+    if (this.isEnumType(type)) {
+      if (rawValue === "" || !enumConstants?.find(c => c === value)) {
+        throw new Error(`Value "${value}" is not a valid enum value for type ${type}`);
+      }
+      return rawValue;
+    }
     if (this.isStringType(type)) {
       return rawValue;
     }
@@ -425,32 +402,12 @@ export class FlecsMetadataService {
     throw new Error(`Unsupported or invalid type: ${type}`);
   }
 
-  /*
-  static parseValueForPrimitiveType(type: string, value: string | null): PrimitiveType {
-    type = type.toLowerCase();
-    
-    if (this.isBooleanType(type)) {
-      return value ? value.toLowerCase() === "true" : "false";
-    } else if (this.isIntegerType(type)) {
-      return value ? parseInt(value) : 0;
-    } else if (this.isFloatType(type)) {
-      return value ? parseFloat(value) : 0.0;
-    } else if (this.isStringType(type)) {
-      return value ? String(value) : "";
-    } else if (type == "vector" || type == "array" || type == "skip") { // unsupported for now
-        return "I am " + type + " value";
-    } else {
-      console.log("throw Error(\"Invalid (type, value): \" + type + \", \" + value);")
-      throw Error("Invalid (type, value): " + type + ", " + value);
-    }
-  }
-  */
-
   private static readonly DEFAULT_VALUES: Record<string, PrimitiveType> = {
     boolean: false,
     int: 0,
     float: 0,
     string: "",
+    text: "",
   };
 
   /**
@@ -466,16 +423,11 @@ export class FlecsMetadataService {
     return value;
   }
 
-  
-
-  
-
   // TODO: component name vs module.name
   // TODO: array support
   static getDefaultValueForField(fieldType: string, knownComponents: Components)
     : ComponentFieldValue 
   {
-
     const component = knownComponents.find((component) => { component.name == fieldType });
     if (!component) {
       return String(this.getDefaultValueForPrimitiveType(fieldType));
@@ -483,8 +435,6 @@ export class FlecsMetadataService {
 
     return this.getDefaultValueForComponentFields(component.fields, knownComponents);
   }
-
-  
 
   static getDefaultValueForComponentFields(
     fields: ComponentFields, knownComponents: Components
@@ -496,54 +446,7 @@ export class FlecsMetadataService {
         f => ({ ...f, value: this.getDefaultValueForField(f.type, knownComponents) })
       )
     } catch(error: any) {
-      //console.log("Failed to getDefaultValueForComponentFields: ", fields);
       throw Error(error.cause);
     }
-
-    // return Object.fromEntries(Object.entries(fields).map(
-    //   f => ({ ...f, value: this.getDefaultValueForField(f.type, knownComponents) })
-    // ));
   }
-
-  // static getDefaultComponentValue(
-  //   componentName: string, knownComponents: ComponentsRegistry
-  // ): ComponentFields
-  // {
-
-  //   return fields.map(
-  //     f => ({ ...f, value: this.getDefaultValueForField(f.type, knownComponents) })
-  //   );
-  // }
-
-  /**
-   * Format a value for JSON serialization based on its type
-   */
-  // static formatValueForType(value: string, type: string): ScalarValue {
-  //   switch (type.toLowerCase()) {
-  //     case 'float':
-  //     case 'double':
-  //     case 'f32':
-  //     case 'f64':
-  //       return parseFloat(value) || 0.0;
-  //     case 'int':
-  //     case 'integer':
-  //     case 'i32':
-  //     case 'i64':
-  //     case 'u32':
-  //     case 'u64':
-  //     case 'int32':
-  //     case 'int64':
-  //     case 'uint32':
-  //     case 'uint64':
-  //       return parseInt(value) || 0;
-  //     case 'bool':
-  //     case 'boolean':
-  //       return value.toLowerCase() === 'true';
-  //     case 'string':
-  //     case 'str':
-  //       return String(value);
-  //     default:
-  //       return value;
-  //   }
-  // }
 }

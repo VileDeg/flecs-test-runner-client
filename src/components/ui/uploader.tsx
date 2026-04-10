@@ -61,7 +61,6 @@ export const Uploader: React.FC<UploaderProps> = ({ onTestsParsed  }) => {
             Skipping...`, 
             MessageType.ERROR
           );
-          //console.error(`Error parsing ${file.name}:`, e);
         }
       }
 
@@ -75,7 +74,7 @@ export const Uploader: React.FC<UploaderProps> = ({ onTestsParsed  }) => {
     useDropzone({
       onDrop,
       accept: {
-        "application/json": [".json"], // <-- accept only JSON files
+        "application/json": [".json"], 
       },
       multiple: true,
     });

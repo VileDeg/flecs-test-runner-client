@@ -1,7 +1,4 @@
 import React from "react";
-import { Button } from "./button";
-import { Eye, EyeOff } from "lucide-react";
-import { cn } from "@/lib/utils";
 import type { Component } from "@/common/types";
 
 export interface ComponentSelectorProps {

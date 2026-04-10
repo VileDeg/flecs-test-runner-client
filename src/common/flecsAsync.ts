@@ -5,8 +5,6 @@
 // @ts-ignore TS7006
 // @ts-nocheck
 
-
-
 import {flecs} from "../flecs.js";
 
 import type {
@@ -77,17 +75,11 @@ export class FlecsAsync {
         return;
       }
       
-      //if(methodName != "set") {
-        // TODO: other methods without recv, err
-        // Add success and error callbacks
+      // TODO: other methods without recv, err
+      // Add success and error callbacks
       // what about on_abort parameter?
       const newArgs = [...args, resolve, reject]; 
       method.apply(this.connection, newArgs);
-      // } else {
-      //   newArgs = [...args];
-      //   method.apply(this.connection, newArgs);
-      //   resolve();
-      // }
     });
   }
 
@@ -119,18 +111,6 @@ export class FlecsAsync {
 
    // Methods that DON'T take recv/err - return request objects
   async set(path, component, value) {
-    // return new Promise((resolve, reject) => {
-    //   try {
-    //     const request = this.connection.set(path, component, value);
-        
-    //     // The request object handles the HTTP call internally
-    //     // We need to hook into its completion somehow
-    //     // Since it returns immediately, we assume success for now
-    //     resolve(request);
-    //   } catch (error) {
-    //     reject(error);
-    //   }
-    // });
     return this._wrapMethod('set', path, component, value);
   }
 

@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useMemo, type ReactNode } from "react";
-//import type { UnitTest } from "@/common/types";
 import type { WorkspaceTest, WorkspaceState } from "@/common/workspaceTypes";
 import { TestStatus } from "@/common/workspaceTypes";
 import { isWorkspaceState } from "@/common/workspaceTypes";
@@ -47,7 +46,7 @@ interface WorkspaceContextType {
   clearWorkspaceTests: () => void;
   
   // Bulk operations
-  addWorkspaceTests: (tests: UnitTestProps[]) => void;// => WorkspaceTest[];
+  addWorkspaceTests: (tests: UnitTestProps[]) => void;
   runTest: (testId: string) => Promise<boolean>;
   runTestIncomplete: (testId: string, testProps: UnitTestProps) => Promise<boolean>;
   runMultipleTests: (tests: WorkspaceTest[]) => Promise<boolean>;
@@ -101,7 +100,8 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
     if(!loadingMetadata) {
       availableModules.forEach(module => {
         if(!moduleMetadataMap.has(module.fullPath)) {
-          console.error("Internal Error"); // Cannot happen
+          // Cannot happen
+          console.error("Internal Error: module ", module.fullPath, " is not in the map ", moduleMetadataMap); 
           return;
         }
         const md = moduleMetadataMap.get(module.fullPath)!;
@@ -115,7 +115,7 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
 
   const testsRef = useRef(wsState.tests);
 
-  // 2. Update the ref every time the state changes
+  // Update the ref every time the state changes
   useEffect(() => {
     testsRef.current = wsState.tests;
   }, [wsState.tests]);
@@ -163,14 +163,13 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
     return workspaceTest;
   };
 
-  const addTests = (testsToAdd: UnitTestProps[]) => { // : WorkspaceTest[] 
+  const addTests = (testsToAdd: UnitTestProps[]) => {
     console.log("testsToAdd: ", testsToAdd)
 
     setWsState(prev => {
       const newWsTests = testsToAdd.map(testProps => createWorkspaceTest(testProps));
       const combinedTests = [...prev.tests];
 
-      //const totalTests = prev.tests;
       console.log("totalTests BEFORE: ", combinedTests)
 
       newWsTests.forEach(wsTest => {
@@ -244,11 +243,11 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
     const testId = wsTest.id;
     const unitTest = wsTest.testProperties.test;
     if(wsTest.status === TestStatus.INVALID) {
-      showToast(`Test "${unitTest.name}" is not valid. Cannot run.`, MessageType.ERROR);
+      showToast(`Test "${unitTest.name}" is not valid. Cannot run.`, MessageType.WARNING);
       return false;
     }
     if(wsTest.status === TestStatus.RUNNING) {
-      showToast(`Test "${unitTest.name}" is already running.`, MessageType.ERROR);
+      showToast(`Test "${unitTest.name}" is already running.`, MessageType.WARNING);
       return false;
     }
     try {
@@ -465,7 +464,7 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
   };
 
   // Helper function to parse query results into TestResult array
-  const parseQueryResults = (queryResult: QueryResponse): TestResult[] => { // , defaultStatusMessage: string
+  const parseQueryResults = (queryResult: QueryResponse): TestResult[] => {
     const results: TestResult[] = [];
     
     for (const entity of queryResult.results) {
@@ -492,7 +491,6 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
       const currentTests = testsRef.current;
       const runningTests = currentTests.filter(test => test.status === TestStatus.RUNNING);
   
-      //console.log("runningTests: ", runningTests);
       if (runningTests.length === 0) {
         setIsPolling(false);
         return;
@@ -500,16 +498,17 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
   
       // Execute queries
       const [passedQuery, failedQuery] = await Promise.all([
-        connection.query(`TestRunner.UnitTest, ${UNIT_TEST_EXECUTED_TAG_NAME},  ${UNIT_TEST_PASSED_TAG_NAME}, ?${UNIT_TEST_INCOMPLETE_TAG_NAME}`), // , !${UNIT_TEST_INCOMPLETE_TAG_NAME}
-        connection.query(`TestRunner.UnitTest, ${UNIT_TEST_EXECUTED_TAG_NAME}, !${UNIT_TEST_PASSED_TAG_NAME}, ?${UNIT_TEST_INCOMPLETE_TAG_NAME}`) // , !${UNIT_TEST_INCOMPLETE_TAG_NAME}
+        connection.query(
+          `TestRunner.UnitTest, ${UNIT_TEST_EXECUTED_TAG_NAME},  ${UNIT_TEST_PASSED_TAG_NAME}, ?${UNIT_TEST_INCOMPLETE_TAG_NAME}`
+        ),
+        connection.query(
+          `TestRunner.UnitTest, ${UNIT_TEST_EXECUTED_TAG_NAME}, !${UNIT_TEST_PASSED_TAG_NAME}, ?${UNIT_TEST_INCOMPLETE_TAG_NAME}`
+        ) 
       ]);
   
       const passedResults = parseQueryResults(passedQuery);
       const failedResults = parseQueryResults(failedQuery);
 
-      console.log("failedResults: ", failedResults);
-      console.log("passedResults: ", passedResults);
-  
       // Filter and update
       filterRunningTests(runningTests, passedResults, failedResults);
     } catch (err: any) {
@@ -523,16 +522,18 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
     let isMounted = true;
   
     const runPoll = async () => {
-      // 1. Check if we should still be polling
-      if (!isPolling || !isMounted) return;
+      // Check if we should still be polling
+      if (!isPolling || !isMounted) {
+        return;
+      }
   
       try {
-        // 2. Await the async logic fully
+        // Await the async logic fully
         await pollTestResults();
       } catch (error) {
-        console.error("Poll failed:", error);
+        console.error("Poll for results failed: ", error);
       } finally {
-        // 3. Only schedule the NEXT poll after the current one is DONE
+        // Only schedule the NEXT poll after the current one is DONE
         if (isPolling && isMounted) {
           timerId = setTimeout(runPoll, 5000);
         }
@@ -547,7 +548,7 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
       isMounted = false;
       clearTimeout(timerId);
     };
-  }, [isPolling]); // pollTestResults is excluded to avoid effect re-runs
+  }, [isPolling]);
 
 
   const value: WorkspaceContextType = {

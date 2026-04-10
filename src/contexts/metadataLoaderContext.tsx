@@ -14,12 +14,6 @@ export interface ModuleMetadata {
   components: Component[],
 }
 
-export interface MetadataProps {
-  availableModules: Module[],
-  moduleMetadataMap: Map<string, ModuleMetadata>,
-  loadingMetadata: boolean,
-}
-
 interface MetadataLoaderContextType {
   availableModules: Module[],
   moduleMetadataMap: Map<string, ModuleMetadata>,
@@ -38,7 +32,7 @@ export const MetadataLoaderProvider: React.FC<MetadataLoaderProviderProps> = ({ 
   const [moduleMetadataMap, setModuleMetadataMap] = useState<Map<string, ModuleMetadata>>(new Map());
   
   const [availableModules, setAvailableModules] = useState<Module[]>([]);
-  const [loadingMetadata, setLoadingMetadata] = useState(false);
+  const [loadingMetadata, setLoadingMetadata] = useState(true);
 
   const setModuleMetadata = (module: string, metadata: ModuleMetadata) => {
     setModuleMetadataMap((prev) => new Map(prev).set(module, metadata));
@@ -49,13 +43,11 @@ export const MetadataLoaderProvider: React.FC<MetadataLoaderProviderProps> = ({ 
     if (!connection) {
       setModuleMetadataMap(new Map());
       setAvailableModules([])
-      setLoadingMetadata(false);
       console.log("useMetadataLoading: useEffect: no connection")
       return;
     }
     
     const loadMetadata = async () => {
-      setLoadingMetadata(true);
       try {
         const avModules = await FlecsMetadataService.getModules(connection);
         setAvailableModules(avModules);
@@ -73,6 +65,7 @@ export const MetadataLoaderProvider: React.FC<MetadataLoaderProviderProps> = ({ 
         console.error('Failed to load metadata:', error);
       }
       setLoadingMetadata(false);
+      console.log("useMetadataLoading: useEffect: Finished loading")
     };
     
     console.log("useMetadataLoading: useEffect: load modules")

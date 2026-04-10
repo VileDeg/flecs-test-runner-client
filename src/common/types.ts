@@ -2,7 +2,6 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 
 import type { OperatorType } from "@common/coreTypes";
-//import { MODULE_PATH_SEP } from "@common/constants"
 
 // Core types
 export interface SystemInvocation {
@@ -59,13 +58,10 @@ export function isModuleStructural(obj: any): obj is Module {
     obj !== null &&
     typeof obj === "object" &&
     typeof obj.fullPath === "string"
-    // typeof obj.getName === "function" &&
-    // typeof obj.equals === "function"
   );
 }
 
 export function isUnitTestProps(obj: any): obj is UnitTestProps {
-  //const topLevel = false;
   const test = obj.test;
   return (
     typeof obj === "object" &&
@@ -93,7 +89,6 @@ export function isUnitTestProps(obj: any): obj is UnitTestProps {
     test.operators !== null &&
     Array.isArray(test.operators)
   );
-  // TODO: more validation?
 }
 
 // General types
@@ -130,9 +125,6 @@ export type ComponentFieldValuePrimitive = string;
 export type ComponentFieldValue = 
   ComponentFieldValuePrimitive | ComponentFields | ComponentFieldsArray;
 
-// For vector of components, need fields, for vector of primitives just need the primitive type
-//export type ComponentSchema = ComponentFields | ComponentFieldValuePrimitive;
-
 export interface ComponentField {
   // We only know the actual type for the primitive
   type: string;
@@ -140,6 +132,7 @@ export interface ComponentField {
 
   // For vector and array to know what the element looks like
   schema?: ComponentField;
+  enumValues?: string[];
 }
 
 // TODO: difference between equals and cmp
@@ -147,9 +140,6 @@ export interface SupportedOperators {
   equals: boolean;
   cmp: boolean;
 }
-// export const getComponentFullName = (component: Component) => (
-//   [component.module.fullPath, component.name].join(MODULE_PATH_SEP)
-// )
 
 export function isComponentStructureEqual(
   a: ComponentFieldValue,
@@ -222,16 +212,31 @@ export interface ComponentHeader {
   supportedOperators: SupportedOperators;
 }
 
-export function isComponentFieldValuePrimitive(value: any): value is ComponentFieldValuePrimitive {
+export function isComponentFieldValuePrimitive(
+  value: ComponentFieldValue
+): value is ComponentFieldValuePrimitive {
   return typeof value === "string";
 }
 
-export function isComponentFieldValueArray(value: any): value is ComponentFieldsArray {
+export function isComponentFieldValueArray(
+  value: ComponentFieldValue
+): value is ComponentFieldsArray {
   return Array.isArray(value);
 }
 
-export function isComponentFieldValueDict(value: any): value is ComponentFields {
+export function isComponentFieldValueDict(
+  value: ComponentFieldValue
+): value is ComponentFields {
   return !isComponentFieldValuePrimitive(value) && !isComponentFieldValueArray(value);
+}
+
+
+export function isComponentFieldEnum(
+  field: ComponentField
+): boolean {
+  return field.type === "enum" &&
+    isComponentFieldValuePrimitive(field.value) && 
+    field.enumValues !== undefined;
 }
 
 const PATH_DELIM = '.';
@@ -258,9 +263,6 @@ export function iterateComponentField<T>(
 ): GenericFieldValue<T> {
   const value = field.value;
 
-  //console.log("iterateComponentField received: ", field);
-  //console.log("iterateComponentField Examine value: ", field.value);
-
   if (isComponentFieldValuePrimitive(value)) {
     const parts = parent.split('.')
     const name = parts.length > 0 ? parts[-1] : ""
@@ -276,74 +278,25 @@ export function iterateComponentField<T>(
         iterateComponentField(element, me, func)
       )
     })
-    //console.log("iterateComponentField array after: ", newArray);
     return newArray;
   } else {
     return iterateComponentFieldDict(value, parent, func)
   }
-  //throw Error(`Invalid type for field value ${value}`)
 }
-
 
 export function iterateComponentFieldDict<T>(
   fields: ComponentFields, 
   parent: string,
   func: ComponentFieldCallback<T>
 ): GenericFieldRecord<T> {
-  //console.log("iterateComponentFieldDict before: ", fields);
   let fieldsOut: GenericFieldRecord<T> = {}
   for (const [key, field] of Object.entries(fields)) {
     const path = parent + "." + key;
 
     fieldsOut[key] = iterateComponentField(field, path, func)
   }
-  //console.log("iterateComponentFieldDict after: ", fieldsOut);
   return fieldsOut
 }
-// export function iterateComponentFields(
-//   fields: ComponentFields, 
-//   path: string,
-//   func: ComponentFieldCallback
-// ) {
-//   for (const [key, field] of Object.entries(fields)) {
-//     const value = field.value;
-
-//     path += PATH_DELIM + key;
-
-//     if (isComponentFieldValuePrimitive(value)) {
-//       func(key, field, path)
-//       return;
-//     }
-
-//     if (isComponentFieldValueArray(value)) {
-//       if (value.length < 1) {
-//         return;
-//       }
-
-//       if(isComponentFieldValuePrimitive(value[0])) {
-//         // array of primitive
-//         const arrayPrim = value as ComponentFieldsArrayOfPrimitives;
-//         arrayPrim.forEach((element, index) => {
-//           path += PATH_DELIM + `${index}`;
-//           // TODO: assert schema exists and holds a string
-//           func(`${index}`, {type: field.schema! as string, value: element}, path)
-//         })
-//       } else {
-//         // array of component
-//         const arrayComp = value as ComponentFieldsArrayOfComponents;
-//         arrayComp.forEach((element, index) => {
-//           path += PATH_DELIM + `${index}`;
-//           iterateComponentFields(element, path, func)
-//         })
-//       }
-//     } else {
-//       iterateComponentFields(value, key, func)
-//     }
-//   }
-// }
-
-
-//export type ComponentsRegistry = Record<string, Component>;
 
 export type Components = Component[];
 
@@ -356,33 +309,16 @@ export interface EntityHeader {
   entityName: string;
 }
 
-
 export interface EntityConfiguration extends EntityHeader {
   // TODO: maybe user a record type name : component?
-  components: Components; // : ComponentsRegistry;
+  components: Components;
 }
 
 export type WorldConfiguration = EntityConfiguration[];
 
-// Metadata service
-
 export type PrimitiveType = boolean | string | number;
 
-// Builder types
-
-/*
-export interface TestProperties {
-  name: string;
-  systems: SystemInvocation[];
-  initialConfiguration: WorldConfiguration;
-  expectedConfiguration: WorldConfiguration;
-  operators: Operator[];
-}
-  */
-
-
 // Types retrieved from Flecs query
-
 export interface QueriedEntityFields {
   values: unknown[];
 }
@@ -435,7 +371,7 @@ export interface TypeInfoResponseDict {
 // TODO: not sure about array, check serialized array JSON
 export type TypeInfoResponseArray = (TypeInfoResponseEntryValueLeaf | TypeInfoResponseDict)[];
 
-export type TypeInfoResponse = TypeInfoResponseDict | TypeInfoResponseArray; 
+export type TypeInfoResponse = TypeInfoResponseDict | TypeInfoResponseArray;
 
 export function isTypeInfoLeafValue(value: any): value is TypeInfoResponseEntryValueLeafValue {
   const type = typeof value;
@@ -455,7 +391,6 @@ export const OperatorLevel = {
 } as const;
 export type OperatorLevel = (typeof OperatorLevel)[keyof typeof OperatorLevel];
 
-
 // 1. Erasable "Enum" Replacement
 export const MessageType = {
   INFO: 'info',
@@ -466,10 +401,7 @@ export const MessageType = {
 
 export type MessageType = (typeof MessageType)[keyof typeof MessageType];
 
-
 export interface TestValidationResult {
   message: string,
   type?: MessageType
 }
-
-

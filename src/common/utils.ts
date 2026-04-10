@@ -1,9 +1,3 @@
-import { OPERATOR_PATH_SEP } from "./constants";
-
-// export const makePath = (parts: string[]) => {
-//   return parts.join(MODULE_PATH_SEP)
-// }
-
 export const mapRecord = <K extends string, V, R>(
   record: Record<K, V>,
   callback: (value: V, key: K) => R

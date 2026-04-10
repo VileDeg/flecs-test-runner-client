@@ -193,8 +193,6 @@ const TestListItem: React.FC<TestListItemProps> = ({
               </TooltipContent>
             </Tooltip>
           }
-
-              
           </div>
         </div>
         

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useWorkspace } from "@/contexts/workspaceContext.tsx";
 import { ModuleSelector } from "./moduleSelector.tsx";
 import { SystemsList } from "./systemsList.tsx";
@@ -106,17 +106,10 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
   // Helper setters
   const setSelectedModules = (selectedModules: Module[]) => {
     console.log(`setSelectedModules: `, testProperties, selectedModules)
-    updateTestProperties({...testProperties, selectedModules}) // setTestProperties
+    updateTestProperties({...testProperties, selectedModules}) 
   }
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [jsonPreview, setJsonPreview] = useState("");
-  
-  // State for incomplete test execution (expected state generation)
-  const [genStatus, setGenStatus] = useState<{ loading: boolean; msg: string }>({
-    loading: false,
-    msg: ""
-  });
-
   
   const setTestName = (name: string) => {
     updateUnitTest({name});
@@ -246,15 +239,10 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
       <Button 
         variant="outline" 
         onClick={() => runTestIncomplete(currentTestId, testProperties)}
-        disabled={genStatus.loading}
         className="gap-2"
       >
-        {genStatus.loading ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <Layers className="h-4 w-4" />
-        )}
-        {genStatus.loading ? genStatus.msg : "Generate Expected from Initial"}
+        <Layers className="h-4 w-4" />
+        {"Generate Expected from Initial"}
       </Button>
       
       <Button 
@@ -353,8 +341,6 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
     </div>
     </>
   )
-
-  
 
   return (
     <div className="space-y-8">

@@ -101,7 +101,6 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({goToBuilderPage}) =
   // Selection state
   const [isSelectionMode, setIsSelectionMode] = useState<boolean>(false);
   const [selectedTestIds, setSelectedTestIds] = useState<Set<string>>(new Set());
-  //const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(null); // TODO: remove
 
   // Selection helper functions
   const toggleSelectionMode = () => {
@@ -123,11 +122,9 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({goToBuilderPage}) =
     if (newSelectedIds.has(testId)) {
       newSelectedIds.delete(testId);
     } else {
-      //newSelectedIds.clear();
       newSelectedIds.add(testId);
     }
     setSelectedTestIds(newSelectedIds);
-    //setLastSelectedIndex(index);
   };
 
   const selectAllVisibleTests = () => {
@@ -137,7 +134,6 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({goToBuilderPage}) =
 
   const clearSelection = () => {
     setSelectedTestIds(new Set());
-    //setLastSelectedIndex(null);
   };
 
   const isTestSelected = (testId: string) => selectedTestIds.has(testId);
@@ -203,13 +199,12 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({goToBuilderPage}) =
       return;
     }
 
-    addTests(uploadedTests); // const workspaceTests = 
+    addTests(uploadedTests);
     showToast(`Added ${uploadedTests.length} test(s) to workspace`, "success");
   };
 
   // Handle test execution
   const handleRunTest = async (testId: string) => {
-    //const wsTest = wsTests.find(test => test.id == testId)!;
     await runTest(testId)
   };
 
@@ -259,7 +254,6 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({goToBuilderPage}) =
       selectedTests.map(test => [test.id, makeTestResult(test)])
     )
     Utils.downloadJson(results, `Test_Results_${Date.now()}`)
-    //const results = selectedTests.map(test => {{id: test.id, name: test.testProperties.test.name}})
   }
 
   // Handle clear selected tests
@@ -428,7 +422,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({goToBuilderPage}) =
         {sortType === 'alphabetical' && <Text className="h-3 w-3" />}
         {sortType === 'status' && <List className="h-3 w-3" />}
         {sortType === 'chronological' && <Calendar className="h-3 w-3" />}
-        <span className="text-xs capitalize">{sortType}</span> {/*.slice(0, 4) */}
+        <span className="text-xs capitalize">{sortType}</span>
       </Button>
     </div>
   )

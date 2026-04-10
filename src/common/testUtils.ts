@@ -14,8 +14,6 @@ import {
 } from "@/common/types";
 
 import { FlecsMetadataService } from "@common/flecsMetadataService.ts";
-import { TestRunner } from "@common/testRunner.ts";
-import type { FlecsAsync } from "./flecsAsync";
 
 export function downloadJson<T> (item: T, filename: string) {
   const blob = new Blob([JSON.stringify(item, null, 2)], { type: 'application/json' });
@@ -33,19 +31,15 @@ export function validateComponentField(_: string, field: ComponentField, path: s
   try {
     String(FlecsMetadataService.parseValueForPrimitiveType(
       field.type, 
-      field.value as ComponentFieldValuePrimitive)
+      field.value as ComponentFieldValuePrimitive,
+      field.enumValues
+    )
     );
   } catch(err) {
-    console.log("Invalid value");
-    const message = `${path}: invalid value "${field.value}" for type "${field.type}"`
+    const message = `${path}: invalid value "${field.value}" for type "${field.type}": ${err}`
     messages.push(message);
-
   } 
 }
-
-// function getComponentFullName(comp: Component) {
-//   return comp.module.fullPath.trim() + comp.name.trim() 
-// }
 
 export function validateComponents(
   components: Component[],
@@ -91,7 +85,6 @@ export function validateEntities(
   })
   return all
 }
-
 
 function findDuplicates(arr: string[]): string[] {
   const seen = new Set<string>();
@@ -164,51 +157,6 @@ export function validateTest(
   if (validateExpected) {
     all.push(...validateConfiguration(test.expectedConfiguration, availableComponents, true));
   }
-  //all.forEach((msg) => showToast(msg, "error"))
 
   return all.map(message => {return {message}});
 }
-
-
-// export async function runTest(connection: FlecsAsync, test: UnitTest)
-//   : Promise<{ success: boolean; message?: string }> 
-// {
-//   const testCore = TestRunner.convertTestToCore({...test, name: test.name.trim()});
-
-//     /*
-//     // First update the test in workspace
-//     const updatedTest = {
-//         name: test.name,
-//       systems: test.systems,
-//       initialConfiguration,
-//       expectedConfiguration,
-//       operators: test.operators || []
-//     };
-    
-//     updateTest(currentTest.id, { test: updatedTest });
-//     */
-//   try {  
-//     // Then execute the test
-//     const testRunner = new TestRunner(connection!);
-//     const result = await testRunner.executeTest(testCore);
-
-//     return {
-//       success: result.success,
-//       message: result.message
-//     }
-    
-//     // if (result.success) {
-//     //   showToast(`Test "${test.name}" saved and started successfully`, 'success');
-//     // } else {
-//     //   showToast(result.message, 'error');
-//     // }
-//   } catch (error: any) {
-//     return {
-//       success: false,
-//       message: "Error running test: " + error.message
-//     }    
-//     //console.error("Error running test:", error);
-//     //showToast(`Error running test "${test.name}": ${error.message}`, 'error');
-//   }
-// };
-

@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import {flecs} from "../flecs.js";
 import { FlecsAsync } from "../common/flecsAsync.ts"
 
-type FlecsConnection = any | null; // ReturnType<typeof flecs.connect>
+type FlecsConnection = any | null; 
 
 export interface FlecsConnectionState {
   connection: FlecsAsync | null;

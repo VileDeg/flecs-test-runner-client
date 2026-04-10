@@ -1,8 +1,4 @@
-import type { UnitTest, UnitTestProps } from "./types";
-
-import type { 
-  Module,
-} from "@/common/types";
+import type { UnitTestProps } from "./types";
 
 import { 
   isUnitTestProps,
@@ -13,7 +9,6 @@ import {
  * Test status types
  */
 export const TestStatus = {
-  //PENDING: 'pending', // TODO: remove?
   RUNNING: 'running',
   PASSED: 'passed',
   FAILED: 'failed',
@@ -42,8 +37,6 @@ export interface WorkspaceTest {
   createdAt: number;
 
   executedAtEpochMs?: number;
-  /** Modules selected for the test */
-  //modules: Module[];
 }
 
 export function isWorkspaceTest(value: any): value is WorkspaceTest {
@@ -66,10 +59,6 @@ export function isWorkspaceTest(value: any): value is WorkspaceTest {
 export interface WorkspaceState {
   /** All tests in the workspace */
   tests: WorkspaceTest[];
-  /** ID of the test currently open in builder (if any) */
-  //currentTestId: string | null; // TODO: remove
-  /** Last time workspace was synced with Flecs */
-  //lastSyncTime: number | null;
 }
 
 export function isWorkspaceState(value: any): value is WorkspaceState {

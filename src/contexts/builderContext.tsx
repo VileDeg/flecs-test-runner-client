@@ -70,12 +70,14 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({ children }) =>
   } = useMetadataLoader();
 
   const { availableSystems, availableComponents } = useMemo(() => {
+    console.log("builderContent update, systems, components")
     let availableSystems: System[] = []
     let availableComponents: Component[] = []
     if(!loadingMetadata) {
+      console.log("builderContent update, systems, components, loadingMetadata = false")
       selectedModules.forEach(module => {
         if(!moduleMetadataMap.has(module.fullPath)) {
-          console.error("Internal Error"); // Cannot happen
+          console.error("Internal Error: module ", module.fullPath, " is not in the map ", moduleMetadataMap); // Cannot happen
           return;
         }
         const md = moduleMetadataMap.get(module.fullPath)!;
@@ -153,11 +155,9 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({ children }) =>
     const component = 
         availableComponents.find((component) => component.id == id);
     if(!component) {
-      //console.log("getAvailableComponent Error: ", component)
       throw Error(`Component with ID ${id} is not available`);
     }
 
-    //console.log("getAvailableComponent: ", component)
     return component;
   }
 
@@ -186,10 +186,6 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({ children }) =>
 
 
   const replaceComponentFromWorld = (world: WorldConfiguration, entityId: string, componentIndex: number, newComponentId: string | null) => {
-    //console.log("replaceComponentFromWorld, ", newComponentId)
-    //console.log("entityId, ", entityId)
-    //console.log("world, ", world)
-
     return world.map(
       e => e.id === entityId ? {
         ...e, 
@@ -230,7 +226,6 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({ children }) =>
     updateUnitTest(prevTest => {
       let newOperators = []
       if(type) {
-        //newOperators = prevTest.operators.filter((op) => !arePathsRelated(op.path, fullPath));
         newOperators = prevTest.operators.filter((op) => !arePathsNested(fullPath, op.path));
 
         newOperators.push({type, path:fullPath})
@@ -244,14 +239,10 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({ children }) =>
   };
 
   const isOperatorEnabled = (path: string): boolean => {
-    //console.log(`isOperatorEnabled search ${path} in `, operators)
-    //console.log("Result isOperatorEnabled: ", operators.find(op => op.path == path))
     return operators.find(op => op.path == path) !== undefined
   }
 
   const getOperatorType = (path: string): OperatorType | null => {
-    //console.log(`isOperatorEnabled search ${path} in `, operators)
-    //console.log("Result isOperatorEnabled: ", operators.find(op => op.path == path))
     return operators.find(op => op.path == path)?.type ?? null;
   }
  

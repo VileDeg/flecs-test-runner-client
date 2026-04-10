@@ -8,17 +8,27 @@ import { Plus, Minus } from "lucide-react";
 import type { 
   ComponentField,
   ComponentFieldValue,
+  ComponentFieldValuePrimitive,
   ComponentFieldsArray,
   ComponentFields,
 } from "@/common/types";
 
-import { OperatorType, type ComponentFieldValuePrimitive } from "@/common/coreTypes";
+import { OperatorType } from "@/common/coreTypes";
 
 import { 
   isComponentStructureEqual,
   isComponentFieldValueArray,
-  isComponentFieldValuePrimitive
+  isComponentFieldValuePrimitive,
+  isComponentFieldEnum,
 } from "@/common/types";
+
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@components/ui/select";
 
 
 import { FlecsMetadataService } from "@common/flecsMetadataService.ts";
@@ -69,11 +79,15 @@ export const ComponentFieldBuilder: React.FC<ComponentFieldBuilderProps> = ({
     onUpdate(newField)
   }
 
-  const renderFieldPrimitive = (name: string, type: string, value: ComponentFieldValuePrimitive) => {
-    const isBoolean = FlecsMetadataService.isBooleanType(type);
+  const renderFieldPrimitive = (name: string, field: ComponentField) => {
+    const value = field.value as ComponentFieldValuePrimitive;
+    if(isComponentFieldEnum(field)) {
+      return renderFieldEnum(name, value, field.enumValues!);
+    }
+    const isBoolean = FlecsMetadataService.isBooleanType(field.type);
     
     return isBoolean 
-      ? renderFieldCheckbox(name, Boolean(value))
+      ? renderFieldCheckbox(name, Boolean(field.value))
       : renderFieldInput(name, value)
   }
 
@@ -103,7 +117,7 @@ export const ComponentFieldBuilder: React.FC<ComponentFieldBuilderProps> = ({
         <Checkbox
           id={`field-${name}`}
           checked={value}
-          onCheckedChange={(checked) => { // TODO: which type is checked here?
+          onCheckedChange={(checked) => {
             const newField = {...field};
             newField.value = checked ? "true" : "false";
             onUpdate(newField); 
@@ -112,6 +126,29 @@ export const ComponentFieldBuilder: React.FC<ComponentFieldBuilderProps> = ({
       </div>
     </div>
   )
+
+  const renderFieldEnum = (name: string, value: string, constants: string[]) => {
+    return (
+      <Select
+        value={value}
+        onValueChange={(newValue) => {
+          const newField = { ...field, value: newValue };
+          onUpdate(newField);
+        }}
+      >
+        <SelectTrigger className="h-8 w-[180px]">
+          <SelectValue placeholder="Select value..." />
+        </SelectTrigger>
+        <SelectContent>
+          {constants.map((constant) => (
+            <SelectItem key={constant} value={constant}>
+              {constant}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    );
+  };
 
 
   const makeChildFieldPath = (childFieldName: string) => {
@@ -127,7 +164,6 @@ export const ComponentFieldBuilder: React.FC<ComponentFieldBuilderProps> = ({
       );
     }
     
-    //console.log("renderFieldValueDict: ", dict);
     return (
       <div className="ml-4 pl-4 border-l-2 border-muted/30 bg-muted/5 dark:bg-muted/10 rounded-r space-y-3">
         {Object.entries(dict).map(([name, field]) => {
@@ -157,8 +193,6 @@ export const ComponentFieldBuilder: React.FC<ComponentFieldBuilderProps> = ({
   }
  
   const renderFieldArray = (name: string, schema: ComponentField, array: ComponentFieldsArray) => {
-    //console.log("renderFieldArray: schema: ", schema);
-    //console.log("renderFieldArray: array: ", array);
     return (
       <div className="ml-4 pl-4 border-l-2 border-accent/30 bg-accent/5 dark:bg-accent/10 rounded-r space-y-3">
         {array.map((element, index) => (
@@ -206,7 +240,6 @@ export const ComponentFieldBuilder: React.FC<ComponentFieldBuilderProps> = ({
       )
     if(!comp) {
       console.error("Failed to match fields ", fields, " to any component")
-      console.log("Available comps: ", availableComponents)
       return [];
     }
 
@@ -223,7 +256,7 @@ export const ComponentFieldBuilder: React.FC<ComponentFieldBuilderProps> = ({
   // TODO: save to state, otherwise done every re-render?
   const getSupportedOperators = () => {
     if (isComponentFieldValuePrimitive(field.value)) {
-      return getAllOperatorTypes();
+      return isComponentFieldEnum(field) ? [] : getAllOperatorTypes();
     } 
     if (isComponentFieldValueArray(field.value)) {
       // For now assume no operators supported for array
@@ -233,14 +266,15 @@ export const ComponentFieldBuilder: React.FC<ComponentFieldBuilderProps> = ({
   }
 
   const renderField = (name: string, field: ComponentField) => {
-    //console.log("renderFieldImpl field: ", field)
-    if (isComponentFieldValuePrimitive(field.value)) {
-      return renderFieldPrimitive(name, field.type, field.value)
+    if (
+      isComponentFieldValuePrimitive(field.value) || 
+      isComponentFieldEnum(field)
+    ) {
+      return renderFieldPrimitive(name, field)
     } 
     if (isComponentFieldValueArray(field.value)) {
       return renderFieldArray(name, field.schema!, field.value) // TODO: check if schema exists?
     } 
-    //console.log("renderFieldValueDict value: ", field.value);
     return renderFieldValueDict(field.value)
   }
 
