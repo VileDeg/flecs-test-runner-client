@@ -126,8 +126,6 @@ export class TestRunner {
     const name = parts.pop();
     const module = parts.join(".");
 
-    console.log("getComponentByPath knownComponents: ", knownComponents);
-
     const component = knownComponents.find(
       (comp) => comp.name == name && comp.module.fullPath == module,
     );

@@ -187,7 +187,6 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
         availableComponents.push(...md.components);
       });
     }
-    console.log("availableSystems: ", availableSystems);
     return { availableSystems, availableComponents };
   }, [loadingMetadata, availableModules, moduleMetadataMap]);
 
@@ -242,21 +241,16 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
   };
 
   const addTests = (testsToAdd: UnitTestProps[]) => {
-    console.log("testsToAdd: ", testsToAdd);
-
     setWsState((prev) => {
       const newWsTests = testsToAdd.map((testProps) =>
         createWorkspaceTest(testProps),
       );
       const combinedTests = [...prev.tests];
 
-      console.log("totalTests BEFORE: ", combinedTests);
-
       newWsTests.forEach((wsTest) => {
         combinedTests.push(wsTest);
         validateTest(wsTest, true, combinedTests);
       });
-      console.log("totalTests AFTER: ", combinedTests);
 
       return {
         ...prev,
@@ -338,8 +332,6 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
       const testCore = TestRunner.convertTestToCore(testToRun);
       const testRunner = new TestRunner(connection!);
       await testRunner.executeTest(testCore, clearLastResult);
-
-      console.log("Set to NOW for testId: ", testId);
 
       updateTest(testId, {
         status: TestStatus.RUNNING, // Will be later updated by polling

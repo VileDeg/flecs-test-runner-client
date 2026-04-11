@@ -58,7 +58,6 @@ export const ComponentFieldBuilder: React.FC<ComponentFieldBuilderProps> = ({
   const fieldName = getFieldName();
 
   const onUpdateValueDict = (name: string, newValue: ComponentFieldValue) => {
-    console.log("onUpdateValueDict newValue: ", newValue);
     const newField = { ...field };
     (newField.value as ComponentFields)[name].value = newValue;
     onUpdate(newField);
@@ -70,8 +69,6 @@ export const ComponentFieldBuilder: React.FC<ComponentFieldBuilderProps> = ({
     index: number,
     newValue: ComponentFieldValue,
   ) => {
-    console.log("onUpdateValueArrayElement newValue: ", newValue);
-
     const newField = { ...field };
     // TODO: need to do a copy before?
     (newField.value as ComponentFieldsArray)[index].value = newValue;
@@ -184,13 +181,11 @@ export const ComponentFieldBuilder: React.FC<ComponentFieldBuilderProps> = ({
     array: ComponentFieldsArray,
     schema: ComponentField,
   ) => {
-    const newLen = array.push(structuredClone(schema)); // clone
-    console.log("New array length ", newLen);
+    array.push(structuredClone(schema)); // clone
   };
 
   const removeArrayElement = (array: ComponentFieldsArray, index: number) => {
-    const deleted = array.splice(index, 1);
-    console.log("Removed elements: ", deleted);
+    array.splice(index, 1);
   };
 
   const renderFieldArray = (

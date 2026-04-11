@@ -50,7 +50,6 @@ export const MetadataLoaderProvider: React.FC<MetadataLoaderProviderProps> = ({
     if (!connection) {
       setModuleMetadataMap(new Map());
       setAvailableModules([]);
-      console.log("useMetadataLoading: useEffect: no connection");
       return;
     }
 
@@ -60,11 +59,6 @@ export const MetadataLoaderProvider: React.FC<MetadataLoaderProviderProps> = ({
         setAvailableModules(avModules);
 
         for (const module of avModules) {
-          console.log(
-            "*** useEffect useModuleSelection, not has module: ",
-            module,
-          );
-
           const [systems, components] = await Promise.all([
             FlecsMetadataService.getSystems(connection, module),
             FlecsMetadataService.getComponents(connection, module),
@@ -75,10 +69,7 @@ export const MetadataLoaderProvider: React.FC<MetadataLoaderProviderProps> = ({
         console.error("Failed to load metadata:", error);
       }
       setLoadingMetadata(false);
-      console.log("useMetadataLoading: useEffect: Finished loading");
     };
-
-    console.log("useMetadataLoading: useEffect: load modules");
 
     loadMetadata();
   }, [connection]);

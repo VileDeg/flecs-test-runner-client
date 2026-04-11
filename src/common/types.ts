@@ -275,7 +275,6 @@ export function iterateComponentField<T>(
   if (isComponentFieldValuePrimitive(value)) {
     const parts = parent.split(".");
     const name = parts.length > 0 ? parts[-1] : "";
-    //    console.log("iterateComponentField primitive value: ", value);
     return func(name, field, parent);
   } else if (isComponentFieldValueArray(value)) {
     const newArray: GenericFieldArray<T> = [];

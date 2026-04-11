@@ -56,7 +56,6 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
 
   // Helper setters
   const setSelectedModules = (selectedModules: Module[]) => {
-    console.log(`setSelectedModules: `, testProperties, selectedModules);
     updateTestProperties({ ...testProperties, selectedModules });
   };
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
