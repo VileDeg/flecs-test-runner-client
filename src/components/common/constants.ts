@@ -9,5 +9,12 @@ export const OPERATOR_LABELS: Record<OperatorType, string> = {
   GTE: ">=",
 } as const;
 
-export const ALL_OPERATORS: OperatorType[] = ["EQ", "NEQ", "LT", "LTE", "GT", "GTE"];
+export const ALL_OPERATORS: OperatorType[] = [
+  "EQ",
+  "NEQ",
+  "LT",
+  "LTE",
+  "GT",
+  "GTE",
+];
 export const ENTITY_OPERATORS: OperatorType[] = ["EQ", "NEQ"];

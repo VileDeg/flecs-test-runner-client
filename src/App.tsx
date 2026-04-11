@@ -52,12 +52,10 @@ const AppContent = () => {
 
   // Navigation functions
   const goToWorkspacePage = () => {
-    //window.location.hash === "#workspace";
     setCurrentPage("workspace");
   };
 
   const goToBuilderPage = () => {
-    //window.location.hash = "#builder";
     setCurrentPage("builder");
   };
 

@@ -81,8 +81,6 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
     );
   }, [getCurrentTest, refreshCurrentTest]);
 
-  //const {test, selectedModules} = testProperties;
-
   const { test, selectedModules } = useMemo(() => {
     return {
       test: testProperties.test,
@@ -94,13 +92,9 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
     useMetadataLoader();
 
   const { availableSystems, availableComponents } = useMemo(() => {
-    console.log("builderContent update, systems, components");
     const availableSystems: System[] = [];
     const availableComponents: Component[] = [];
     if (!loadingMetadata) {
-      console.log(
-        "builderContent update, systems, components, loadingMetadata = false",
-      );
       selectedModules.forEach((module) => {
         if (!moduleMetadataMap.has(module.fullPath)) {
           console.error(
@@ -120,7 +114,6 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
   }, [loadingMetadata, moduleMetadataMap, selectedModules]);
 
   const updateTestProperties = (updates: Partial<UnitTestProps>) => {
-    console.log("updateTestProperties: ", updates);
     setTestProperties((prev) => ({ ...prev, ...updates }));
   };
 
@@ -210,7 +203,6 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
   };
 
   const addComponent = (entityId: string, componentId: string) => {
-    console.log("addComponent: ", entityId, componentId);
     const comp = getAvailableComponent(componentId);
 
     const initial = addComponentToWorld(test.initialConfiguration, entityId, {
@@ -294,8 +286,6 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
     type: OperatorType | null,
     fullPath: string,
   ) => {
-    console.log("Add operator: ", type, fullPath);
-
     updateUnitTest((prevTest) => {
       let newOperators = [];
       if (type) {
@@ -307,7 +297,6 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
       } else {
         newOperators = prevTest.operators.filter((op) => op.path !== fullPath);
       }
-      console.log("newOperators: ", newOperators);
 
       return { operators: newOperators };
     });

@@ -29,7 +29,7 @@ export const LockedToggle: React.FC<LockedToggleProps> = ({
         "h-6 w-6 p-0",
         locked === null && "opacity-50", //  cursor-not-allowed
         locked === false && "text-muted-foreground",
-        className
+        className,
       )}
       onClick={handleToggle}
       title={title}

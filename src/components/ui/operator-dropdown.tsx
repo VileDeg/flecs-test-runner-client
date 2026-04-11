@@ -38,16 +38,14 @@ export const OperatorDropdown: React.FC<OperatorDropdownProps> = ({
             size="sm"
             className={cn(
               "h-7 px-2 text-xs font-mono",
-              disabled && "opacity-50 cursor-not-allowed"
+              disabled && "opacity-50 cursor-not-allowed",
             )}
             onClick={() => !disabled && setIsOpen(!isOpen)}
             disabled={disabled}
             title={"Select comparison operator"}
           >
             <span>{OPERATOR_LABELS[value]}</span>
-            {!disabled && (
-              <ChevronDown className="ml-1 h-3 w-3 opacity-50" />
-            )}
+            {!disabled && <ChevronDown className="ml-1 h-3 w-3 opacity-50" />}
           </Button>
 
           {isOpen && !disabled && (
@@ -58,7 +56,7 @@ export const OperatorDropdown: React.FC<OperatorDropdownProps> = ({
                   type="button"
                   className={cn(
                     "w-full text-left px-3 py-1.5 text-sm hover:bg-accent",
-                    value === operator && "bg-accent font-medium"
+                    value === operator && "bg-accent font-medium",
                   )}
                   onClick={() => handleOperatorSelect(operator)}
                 >
@@ -71,10 +69,7 @@ export const OperatorDropdown: React.FC<OperatorDropdownProps> = ({
       </div>
 
       {isOpen && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setIsOpen(false)}
-        />
+        <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
       )}
     </div>
   );

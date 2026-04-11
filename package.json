@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "prepare": "husky",
     "lint": "npx eslint . --ext js,jsx,ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "lint:fix": "nxp eslint . --ext ts,tsx --fix",
+    "lint:fix": "npx eslint . --ext ts,tsx --fix",
     "format": "prettier --check \"src/**/*.{ts,tsx,css,md}\"",
     "format:fix": "prettier --write \"src/**/*.{ts,tsx,css,md}\"",
     "type-check": "tsc --noEmit"

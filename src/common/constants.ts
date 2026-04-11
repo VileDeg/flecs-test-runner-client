@@ -1,7 +1,7 @@
 import type { UnitTest, UnitTestProps } from "./types";
 import { type WorkspaceState } from "./workspaceTypes";
 
-export const FLECS_PORT = 27750
+export const FLECS_PORT = 27750;
 export const BASE_URL = `http://localhost:${FLECS_PORT}`;
 export const TEST_RUNNER_NAME = "TestRunner";
 export const TEST_RUNNER_NAME_2 = "TestRunnerImpl";
@@ -16,8 +16,8 @@ export const TEST_EXECUTION_TIMEOUT_MS = 10000;
 
 export const SUPPORTER_OPERATORS_COMPONENT_NAME = `${TEST_RUNNER_NAME}.SupportedOperators`;
 
-export const OPERATOR_PATH_SEP = '/';
-export const MODULE_PATH_SEP = '.';
+export const OPERATOR_PATH_SEP = "/";
+export const MODULE_PATH_SEP = ".";
 
 export const DEFAULT_UNIT_TEST: UnitTest = {
   name: "Test",

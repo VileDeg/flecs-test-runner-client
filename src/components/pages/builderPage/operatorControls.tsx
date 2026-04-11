@@ -16,7 +16,10 @@ export const OperatorControls: React.FC<OperatorControlsProps> = ({
   onOperatorTypeChange,
 }) => {
   const getDefaultSupportedOperator = () => {
-    return supportedOperators.find(t => t === OperatorType.Eq) ?? supportedOperators[0];
+    return (
+      supportedOperators.find((t) => t === OperatorType.Eq) ??
+      supportedOperators[0]
+    );
   };
 
   const defaultOperator = getDefaultSupportedOperator();
@@ -29,8 +32,8 @@ export const OperatorControls: React.FC<OperatorControlsProps> = ({
   // Early return for unsupported state
   if (!defaultOperator) {
     return (
-      <div 
-        className="flex items-center justify-center w-8 h-8 ml-4 text-slate-400 hover:text-slate-500 transition-colors cursor-help" 
+      <div
+        className="flex items-center justify-center w-8 h-8 ml-4 text-slate-400 hover:text-slate-500 transition-colors cursor-help"
         title="No operators supported"
       >
         <X size={18} strokeWidth={2.5} />
@@ -42,7 +45,9 @@ export const OperatorControls: React.FC<OperatorControlsProps> = ({
     <LockedToggle
       locked={locked}
       onChange={(isLocked) => {
-        onOperatorTypeChange(!isLocked && defaultOperator ? defaultOperator : null);
+        onOperatorTypeChange(
+          !isLocked && defaultOperator ? defaultOperator : null,
+        );
       }}
       title={locked ? "Operator disabled" : "Operator enabled"}
     />

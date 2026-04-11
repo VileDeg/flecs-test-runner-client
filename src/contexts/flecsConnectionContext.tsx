@@ -1,10 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import {flecs} from "../flecs.js";
-import { FlecsAsync } from "../common/flecsAsync.ts"
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import { flecs } from "../flecs.js";
+import { FlecsAsync } from "../common/flecsAsync.ts";
 
-type FlecsConnection = any | null; 
+type FlecsConnection = any | null;
 
 export interface FlecsConnectionState {
   connection: FlecsAsync | null;
@@ -18,7 +25,8 @@ const defaultState: FlecsConnectionState = {
   heartbeat: null,
 };
 
-export const FlecsConnectionContext = createContext<FlecsConnectionState>(defaultState);
+export const FlecsConnectionContext =
+  createContext<FlecsConnectionState>(defaultState);
 
 interface FlecsProviderProps {
   host?: string;
@@ -41,19 +49,19 @@ export const FlecsConnectionProvider = ({
     connectionRef.current = new FlecsAsync({
       host,
       poll_interval_ms: pollIntervalMs,
-      timeout_ms: 15000, 
+      timeout_ms: 15000,
 
       on_fallback: onFallback,
 
-      on_status: (s : any) => {
+      on_status: (s: any) => {
         setStatus(flecs.ConnectionStatus.toString(s)); // convert enum to string
       },
 
-      on_heartbeat: (msg : any) => {
+      on_heartbeat: (msg: any) => {
         setHeartbeat(msg);
       },
 
-      on_host: (h : any) => {
+      on_host: (h: any) => {
         console.log("Connected to host:", h);
       },
     });
@@ -83,4 +91,3 @@ export const FlecsConnectionProvider = ({
 export const useFlecsConnection = (): FlecsConnectionState => {
   return useContext(FlecsConnectionContext);
 };
-

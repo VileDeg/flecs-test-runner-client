@@ -5,10 +5,7 @@ import { Checkbox } from "@components/ui/checkbox";
 import { Label } from "@components/ui/label";
 import { CheckSquare, Square } from "lucide-react";
 
-import {
-
-  Module
-} from "@common/types.ts"
+import { Module } from "@common/types.ts";
 
 interface ModuleSelectorProps {
   availableModules: Module[];
@@ -21,12 +18,16 @@ export const ModuleSelector: React.FC<ModuleSelectorProps> = ({
   availableModules,
   selectedModules,
   onSelectionChange,
-  loading = false
+  loading = false,
 }) => {
   const handleToggleModule = (module: Module) => {
-    const isSelected = selectedModules.some(m => m.fullPath === module.fullPath);
+    const isSelected = selectedModules.some(
+      (m) => m.fullPath === module.fullPath,
+    );
     if (isSelected) {
-      onSelectionChange(selectedModules.filter(m => m.fullPath !== module.fullPath));
+      onSelectionChange(
+        selectedModules.filter((m) => m.fullPath !== module.fullPath),
+      );
     } else {
       onSelectionChange([...selectedModules, module]);
     }
@@ -40,9 +41,9 @@ export const ModuleSelector: React.FC<ModuleSelectorProps> = ({
     onSelectionChange([]);
   };
 
-  const isAllSelected = () :boolean => {
+  const isAllSelected = (): boolean => {
     return JSON.stringify(selectedModules) === JSON.stringify(availableModules);
-  }
+  };
 
   if (loading) {
     return (
@@ -77,13 +78,13 @@ export const ModuleSelector: React.FC<ModuleSelectorProps> = ({
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Select the modules to filter systems and components. 
-          Selected: {selectedModules.length} / {availableModules.length}
+          Select the modules to filter systems and components. Selected:{" "}
+          {selectedModules.length} / {availableModules.length}
         </p>
-        
+
         <div className="flex justify-center gap-3">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
             onClick={isAllSelected() ? handleDeselectAll : handleSelectAll}
             className="gap-2"
@@ -105,21 +106,25 @@ export const ModuleSelector: React.FC<ModuleSelectorProps> = ({
         <div className="max-h-72 overflow-y-auto p-3 bg-card border border-border rounded-md">
           <div className="space-y-2">
             {availableModules.map((module) => (
-              <div 
-                key={module.fullPath} 
+              <div
+                key={module.fullPath}
                 className="flex items-center gap-3 p-2 rounded-md hover:bg-accent transition-colors"
               >
                 <Checkbox
                   id={`module-${module.fullPath}`}
-                  checked={selectedModules.some(m => m.fullPath === module.fullPath)}
+                  checked={selectedModules.some(
+                    (m) => m.fullPath === module.fullPath,
+                  )}
                   onCheckedChange={() => handleToggleModule(module)}
                   className="h-5 w-5"
                 />
-                <Label 
+                <Label
                   htmlFor={`module-${module.fullPath}`}
                   className="flex-1 cursor-pointer flex items-center gap-2"
                 >
-                  <span className="font-medium text-foreground">{module.getName()}</span>
+                  <span className="font-medium text-foreground">
+                    {module.getName()}
+                  </span>
                   {module.fullPath !== module.getName() && (
                     <span className="text-sm text-muted-foreground">
                       ({module.fullPath})
