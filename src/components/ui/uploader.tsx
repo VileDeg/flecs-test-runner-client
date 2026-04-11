@@ -4,26 +4,22 @@ import { useDropzone } from "react-dropzone";
 import React from "react";
 import { useToast } from "@contexts/toastContext";
 
-import type { 
-  UnitTestProps,
-} from "@/common/types";
+import type { UnitTestProps } from "@/common/types";
 
-import { 
-  isUnitTestProps,
-  MessageType,
-} from "@/common/types";
+import { isUnitTestProps, MessageType } from "@/common/types";
 
 import { cn } from "@/lib/utils";
 
 interface UploaderProps {
-  onTestsParsed : (tests: UnitTestProps[]) => void;
+  onTestsParsed: (tests: UnitTestProps[]) => void;
 }
 
-export const Uploader: React.FC<UploaderProps> = ({ onTestsParsed  }) => {
+export const Uploader: React.FC<UploaderProps> = ({ onTestsParsed }) => {
   const { showToast } = useToast();
-  
+
   const onDrop = useCallback(
-    async (acceptedFiles: File[]) => { // Why is async?
+    async (acceptedFiles: File[]) => {
+      // Why is async?
       const allTests: UnitTestProps[] = [];
 
       for (const file of acceptedFiles) {
@@ -34,15 +30,15 @@ export const Uploader: React.FC<UploaderProps> = ({ onTestsParsed  }) => {
           // Handle multiple formats:
           if (Array.isArray(json)) {
             // Validate each test in the array
-            json.forEach((test: any) => {
-              if(!isUnitTestProps(test)) {
+            json.forEach((test: unknown) => {
+              if (!isUnitTestProps(test)) {
                 // TODO: show correct structure example
                 showToast(
                   `File ${file.name} has incorrect test structure inside array of tests. \
-                  Skipping...`, 
-                  MessageType.ERROR
+                  Skipping...`,
+                  MessageType.ERROR,
                 );
-                return
+                return;
               }
               allTests.push(test);
             });
@@ -51,15 +47,16 @@ export const Uploader: React.FC<UploaderProps> = ({ onTestsParsed  }) => {
           } else {
             showToast(
               `File ${file.name} has incorrect test structure. \
-              Skipping...`, 
-              MessageType.ERROR
+              Skipping...`,
+              MessageType.ERROR,
             );
           }
-        } catch (e: any) {
+        } catch (e: unknown) {
+          const errorMessage = e instanceof Error ? e.message : String(e);
+
           showToast(
-            `Error parsing ${file.name}. Is not a valid JSON file: ${e.message} \
-            Skipping...`, 
-            MessageType.ERROR
+            `Error parsing ${file.name}. ${errorMessage} Skipping...`,
+            MessageType.ERROR,
           );
         }
       }
@@ -67,14 +64,14 @@ export const Uploader: React.FC<UploaderProps> = ({ onTestsParsed  }) => {
       // Pass the combined list to the parent
       onTestsParsed(allTests);
     },
-    [onTestsParsed]
+    [showToast, onTestsParsed],
   );
 
   const { getRootProps, getInputProps, isDragActive, fileRejections } =
     useDropzone({
       onDrop,
       accept: {
-        "application/json": [".json"], 
+        "application/json": [".json"],
       },
       multiple: true,
     });
@@ -84,17 +81,19 @@ export const Uploader: React.FC<UploaderProps> = ({ onTestsParsed  }) => {
       {...getRootProps()}
       className={cn(
         "border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all",
-        isDragActive 
-          ? "border-primary bg-primary/10" 
+        isDragActive
+          ? "border-primary bg-primary/10"
           : "border-border bg-card hover:border-primary/50",
-        "hover:bg-card/80"
+        "hover:bg-card/80",
       )}
     >
       <input {...getInputProps()} />
       {isDragActive ? (
         <p className="text-foreground m-0">Drop the JSON file here ...</p>
       ) : (
-        <p className="text-foreground m-0">Drag and drop JSON files here, or click to select</p>
+        <p className="text-foreground m-0">
+          Drag and drop JSON files here, or click to select
+        </p>
       )}
 
       {fileRejections.length > 0 && (

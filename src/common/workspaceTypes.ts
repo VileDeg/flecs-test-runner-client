@@ -1,23 +1,19 @@
 import type { UnitTestProps } from "./types";
 
-import { 
-  isUnitTestProps,
-} from "@/common/types";
-
+import { isUnitTestProps } from "@/common/types";
 
 /**
  * Test status types
  */
 export const TestStatus = {
-  RUNNING: 'running',
-  PASSED: 'passed',
-  FAILED: 'failed',
-  TIMEOUT: 'timeout',
-  INVALID: 'invalid', // when test did not pass validation
-  IDLE: 'idle', // not displayed in UI?
+  RUNNING: "running",
+  PASSED: "passed",
+  FAILED: "failed",
+  TIMEOUT: "timeout",
+  INVALID: "invalid", // when test did not pass validation
+  IDLE: "idle", // not displayed in UI?
 } as const;
 export type TestStatus = (typeof TestStatus)[keyof typeof TestStatus];
-
 
 /**
  * Extended test information for workspace management
@@ -39,18 +35,21 @@ export interface WorkspaceTest {
   executedAtEpochMs?: number;
 }
 
-export function isWorkspaceTest(value: any): value is WorkspaceTest {
+export function isWorkspaceTest(value: unknown): value is WorkspaceTest {
+  if (typeof value !== "object" || value === null) return false;
+  const candidate = value as Record<string, unknown>;
+
   return (
-    typeof value === "object" &&
-    value !== null &&
-    typeof value.id === "string" &&
-    isUnitTestProps(value.testProperties) &&
-    Object.values(TestStatus).includes(value.status) &&
-    typeof value.lastUpdated === "number" &&
-    typeof value.createdAt === "number" &&
+    typeof candidate.id === "string" &&
+    isUnitTestProps(candidate.testProperties) &&
+    Object.values(TestStatus).includes(candidate.status as TestStatus) &&
+    typeof candidate.lastUpdated === "number" &&
+    typeof candidate.createdAt === "number" &&
     // Optional/Nullable properties
-    (value.statusMessage === undefined || typeof value.statusMessage === "string") &&
-    (value.executedAtEpochMs === undefined || typeof value.executedAtEpochMs === "number")
+    (candidate.statusMessage === undefined ||
+      typeof candidate.statusMessage === "string") &&
+    (candidate.executedAtEpochMs === undefined ||
+      typeof candidate.executedAtEpochMs === "number")
   );
 }
 /**
@@ -61,11 +60,14 @@ export interface WorkspaceState {
   tests: WorkspaceTest[];
 }
 
-export function isWorkspaceState(value: any): value is WorkspaceState {
-  return typeof value === "object" &&
-    value !== null &&
-    Array.isArray(value.tests) && 
-    !value.tests.find((something: any) => !isWorkspaceTest(something))
+export function isWorkspaceState(value: unknown): value is WorkspaceState {
+  if (typeof value !== "object" || value === null) return false;
+  const candidate = value as Record<string, unknown>;
+
+  return (
+    Array.isArray(candidate.tests) &&
+    !candidate.tests.find((something) => !isWorkspaceTest(something))
+  );
 }
 
 /**
@@ -88,4 +90,3 @@ export const DEFAULT_POLLING_CONFIG: PollingConfig = {
   enabled: true,
   timeout: 10000, // 10 seconds
 };
-

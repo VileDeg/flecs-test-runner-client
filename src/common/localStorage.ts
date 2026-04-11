@@ -1,5 +1,9 @@
-export type ValidatePredicate<T> = (parsed: any) => parsed is T;
-export function get<T>(key: string, validator: ValidatePredicate<T>, defaultValue: T): T {
+export type ValidatePredicate<T> = (parsed: unknown) => parsed is T;
+export function get<T>(
+  key: string,
+  validator: ValidatePredicate<T>,
+  defaultValue: T,
+): T {
   try {
     const saved = localStorage.getItem(key);
     if (saved) {
@@ -15,7 +19,7 @@ export function get<T>(key: string, validator: ValidatePredicate<T>, defaultValu
     console.error("Failed to load workspace tests from localStorage:", error);
   }
   return defaultValue;
-}; 
+}
 
 export function set<T>(key: string, value: T) {
   try {
@@ -23,4 +27,4 @@ export function set<T>(key: string, value: T) {
   } catch (error) {
     console.error("Failed to save " + key + " to localStorage:", error);
   }
-}; 
+}

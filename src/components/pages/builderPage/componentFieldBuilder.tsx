@@ -1,11 +1,11 @@
-import { Fragment} from "react";
+import { Fragment } from "react";
 import { Checkbox } from "@components/ui/checkbox";
 import { Button } from "@components/ui/button";
 import { Input } from "@components/ui/input";
 import { Label } from "@components/ui/label";
 import { Plus, Minus } from "lucide-react";
 
-import type { 
+import type {
   ComponentField,
   ComponentFieldValue,
   ComponentFieldValuePrimitive,
@@ -15,7 +15,7 @@ import type {
 
 import { OperatorType } from "@/common/coreTypes";
 
-import { 
+import {
   isComponentStructureEqual,
   isComponentFieldValueArray,
   isComponentFieldValuePrimitive,
@@ -29,7 +29,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@components/ui/select";
-
 
 import { FlecsMetadataService } from "@common/flecsMetadataService.ts";
 import { OperatorControls } from "@components/pages/builderPage/operatorControls";
@@ -48,52 +47,52 @@ export const ComponentFieldBuilder: React.FC<ComponentFieldBuilderProps> = ({
   fieldPath,
   isExpected,
 }) => {
-
-  const {
-    availableComponents,
-    onOperatorChanged,
-    getOperatorType
-  } = useBuilder();
+  const { availableComponents, onOperatorChanged, getOperatorType } =
+    useBuilder();
 
   const getFieldName = () => {
     return fieldPath.split(OPERATOR_PATH_SEP).at(-1) ?? fieldPath;
-  }
+  };
 
   // Conveniece accessor
   const fieldName = getFieldName();
-  
+
   const onUpdateValueDict = (name: string, newValue: ComponentFieldValue) => {
     console.log("onUpdateValueDict newValue: ", newValue);
-    const newField = {...field};
-    (newField.value as ComponentFields)[name].value = newValue; 
-    onUpdate(newField)
-  }
+    const newField = { ...field };
+    (newField.value as ComponentFields)[name].value = newValue;
+    onUpdate(newField);
+  };
 
   // TODO: dont need name param?
-  const onUpdateValueArrayElement = (name: string, index: number, newValue: ComponentFieldValue) => {
+  const onUpdateValueArrayElement = (
+    _: string,
+    index: number,
+    newValue: ComponentFieldValue,
+  ) => {
     console.log("onUpdateValueArrayElement newValue: ", newValue);
 
-    const newField = {...field};
+    const newField = { ...field };
     // TODO: need to do a copy before?
     (newField.value as ComponentFieldsArray)[index].value = newValue;
-    onUpdate(newField)
-  }
+    onUpdate(newField);
+  };
 
   const renderFieldPrimitive = (name: string, field: ComponentField) => {
     const value = field.value as ComponentFieldValuePrimitive;
-    if(isComponentFieldEnum(field)) {
+    if (isComponentFieldEnum(field)) {
       return renderFieldEnum(name, value, field.enumValues!);
     }
     const isBoolean = FlecsMetadataService.isBooleanType(field.type);
-    
-    return isBoolean 
-      ? renderFieldCheckbox(name, Boolean(field.value))
-      : renderFieldInput(name, value)
-  }
 
-  const renderFieldInput = (name: string, value: ComponentFieldValuePrimitive) => {
+    return isBoolean
+      ? renderFieldCheckbox(name, Boolean(field.value))
+      : renderFieldInput(name, value);
+  };
+
+  const renderFieldInput = (_: string, value: ComponentFieldValuePrimitive) => {
     const stringValue = String(value ?? "");
-    
+
     return (
       <div className="inline-block">
         <Input
@@ -118,16 +117,16 @@ export const ComponentFieldBuilder: React.FC<ComponentFieldBuilderProps> = ({
           id={`field-${name}`}
           checked={value}
           onCheckedChange={(checked) => {
-            const newField = {...field};
+            const newField = { ...field };
             newField.value = checked ? "true" : "false";
-            onUpdate(newField); 
+            onUpdate(newField);
           }}
         />
       </div>
     </div>
-  )
+  );
 
-  const renderFieldEnum = (name: string, value: string, constants: string[]) => {
+  const renderFieldEnum = (_: string, value: string, constants: string[]) => {
     return (
       <Select
         value={value}
@@ -150,10 +149,9 @@ export const ComponentFieldBuilder: React.FC<ComponentFieldBuilderProps> = ({
     );
   };
 
-
   const makeChildFieldPath = (childFieldName: string) => {
     return fieldPath + OPERATOR_PATH_SEP + childFieldName;
-  }
+  };
 
   const renderFieldValueDict = (dict: ComponentFields) => {
     if (Object.keys(dict).length === 0) {
@@ -163,50 +161,57 @@ export const ComponentFieldBuilder: React.FC<ComponentFieldBuilderProps> = ({
         </div>
       );
     }
-    
+
     return (
       <div className="ml-4 pl-4 border-l-2 border-muted/30 bg-muted/5 dark:bg-muted/10 rounded-r space-y-3">
         {Object.entries(dict).map(([name, field]) => {
-          return  <Fragment key={name}>
-            <ComponentFieldBuilder
-              field={field}
-              onUpdate={
-                (newField) => onUpdateValueDict(name, newField.value)
-              }
-              fieldPath={makeChildFieldPath(name)}
-              isExpected={isExpected}
-            />
-          </Fragment>
+          return (
+            <Fragment key={name}>
+              <ComponentFieldBuilder
+                field={field}
+                onUpdate={(newField) => onUpdateValueDict(name, newField.value)}
+                fieldPath={makeChildFieldPath(name)}
+                isExpected={isExpected}
+              />
+            </Fragment>
+          );
         })}
       </div>
     );
-  }
+  };
 
-  const addArrayElement = (array: ComponentFieldsArray, schema: ComponentField) => {
-    const newLen = array.push(structuredClone(schema)) // clone
+  const addArrayElement = (
+    array: ComponentFieldsArray,
+    schema: ComponentField,
+  ) => {
+    const newLen = array.push(structuredClone(schema)); // clone
     console.log("New array length ", newLen);
-  }
+  };
 
   const removeArrayElement = (array: ComponentFieldsArray, index: number) => {
     const deleted = array.splice(index, 1);
     console.log("Removed elements: ", deleted);
-  }
- 
-  const renderFieldArray = (name: string, schema: ComponentField, array: ComponentFieldsArray) => {
+  };
+
+  const renderFieldArray = (
+    name: string,
+    schema: ComponentField,
+    array: ComponentFieldsArray,
+  ) => {
     return (
       <div className="ml-4 pl-4 border-l-2 border-accent/30 bg-accent/5 dark:bg-accent/10 rounded-r space-y-3">
         {array.map((element, index) => (
           <div key={`${fieldName}-${index}`} className="space-y-2">
             <ComponentFieldBuilder
               field={element}
-              onUpdate={
-                (newField) => onUpdateValueArrayElement(name, index, newField.value) 
+              onUpdate={(newField) =>
+                onUpdateValueArrayElement(name, index, newField.value)
               }
               fieldPath={makeChildFieldPath(`${index}`)}
               isExpected={isExpected}
             />
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => removeArrayElement(array, index)}
               className="gap-2 w-full"
             >
@@ -216,8 +221,8 @@ export const ComponentFieldBuilder: React.FC<ComponentFieldBuilderProps> = ({
           </div>
         ))}
         <div className="flex justify-center pt-2">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={() => addArrayElement(array, schema)}
             className="gap-2"
           >
@@ -227,81 +232,85 @@ export const ComponentFieldBuilder: React.FC<ComponentFieldBuilderProps> = ({
         </div>
       </div>
     );
-  }
+  };
 
   const getAllOperatorTypes = () => {
     return Object.values(OperatorType);
-  }
+  };
 
   // TODO: save to state, otherwise done every re-render?
   const getSupportedOperatorsForFields = (fields: ComponentFields) => {
-    const comp = availableComponents.find( // operatorProps?.
-        comp => isComponentStructureEqual(comp.fields, fields)
-      )
-    if(!comp) {
-      console.error("Failed to match fields ", fields, " to any component")
+    const comp = availableComponents.find(
+      // operatorProps?.
+      (comp) => isComponentStructureEqual(comp.fields, fields),
+    );
+    if (!comp) {
+      console.error("Failed to match fields ", fields, " to any component");
       return [];
     }
 
-    let supportedOps: OperatorType[] = []
-    const ops = comp?.supportedOperators
-    if(ops?.cmp) {
+    let supportedOps: OperatorType[] = [];
+    const ops = comp?.supportedOperators;
+    if (ops?.cmp) {
       supportedOps = getAllOperatorTypes();
     } else if (ops?.equals) {
-      supportedOps.push(OperatorType.Eq, OperatorType.Neq)
+      supportedOps.push(OperatorType.Eq, OperatorType.Neq);
     }
     return supportedOps;
-  }
+  };
 
   // TODO: save to state, otherwise done every re-render?
   const getSupportedOperators = () => {
     if (isComponentFieldValuePrimitive(field.value)) {
       return isComponentFieldEnum(field) ? [] : getAllOperatorTypes();
-    } 
+    }
     if (isComponentFieldValueArray(field.value)) {
       // For now assume no operators supported for array
-      return []
-    } 
-    return getSupportedOperatorsForFields(field.value)
-  }
+      return [];
+    }
+    return getSupportedOperatorsForFields(field.value);
+  };
 
   const renderField = (name: string, field: ComponentField) => {
     if (
-      isComponentFieldValuePrimitive(field.value) || 
+      isComponentFieldValuePrimitive(field.value) ||
       isComponentFieldEnum(field)
     ) {
-      return renderFieldPrimitive(name, field)
-    } 
+      return renderFieldPrimitive(name, field);
+    }
     if (isComponentFieldValueArray(field.value)) {
-      return renderFieldArray(name, field.schema!, field.value) // TODO: check if schema exists?
-    } 
-    return renderFieldValueDict(field.value)
-  }
+      return renderFieldArray(name, field.schema!, field.value); // TODO: check if schema exists?
+    }
+    return renderFieldValueDict(field.value);
+  };
 
   const handleOperatorTypeChanged = (type: OperatorType | null) => {
-    onOperatorChanged(type, fieldPath) // operatorProps?.
-  }
+    onOperatorChanged(type, fieldPath); // operatorProps?.
+  };
 
   const renderOperatorControls = () => (
     <OperatorControls
       operatorType={getOperatorType(fieldPath)}
       supportedOperators={getSupportedOperators()}
       onOperatorTypeChange={handleOperatorTypeChanged}
-    >
-    </OperatorControls>
-  )
+    ></OperatorControls>
+  );
 
   return (
     <div className="space-y-3">
-      <div key={fieldName} className="flex items-start gap-3 p-3 rounded-md bg-background border border-border/50">
-        <Label htmlFor={`field-${fieldName}`} className=" text-sm font-medium pt-2">
+      <div
+        key={fieldName}
+        className="flex items-start gap-3 p-3 rounded-md bg-background border border-border/50"
+      >
+        <Label
+          htmlFor={`field-${fieldName}`}
+          className=" text-sm font-medium pt-2"
+        >
           {fieldName}:
         </Label>
-        
+
         {renderField(fieldName, field)}
-        <div className="ml-auto">  
-          {isExpected && renderOperatorControls()}
-        </div>
+        <div className="ml-auto">{isExpected && renderOperatorControls()}</div>
       </div>
     </div>
   );

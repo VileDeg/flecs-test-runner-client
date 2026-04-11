@@ -9,7 +9,7 @@ import { TestBuilder } from "@pages/builderPage/builderPage.tsx";
 
 import { useFlecsConnection } from "@contexts/flecsConnectionContext";
 
-import { FLECS_PORT, DEFAULT_TEST_PROPERTIES } from "@common/constants.ts";
+import { FLECS_PORT } from "@common/constants.ts";
 import { Button } from "@components/ui/button";
 import { Badge } from "@components/ui/badge";
 import { ThemeToggle } from "@components/ui/theme-toggle";
@@ -33,7 +33,7 @@ export const App = () => {
         <FlecsConnectionProvider>
           <MetadataLoaderProvider>
             <WorkspaceProvider>
-                <AppContent />
+              <AppContent />
             </WorkspaceProvider>
           </MetadataLoaderProvider>
         </FlecsConnectionProvider>
@@ -44,10 +44,10 @@ export const App = () => {
 
 // App content with connection context
 const AppContent = () => {
-  const [currentPage, setCurrentPage] = useState<
-    "workspace" | "builder"
-  >("workspace");
-  
+  const [currentPage, setCurrentPage] = useState<"workspace" | "builder">(
+    "workspace",
+  );
+
   const { status } = useFlecsConnection();
 
   // Navigation functions
@@ -135,7 +135,7 @@ const AppContent = () => {
       >
         {(status === "Connecting" || status === "RetryConnecting") &&
           `Trying to connect to port ${FLECS_PORT}...`}
-        {status === "Connected" && `✅ Connected to port ${FLECS_PORT}`} 
+        {status === "Connected" && `✅ Connected to port ${FLECS_PORT}`}
         {status === "Disconnected" && "❌ Connection failed"}
       </div>
     </div>
@@ -148,21 +148,13 @@ const AppContent = () => {
           <>
             {renderTopBar()}
             <div className="font-sans pt-20 px-20 pb-20 max-w-full mx-auto">
-              
-                {currentPage === "builder" ? (
-          <BuilderProvider>
-
-                    <TestBuilder
-                      goToWorkspacePage={goToWorkspacePage}
-                    />
-          </BuilderProvider>
-
-                ) : (
-                  <WorkspacePage 
-                    goToBuilderPage={goToBuilderPage}
-                  />
-                )}
-             
+              {currentPage === "builder" ? (
+                <BuilderProvider>
+                  <TestBuilder goToWorkspacePage={goToWorkspacePage} />
+                </BuilderProvider>
+              ) : (
+                <WorkspacePage goToBuilderPage={goToBuilderPage} />
+              )}
             </div>
           </>
         ) : (

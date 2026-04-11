@@ -8,10 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/card";
 import { Badge } from "@components/ui/badge";
 import { Separator } from "@components/ui/separator";
 import { Checkbox } from "@components/ui/checkbox";
-import { 
-  PlayCircle, 
-  Upload, 
-  RefreshCw, 
+import {
+  PlayCircle,
+  Upload,
+  RefreshCw,
   Trash2,
   FileText,
   CheckCircle,
@@ -32,14 +32,14 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-import {TestStatus, type WorkspaceTest} from "@/common/workspaceTypes";
+import { TestStatus, type WorkspaceTest } from "@/common/workspaceTypes";
 import * as Utils from "@/common/testUtils";
 
 import TestListItem from "./testListItem";
 
-import type { 
-  UnitTestProps,
-} from "@/common/types";
+import type { UnitTestProps } from "@/common/types";
+
+import { SortType, SortDirection } from "@/common/types";
 
 const statusPriority: Record<TestStatus, number> = {
   [TestStatus.PASSED]: 0,
@@ -64,60 +64,60 @@ export interface WorkspacePageProps {
   goToBuilderPage: () => void;
 }
 
-const sortTypes = ['alphabetical', 'status', 'chronological'] as const;
-const sortDirections = ['asc', 'desc'] as const;
-
-type SortType = typeof sortTypes[number];
-type SortDirection = typeof sortDirections[number];
-
 interface TestResult {
-  name: string,
-  passed: boolean,
-  status: string,
+  name: string;
+  passed: boolean;
+  status: string;
 }
 
 type TestResults = Record<string, TestResult>;
 
-export const WorkspacePage: React.FC<WorkspacePageProps> = ({goToBuilderPage}) => {
+export const WorkspacePage: React.FC<WorkspacePageProps> = ({
+  goToBuilderPage,
+}) => {
   const { showToast } = useToast();
-  const { 
+  const {
     state,
-    isPolling, 
+    isPolling,
     getWorkspaceTest: getTest,
-    addWorkspaceTests: addTests, 
+    addWorkspaceTests: addTests,
     addEmptyWorkspaceTest: addEmptyTest,
-    removeWorkspaceTest: removeTest, 
-    runTest, 
+    removeWorkspaceTest: removeTest,
+    runTest,
     runMultipleTests,
     setCurrentWorkspaceTestId: setCurrentTestId,
   } = useWorkspace();
 
   const [isExpanded, setIsExpanded] = useState(true);
-  
-  const [sortType, setSortType] = useState<SortType>('chronological');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+
+  const [sortType, setSortType] = useState<SortType>(SortType.Chronological);
+  const [sortDirection, setSortDirection] = useState<SortDirection>(
+    SortDirection.Descending,
+  );
   const [filterStatus, setFilterStatus] = useState<TestStatus | null>(null);
 
   // Selection state
   const [isSelectionMode, setIsSelectionMode] = useState<boolean>(false);
-  const [selectedTestIds, setSelectedTestIds] = useState<Set<string>>(new Set());
+  const [selectedTestIds, setSelectedTestIds] = useState<Set<string>>(
+    new Set(),
+  );
 
   // Selection helper functions
   const toggleSelectionMode = () => {
     if (isSelectionMode) {
       // Cancel selection mode
-      clearSelection()
+      clearSelection();
     }
     setIsSelectionMode(!isSelectionMode);
   };
 
-  const toggleTestSelection = (testId: string, index: number, event: React.MouseEvent) => {
+  const toggleTestSelection = (testId: string) => {
     if (!isSelectionMode) {
       return;
     }
 
     const newSelectedIds = new Set(selectedTestIds);
-    
+
     // Single click selection
     if (newSelectedIds.has(testId)) {
       newSelectedIds.delete(testId);
@@ -128,7 +128,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({goToBuilderPage}) =
   };
 
   const selectAllVisibleTests = () => {
-    const allIds = new Set(wsTests.map(test => test.id));
+    const allIds = new Set(wsTests.map((test) => test.id));
     setSelectedTestIds(allIds);
   };
 
@@ -137,60 +137,67 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({goToBuilderPage}) =
   };
 
   const isTestSelected = (testId: string) => selectedTestIds.has(testId);
-  
+
   const alphabeticalOrder = (a: WorkspaceTest, b: WorkspaceTest) => {
     const nameA = a.testProperties.test.name.toLowerCase();
     const nameB = b.testProperties.test.name.toLowerCase();
     const comparison = nameA.localeCompare(nameB);
-    return sortDirection === 'asc' ? comparison : -comparison;
-  }
+    return sortDirection === SortDirection.Ascending ? comparison : -comparison;
+  };
 
   const statusOrder = (a: WorkspaceTest, b: WorkspaceTest) => {
     return statusPriority[a.status] - statusPriority[b.status];
-  }
+  };
 
   const chronologicalOrder = (a: WorkspaceTest, b: WorkspaceTest) => {
     const timeA = a.lastUpdated;
     const timeB = b.lastUpdated;
-    return sortDirection === 'desc' ? timeB - timeA : timeA - timeB;
-  }
+    return sortDirection === SortDirection.Descending
+      ? timeB - timeA
+      : timeA - timeB;
+  };
 
   const getSortOrder = (sortType: SortType) => {
     switch (sortType) {
-      case 'alphabetical': {
+      case SortType.Alphabetical: {
         return alphabeticalOrder;
       }
-      case 'status': {
+      case SortType.Status: {
         return statusOrder;
       }
       default:
         return chronologicalOrder;
     }
-  }
+  };
   const allTests = state.tests;
 
   // Get sorted and filtered tests
   const getSortedAndFilteredTests = (): WorkspaceTest[] => {
     let filteredTests = allTests;
-    
+
     // Apply status filter
     if (filterStatus !== null) {
-      filteredTests = filteredTests.filter(test => test.status === filterStatus);
+      filteredTests = filteredTests.filter(
+        (test) => test.status === filterStatus,
+      );
     }
-    
+
     // Apply sorting
     return [...filteredTests].sort(getSortOrder(sortType));
   };
-  
+
   const wsTests = getSortedAndFilteredTests();
-  
+
   const getAllFinishedSelectedTests = (): WorkspaceTest[] => {
-    return wsTests.filter(test => test.status === TestStatus.PASSED || test.status === TestStatus.FAILED);
-  }
+    return wsTests.filter(
+      (test) =>
+        test.status === TestStatus.PASSED || test.status === TestStatus.FAILED,
+    );
+  };
 
   const isAnyFinishedSelectedTests = (): boolean => {
     return getAllFinishedSelectedTests().length > 0;
-  }
+  };
 
   // Handle uploaded tests
   const handleTestsUploaded = (uploadedTests: UnitTestProps[]) => {
@@ -205,12 +212,12 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({goToBuilderPage}) =
 
   // Handle test execution
   const handleRunTest = async (testId: string) => {
-    await runTest(testId)
+    await runTest(testId);
   };
 
   const getSelectedTests = () => {
-    return wsTests.filter(test => selectedTestIds.has(test.id));
-  }
+    return wsTests.filter((test) => selectedTestIds.has(test.id));
+  };
 
   // Handle run selected tests
   const handleRunSelectedTests = async () => {
@@ -224,7 +231,9 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({goToBuilderPage}) =
 
   // Handle export selected tests
   const handleExportSelectedTests = () => {
-    const selectedTests = getSelectedTests().map(wsTest => wsTest.testProperties);
+    const selectedTests = getSelectedTests().map(
+      (wsTest) => wsTest.testProperties,
+    );
     if (selectedTests.length === 0) {
       showToast("No tests selected", "error");
       return;
@@ -234,11 +243,11 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({goToBuilderPage}) =
 
   const makeTestResult = (test: WorkspaceTest): TestResult => {
     return {
-      name: test.testProperties.test.name, 
+      name: test.testProperties.test.name,
       passed: test.status === TestStatus.PASSED,
-      status: test.statusMessage ?? ""
-    }
-  }
+      status: test.statusMessage ?? "",
+    };
+  };
 
   const handleExportSelectedTestResults = () => {
     let selectedTests = getSelectedTests();
@@ -247,14 +256,15 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({goToBuilderPage}) =
       return;
     }
     selectedTests = selectedTests.filter(
-      test => test.status === TestStatus.PASSED || test.status === TestStatus.FAILED
-    )
-    
+      (test) =>
+        test.status === TestStatus.PASSED || test.status === TestStatus.FAILED,
+    );
+
     const results: TestResults = Object.fromEntries(
-      selectedTests.map(test => [test.id, makeTestResult(test)])
-    )
-    Utils.downloadJson(results, `Test_Results_${Date.now()}`)
-  }
+      selectedTests.map((test) => [test.id, makeTestResult(test)]),
+    );
+    Utils.downloadJson(results, `Test_Results_${Date.now()}`);
+  };
 
   // Handle clear selected tests
   const handleClearSelectedTests = () => {
@@ -263,34 +273,38 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({goToBuilderPage}) =
       showToast("No tests selected", "error");
       return;
     }
-    selectedTests.forEach(test => removeTest(test.id));
+    selectedTests.forEach((test) => removeTest(test.id));
     showToast(`Cleared ${selectedTests.length} selected test(s)`, "success");
     clearSelection();
   };
 
   const handleExportTest = async (testId: string) => {
     const wsTest = getTest(testId);
-    if(!wsTest) {
-      throw Error(`Test with ID ${testId} was not found`)
+    if (!wsTest) {
+      throw Error(`Test with ID ${testId} was not found`);
     }
-    const props = wsTest.testProperties
+    const props = wsTest.testProperties;
     Utils.downloadJson(props, props.test.name);
   };
 
   const renderCollapseToggle = () => (
-    <Button 
-      variant="ghost" 
-      size="icon" 
-      className="h-8 w-8" 
+    <Button
+      variant="ghost"
+      size="icon"
+      className="h-8 w-8"
       onClick={() => setIsExpanded(!isExpanded)}
     >
-      {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+      {isExpanded ? (
+        <ChevronDown className="h-4 w-4" />
+      ) : (
+        <ChevronRight className="h-4 w-4" />
+      )}
     </Button>
-  )
+  );
 
   const renderSelectionModeButtons = () => (
     <>
-      <Button 
+      <Button
         variant="default"
         onClick={handleRunSelectedTests}
         disabled={selectedTestIds.size === 0}
@@ -300,7 +314,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({goToBuilderPage}) =
         Run
       </Button>
 
-      <Button 
+      <Button
         variant="outline"
         onClick={handleExportSelectedTestResults}
         disabled={selectedTestIds.size === 0 || !isAnyFinishedSelectedTests()}
@@ -310,7 +324,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({goToBuilderPage}) =
         Export Results
       </Button>
 
-      <Button 
+      <Button
         variant="outline"
         onClick={handleExportSelectedTests}
         disabled={selectedTestIds.size === 0}
@@ -320,7 +334,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({goToBuilderPage}) =
         Export
       </Button>
 
-      <Button 
+      <Button
         variant="destructive"
         onClick={handleClearSelectedTests}
         disabled={selectedTestIds.size === 0}
@@ -330,7 +344,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({goToBuilderPage}) =
         Delete
       </Button>
     </>
-  )
+  );
   const renderHeader = () => (
     <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-8">
       <div>
@@ -339,13 +353,12 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({goToBuilderPage}) =
           Manage and monitor your unit tests
         </p>
       </div>
-  
+
       {/* Vertical container to stack button rows */}
       <div className="flex flex-col items-end gap-3">
-        
         {/* Row 1: Primary Actions */}
         <div className="flex flex-wrap gap-2">
-          <Button 
+          <Button
             variant="outline"
             onClick={() => {
               const newTest = addEmptyTest();
@@ -356,20 +369,24 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({goToBuilderPage}) =
             <Plus className="h-4 w-4" />
             Add New Test
           </Button>
-  
-          <Button 
+
+          <Button
             variant={isSelectionMode ? "destructive" : "outline"}
             onClick={toggleSelectionMode}
             className="gap-2"
           >
             {isSelectionMode ? (
-              <><Square className="h-4 w-4" /> Cancel Selection</>
+              <>
+                <Square className="h-4 w-4" /> Cancel Selection
+              </>
             ) : (
-              <><CheckSquare className="h-4 w-4" /> Selection Mode</>
+              <>
+                <CheckSquare className="h-4 w-4" /> Selection Mode
+              </>
             )}
           </Button>
         </div>
-  
+
         {/* Row 2: Selection Mode Actions */}
         {isSelectionMode && (
           <div className="flex flex-wrap gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
@@ -391,24 +408,26 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({goToBuilderPage}) =
       <CardContent>
         <Uploader onTestsParsed={handleTestsUploaded} />
         <p className="text-sm text-muted-foreground mt-4">
-          Upload JSON files containing one or multiple tests. Tests will be added to your workspace.
+          Upload JSON files containing one or multiple tests. Tests will be
+          added to your workspace.
         </p>
       </CardContent>
     </Card>
-  )
+  );
 
   const handleOnSortTypeToggleClicked = () => {
     // Simple toggle between sort types
+    const sortTypes = Object.values(SortType);
     const currentIndex = sortTypes.indexOf(sortType);
     const nextIndex = (currentIndex + 1) % sortTypes.length;
     setSortType(sortTypes[nextIndex]);
     // Reset direction to default for new sort type
-    if (sortTypes[nextIndex] === 'chronological') {
-      setSortDirection('desc');
+    if (sortTypes[nextIndex] === SortType.Chronological) {
+      setSortDirection(SortDirection.Descending);
     } else {
-      setSortDirection('asc');
+      setSortDirection(SortDirection.Ascending);
     }
-  }
+  };
 
   const renderSortTypeToggle = () => (
     <div className="relative inline-block w-full">
@@ -419,39 +438,52 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({goToBuilderPage}) =
         onClick={handleOnSortTypeToggleClicked}
         title={`Sort by: ${sortType}`}
       >
-        {sortType === 'alphabetical' && <Text className="h-3 w-3" />}
-        {sortType === 'status' && <List className="h-3 w-3" />}
-        {sortType === 'chronological' && <Calendar className="h-3 w-3" />}
+        {sortType === SortType.Alphabetical && <Text className="h-3 w-3" />}
+        {sortType === SortType.Status && <List className="h-3 w-3" />}
+        {sortType === SortType.Chronological && (
+          <Calendar className="h-3 w-3" />
+        )}
         <span className="text-xs capitalize">{sortType}</span>
       </Button>
     </div>
-  )
+  );
 
   const renderSortDirectionToggle = () => (
     <>
-    {(sortType === 'alphabetical' || sortType === 'chronological') && (
-      <Button
-        variant="ghost"
-        size="sm"
-        className="h-7 w-7 p-0"
-        onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
-        title={sortDirection === 'asc' ? 'Ascending' : 'Descending'}
-      >
-        {sortDirection === 'asc' ? (
-          <ArrowUp className="h-3 w-3" />
-        ) : (
-          <ArrowDown className="h-3 w-3" />
-        )}
-      </Button>
-    )}
+      {(sortType === SortType.Alphabetical ||
+        sortType === SortType.Chronological) && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 w-7 p-0"
+          onClick={() =>
+            setSortDirection(
+              sortDirection === SortDirection.Ascending
+                ? SortDirection.Descending
+                : SortDirection.Ascending,
+            )
+          }
+          title={
+            sortDirection === SortDirection.Ascending
+              ? "Ascending"
+              : "Descending"
+          }
+        >
+          {sortDirection === SortDirection.Ascending ? (
+            <ArrowUp className="h-3 w-3" />
+          ) : (
+            <ArrowDown className="h-3 w-3" />
+          )}
+        </Button>
+      )}
     </>
-  )
+  );
 
   const handleOnStatusFilterToggleClicked = () => {
     const currentIndex = allStatuses.indexOf(filterStatus);
     const nextIndex = (currentIndex + 1) % allStatuses.length;
     setFilterStatus(allStatuses[nextIndex]);
-  }
+  };
 
   const renderStatusFilterToggle = () => (
     <div className="relative inline-block">
@@ -460,51 +492,64 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({goToBuilderPage}) =
         size="sm"
         className="h-7 px-2 gap-1"
         onClick={handleOnStatusFilterToggleClicked}
-        title={`Filter: ${filterStatus === null ? 'None' : filterStatus}`}
+        title={`Filter: ${filterStatus === null ? "None" : filterStatus}`}
       >
         <Filter className="h-3 w-3" />
         <span className="text-xs">
-          {filterStatus === null ? 'All' : filterStatus.charAt(0).toUpperCase() + filterStatus.slice(1)}
+          {filterStatus === null
+            ? "All"
+            : filterStatus.charAt(0).toUpperCase() + filterStatus.slice(1)}
         </span>
       </Button>
     </div>
-  )
+  );
 
   const renderPollingBadge = () => (
-    <Badge variant="outline" className={
-      "font-medium bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-400"
-    }>
-      <RefreshCw className="h-3 w-3 mr-1 animate-spin" /> 
+    <Badge
+      variant="outline"
+      className={
+        "font-medium bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-400"
+      }
+    >
+      <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
       Polling For Results
     </Badge>
-  )
+  );
 
   const renderTestStats = () => {
     const totalCount = allTests.length;
-    const passedCount = allTests.filter(t => t.status === TestStatus.PASSED).length;
-    const failedCount = allTests.filter(t => t.status === TestStatus.FAILED).length;
-    return <div className="flex items-center gap-4 text-sm font-medium">
-      <span className="text-muted-foreground">
-        Total: <span className="text-foreground">{totalCount}</span>
-      </span>
-      
-      <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
-        <CheckCircle className="h-4 w-4" />
-        Passed: <span>{passedCount}</span>
-      </span>
+    const passedCount = allTests.filter(
+      (t) => t.status === TestStatus.PASSED,
+    ).length;
+    const failedCount = allTests.filter(
+      (t) => t.status === TestStatus.FAILED,
+    ).length;
+    return (
+      <div className="flex items-center gap-4 text-sm font-medium">
+        <span className="text-muted-foreground">
+          Total: <span className="text-foreground">{totalCount}</span>
+        </span>
 
-      <span className="flex items-center gap-1 text-red-600 dark:text-red-400">
-        <XCircle className="h-4 w-4" />
-        Failed: <span>{failedCount}</span>
-      </span>
-    </div>
-  }
+        <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
+          <CheckCircle className="h-4 w-4" />
+          Passed: <span>{passedCount}</span>
+        </span>
+
+        <span className="flex items-center gap-1 text-red-600 dark:text-red-400">
+          <XCircle className="h-4 w-4" />
+          Failed: <span>{failedCount}</span>
+        </span>
+      </div>
+    );
+  };
 
   const renderTestListHeader = () => {
     const visibleTestCount = wsTests.length;
     const selectedCount = selectedTestIds.size;
-    const allVisibleSelected = selectedCount > 0 && selectedCount === visibleTestCount;
-    const someVisibleSelected = selectedCount > 0 && selectedCount < visibleTestCount;
+    const allVisibleSelected =
+      selectedCount > 0 && selectedCount === visibleTestCount;
+    const someVisibleSelected =
+      selectedCount > 0 && selectedCount < visibleTestCount;
 
     return (
       <CardHeader>
@@ -541,45 +586,56 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({goToBuilderPage}) =
                   }}
                   className={cn(
                     "h-4 w-4",
-                    someVisibleSelected && "data-[state=checked]:bg-primary/50"
+                    someVisibleSelected && "data-[state=checked]:bg-primary/50",
                   )}
                 />
-                <span className="text-sm text-muted-foreground">Select all</span>
+                <span className="text-sm text-muted-foreground">
+                  Select all
+                </span>
               </div>
             )}
           </div>
-          
+
           <div className="flex items-center gap-2">
             {isPolling && renderPollingBadge()}
-            <div className={cn(
-              "flex items-center gap-1 border-r border-border pr-2 mr-2",
-              isSelectionMode && "opacity-50 pointer-events-none"
-            )}>
+            <div
+              className={cn(
+                "flex items-center gap-1 border-r border-border pr-2 mr-2",
+                isSelectionMode && "opacity-50 pointer-events-none",
+              )}
+            >
               {renderSortDirectionToggle()}
               {renderSortTypeToggle()}
             </div>
-            <div className={cn(isSelectionMode && "opacity-50 pointer-events-none")}>
+            <div
+              className={cn(
+                isSelectionMode && "opacity-50 pointer-events-none",
+              )}
+            >
               {renderStatusFilterToggle()}
             </div>
           </div>
         </div>
       </CardHeader>
     );
-  }
+  };
 
   const renderTestList = () => (
     <CardContent>
       {wsTests.length === 0 ? (
         <div className="text-center py-12">
           <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-          <h3 className="text-lg font-medium text-foreground mb-2">No tests in workspace</h3>
+          <h3 className="text-lg font-medium text-foreground mb-2">
+            No tests in workspace
+          </h3>
           <p className="text-muted-foreground">
-            Upload tests using the uploader above or create new tests in the builder.
+            Upload tests using the uploader above or create new tests in the
+            builder.
           </p>
         </div>
       ) : (
         <div className="space-y-4">
-          {wsTests.map((wsTest, index) => {
+          {wsTests.map((wsTest) => {
             return (
               <TestListItem
                 key={wsTest.id}
@@ -592,7 +648,6 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({goToBuilderPage}) =
                 }}
                 onExportTest={handleExportTest}
                 // Selection mode props
-                index={index}
                 isSelectionMode={isSelectionMode}
                 isSelected={isTestSelected(wsTest.id)}
                 onToggleSelection={toggleTestSelection}
@@ -602,14 +657,14 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({goToBuilderPage}) =
         </div>
       )}
     </CardContent>
-  )
+  );
 
   const renderTestListCard = () => (
     <Card>
       {renderTestListHeader()}
       {isExpanded && renderTestList()}
     </Card>
-  )
+  );
 
   return (
     <div className="container mx-auto px-6 py-8 max-w-6xl">

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-namespace */
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 
 import type { OperatorType } from "@common/coreTypes";
@@ -31,13 +30,12 @@ export namespace UnitTest {
   export interface Incomplete {
     worldExpectedSerialized: string;
   }
-
 }
 
 // Properties used by builder
 export interface UnitTestProps {
-  test: UnitTest,
-  selectedModules: Module[],
+  test: UnitTest;
+  selectedModules: Module[];
 }
 
 /**
@@ -50,49 +48,39 @@ export function isModule(obj: unknown): obj is Module {
 
 /**
  * Structural Check (Duck Typing)
- * Returns true if the object has the shape of a Module, 
+ * Returns true if the object has the shape of a Module,
  * even if the prototype was lost (e.g., via structuredClone or JSON.parse).
  */
-export function isModuleStructural(obj: any): obj is Module {
-  return (
-    obj !== null &&
-    typeof obj === "object" &&
-    typeof obj.fullPath === "string"
-  );
+export function isModuleStructural(obj: unknown): obj is Module {
+  if (typeof obj !== "object" || obj === null) return false;
+
+  // Cast to a record to allow property probing
+  const candidate = obj as Record<string, unknown>;
+  return typeof candidate.fullPath === "string";
 }
 
-export function isUnitTestProps(obj: any): obj is UnitTestProps {
-  const test = obj.test;
+export function isUnitTestProps(obj: unknown): obj is UnitTestProps {
+  if (typeof obj !== "object" || obj === null) return false;
+
+  const candidate = obj as Record<string, unknown>;
+  const test = candidate.test as Record<string, unknown> | undefined;
+
   return (
-    typeof obj === "object" &&
-
-    obj.selectedModules !== null &&
-    Array.isArray(obj.selectedModules) &&
-
-    obj.selectedModules.every((module: any) => isModuleStructural(module)) &&
-    
-    obj !== null &&
+    Array.isArray(candidate.selectedModules) &&
+    candidate.selectedModules.every(isModuleStructural) &&
     typeof test === "object" &&
-    
     test !== null &&
     typeof test.name === "string" &&
-
-    test.systems !== null &&
     Array.isArray(test.systems) &&
-
-    test.initialConfiguration !== null &&
     Array.isArray(test.initialConfiguration) &&
-
-    test.expectedConfiguration !== null &&
     Array.isArray(test.expectedConfiguration) &&
-
-    test.operators !== null &&
     Array.isArray(test.operators)
   );
 }
 
 // General types
-export class Module { // TODO: convert to simple type (not class)
+export class Module {
+  // TODO: convert to simple type (not class)
   fullPath: string;
 
   constructor(fullPath: string) {
@@ -100,7 +88,7 @@ export class Module { // TODO: convert to simple type (not class)
   }
 
   getName(): string {
-    return this.fullPath.split('.').pop() ?? '';
+    return this.fullPath.split(".").pop() ?? "";
   }
 
   equals(other: Module): boolean {
@@ -114,16 +102,18 @@ export interface System {
 }
 
 // name : field
-export type ComponentFields = Record<string, ComponentField>
-export type ComponentFieldsRaw = Record<string, ComponentFieldValue> 
+export type ComponentFields = Record<string, ComponentField>;
+export type ComponentFieldsRaw = Record<string, ComponentFieldValue>;
 
 export type ComponentBody = ComponentFields;
 
 export type ComponentFieldsArray = ComponentField[]; //ComponentFieldValue[];
 
 export type ComponentFieldValuePrimitive = string;
-export type ComponentFieldValue = 
-  ComponentFieldValuePrimitive | ComponentFields | ComponentFieldsArray;
+export type ComponentFieldValue =
+  | ComponentFieldValuePrimitive
+  | ComponentFields
+  | ComponentFieldsArray;
 
 export interface ComponentField {
   // We only know the actual type for the primitive
@@ -143,10 +133,10 @@ export interface SupportedOperators {
 
 export function isComponentStructureEqual(
   a: ComponentFieldValue,
-  b: ComponentFieldValue
+  b: ComponentFieldValue,
 ): boolean {
   // 1. Handle Primitive Case (string)
-  if (typeof a === 'string' || typeof b === 'string') {
+  if (typeof a === "string" || typeof b === "string") {
     return true; // don't check the value
     //return a === b;
   }
@@ -160,9 +150,12 @@ export function isComponentStructureEqual(
 
   // 3. Handle Dictionary Case (ComponentFields / Record)
   if (
-    typeof a === 'object' && a !== null &&
-    typeof b === 'object' && b !== null &&
-    !Array.isArray(a) && !Array.isArray(b)
+    typeof a === "object" &&
+    a !== null &&
+    typeof b === "object" &&
+    b !== null &&
+    !Array.isArray(a) &&
+    !Array.isArray(b)
   ) {
     const keysA = Object.keys(a);
     const keysB = Object.keys(b);
@@ -170,8 +163,8 @@ export function isComponentStructureEqual(
     if (keysA.length !== keysB.length) {
       return false;
     }
-    
-    return keysA.every(key => {
+
+    return keysA.every((key) => {
       if (!Object.prototype.hasOwnProperty.call(b, key)) {
         return false;
       }
@@ -186,7 +179,10 @@ export function isComponentStructureEqual(
 /**
  * Helper to compare the ComponentField wrapper objects
  */
-export function isFieldStructureEqual(a: ComponentField, b: ComponentField): boolean {
+export function isFieldStructureEqual(
+  a: ComponentField,
+  b: ComponentField,
+): boolean {
   // Compare the explicit 'type' property
   if (a.type !== b.type) return false;
 
@@ -200,9 +196,16 @@ export function isFieldStructureEqual(a: ComponentField, b: ComponentField): boo
   return isComponentStructureEqual(a.value, b.value);
 }
 
-export function isSupportedOperators(value: any): value is SupportedOperators {
-  return value.equals !== undefined && typeof value.equals === "boolean" &&
-    value.cmp !== undefined && typeof value.cmp === "boolean";
+export function isSupportedOperators(
+  value: unknown,
+): value is SupportedOperators {
+  if (typeof value !== "object" || value === null) return false;
+
+  const candidate = value as Record<string, unknown>;
+
+  return (
+    typeof candidate.equals === "boolean" && typeof candidate.cmp === "boolean"
+  );
 }
 
 export interface ComponentHeader {
@@ -213,89 +216,93 @@ export interface ComponentHeader {
 }
 
 export function isComponentFieldValuePrimitive(
-  value: ComponentFieldValue
+  value: ComponentFieldValue,
 ): value is ComponentFieldValuePrimitive {
   return typeof value === "string";
 }
 
 export function isComponentFieldValueArray(
-  value: ComponentFieldValue
+  value: ComponentFieldValue,
 ): value is ComponentFieldsArray {
   return Array.isArray(value);
 }
 
 export function isComponentFieldValueDict(
-  value: ComponentFieldValue
+  value: ComponentFieldValue,
 ): value is ComponentFields {
-  return !isComponentFieldValuePrimitive(value) && !isComponentFieldValueArray(value);
+  return (
+    !isComponentFieldValuePrimitive(value) && !isComponentFieldValueArray(value)
+  );
 }
 
-
-export function isComponentFieldEnum(
-  field: ComponentField
-): boolean {
-  return field.type === "enum" &&
-    isComponentFieldValuePrimitive(field.value) && 
-    field.enumValues !== undefined;
+export function isComponentFieldEnum(field: ComponentField): boolean {
+  return (
+    field.type === "enum" &&
+    isComponentFieldValuePrimitive(field.value) &&
+    field.enumValues !== undefined
+  );
 }
 
-const PATH_DELIM = '.';
-
+const PATH_DELIM = ".";
 
 // Allows to return something by processing each field
 // Or return nothing?
-export type ComponentFieldCallback<T> = 
-  (name: string, field: ComponentField, path: string) => GenericFieldValue<T>; 
+export type ComponentFieldCallback<T> = (
+  name: string,
+  field: ComponentField,
+  path: string,
+) => GenericFieldValue<T>;
 
 // T is the primitive type
 export interface GenericFieldRecord<T> {
   [key: string]: GenericFieldValue<T>;
 }
 
-export type GenericFieldArray<T> = GenericFieldValue<T>[] // GenericFieldValue<T>
-export type GenericFieldValue<T> = GenericFieldRecord<T> | GenericFieldArray<T> | T 
+export type GenericFieldArray<T> = GenericFieldValue<T>[]; // GenericFieldValue<T>
+export type GenericFieldValue<T> =
+  | GenericFieldRecord<T>
+  | GenericFieldArray<T>
+  | T;
 
 // It can be used for example to return each field's value and get it as a dict
 export function iterateComponentField<T>(
-  field: ComponentField, 
+  field: ComponentField,
   parent: string,
-  func: ComponentFieldCallback<T>
+  func: ComponentFieldCallback<T>,
 ): GenericFieldValue<T> {
   const value = field.value;
 
   if (isComponentFieldValuePrimitive(value)) {
-    const parts = parent.split('.')
-    const name = parts.length > 0 ? parts[-1] : ""
+    const parts = parent.split(".");
+    const name = parts.length > 0 ? parts[-1] : "";
     //    console.log("iterateComponentField primitive value: ", value);
-    return func(name, field, parent)
+    return func(name, field, parent);
   } else if (isComponentFieldValueArray(value)) {
-    const newArray: GenericFieldArray<T> = []
+    const newArray: GenericFieldArray<T> = [];
     value.forEach((element, index) => {
       const suffix = `${index}`;
-      const me = parent + PATH_DELIM + suffix
+      const me = parent + PATH_DELIM + suffix;
       // TODO: assert schema exists and holds a string
-      newArray.push(
-        iterateComponentField(element, me, func)
-      )
-    })
+      newArray.push(iterateComponentField(element, me, func));
+    });
     return newArray;
   } else {
-    return iterateComponentFieldDict(value, parent, func)
+    return iterateComponentFieldDict(value, parent, func);
   }
 }
 
 export function iterateComponentFieldDict<T>(
-  fields: ComponentFields, 
+  fields: ComponentFields,
   parent: string,
-  func: ComponentFieldCallback<T>
+  func: ComponentFieldCallback<T>,
 ): GenericFieldRecord<T> {
-  let fieldsOut: GenericFieldRecord<T> = {}
+  const fieldsOut: GenericFieldRecord<T> = {};
   for (const [key, field] of Object.entries(fields)) {
     const path = parent + "." + key;
 
-    fieldsOut[key] = iterateComponentField(field, path, func)
+    fieldsOut[key] = iterateComponentField(field, path, func);
   }
-  return fieldsOut
+  return fieldsOut;
 }
 
 export type Components = Component[];
@@ -305,7 +312,7 @@ export interface Component extends ComponentHeader {
 }
 
 export interface EntityHeader {
-  id: string; // unique 
+  id: string; // unique
   entityName: string;
 }
 
@@ -326,7 +333,7 @@ export interface QueriedEntityFields {
 export interface QueriedEntity {
   name: string;
   parent: string;
-  fields: QueriedEntityFields,
+  fields: QueriedEntityFields;
   components: {
     [K in keyof MetaComponentRegistry]?: MetaComponentRegistry[K];
   };
@@ -342,7 +349,7 @@ export interface MetaComponentRegistry {
 
 export interface QueriedComponentFields {
   sources: string[];
-  values: any[]; // depends on component type
+  values: unknown[]; // depends on component type
 }
 
 export interface QueriedComponent {
@@ -356,52 +363,69 @@ export interface QueryResponse {
 }
 
 export type TypeInfoResponseEntryValueLeafValue = string | number;
-export type TypeInfoResponseEntryValueLeaf = 
-  [string] | 
-  [string, TypeInfoResponseEntryValue] | // In case of array / vector
-  TypeInfoResponseEntryValueLeafValue;
+export type TypeInfoResponseEntryValueLeaf =
+  | [string]
+  | [string, TypeInfoResponseEntryValue] // In case of array / vector
+  | TypeInfoResponseEntryValueLeafValue;
 
-export type TypeInfoResponseEntryValue = 
-  TypeInfoResponseDict |  // dict in case of struct member
-  TypeInfoResponseEntryValueLeaf; // other can be 
+export type TypeInfoResponseEntryValue =
+  | TypeInfoResponseDict // dict in case of struct member
+  | TypeInfoResponseEntryValueLeaf; // other can be
 
 export interface TypeInfoResponseDict {
   [key: string]: TypeInfoResponseEntryValue;
 }
 // TODO: not sure about array, check serialized array JSON
-export type TypeInfoResponseArray = (TypeInfoResponseEntryValueLeaf | TypeInfoResponseDict)[];
+export type TypeInfoResponseArray = (
+  | TypeInfoResponseEntryValueLeaf
+  | TypeInfoResponseDict
+)[];
 
 export type TypeInfoResponse = TypeInfoResponseDict | TypeInfoResponseArray;
 
-export function isTypeInfoLeafValue(value: any): value is TypeInfoResponseEntryValueLeafValue {
+export function isTypeInfoLeafValue(
+  value: unknown,
+): value is TypeInfoResponseEntryValueLeafValue {
   const type = typeof value;
   return type === "string" || type === "number";
 }
 
-export function typeInfoLeafValueToString(value: TypeInfoResponseEntryValueLeafValue): string {
-  return typeof value === "string" 
-    ? value
-    : value.toString();
+export function typeInfoLeafValueToString(
+  value: TypeInfoResponseEntryValueLeafValue,
+): string {
+  return typeof value === "string" ? value : value.toString();
 }
 
 export const OperatorLevel = {
-  Entity: 'entity',
-  Component: 'component',
-  Property: 'field',
+  Entity: "entity",
+  Component: "component",
+  Property: "field",
 } as const;
 export type OperatorLevel = (typeof OperatorLevel)[keyof typeof OperatorLevel];
 
 // 1. Erasable "Enum" Replacement
 export const MessageType = {
-  INFO: 'info',
-  SUCCESS: 'success',
-  WARNING: 'warning',
-  ERROR: 'error',
+  INFO: "info",
+  SUCCESS: "success",
+  WARNING: "warning",
+  ERROR: "error",
 } as const;
-
 export type MessageType = (typeof MessageType)[keyof typeof MessageType];
 
 export interface TestValidationResult {
-  message: string,
-  type?: MessageType
+  message: string;
+  type?: MessageType;
 }
+
+export const SortType = {
+  Alphabetical: "alphabetical",
+  Status: "status",
+  Chronological: "chronological",
+} as const;
+export type SortType = (typeof SortType)[keyof typeof SortType];
+
+export const SortDirection = {
+  Ascending: "asc",
+  Descending: "desc",
+} as const;
+export type SortDirection = (typeof SortDirection)[keyof typeof SortDirection];

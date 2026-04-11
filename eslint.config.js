@@ -21,10 +21,21 @@ export default defineConfig([
     },
     rules: {
       "no-unused-vars": "off",
-      "@typescript-eslint/no-unused-vars": "warn",
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          args: "all",
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
       "@typescript-eslint/ban-ts-comment": "off",
       "@typescript-eslint/no-namespace": "off",
       "react-refresh/only-export-components": "off",
+      "react/jsx-uses-react": "off",
+      "react/react-in-jsx-scope": "off",
     },
+    ignores: ["node_modules/*"],
   },
 ]);
