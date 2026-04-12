@@ -118,7 +118,7 @@ const AppContent = () => {
   const renderLoadingContent = () => (
     <div className="font-sans p-12 max-w-4xl mx-auto text-center min-h-[60vh] flex flex-col justify-center items-center">
       <h1 className="text-3xl font-bold text-foreground mb-6">
-        Unit Test Runner
+        Flecs Test Runner
       </h1>
       <div
         className={cn(
