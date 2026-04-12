@@ -20,4 +20,5 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  base: '/flecs-test-runner-client/',
 })
