@@ -59,27 +59,21 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
   const { currentTestId, refreshCurrentTest, getWorkspaceTest } =
     useWorkspace();
 
-  const getCurrentTest = useCallback((): WorkspaceTest | null => {
+  const workspaceTest = useMemo(() => {
     if (!currentTestId) {
       return null;
     }
-    const test = getWorkspaceTest(currentTestId);
-    if (!test) {
-      console.error("Test does not exist with id: " + currentTestId);
-      return null;
-    }
-    return test;
-  }, [currentTestId, getWorkspaceTest]);
+    return getWorkspaceTest(currentTestId) ?? null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentTestId, refreshCurrentTest, getWorkspaceTest]);
 
   const [testProperties, setTestProperties] = useState<UnitTestProps>(
-    getCurrentTest()?.testProperties ?? DEFAULT_TEST_PROPERTIES,
+    workspaceTest?.testProperties ?? DEFAULT_TEST_PROPERTIES,
   );
 
   useEffect(() => {
-    setTestProperties(
-      getCurrentTest()?.testProperties ?? DEFAULT_TEST_PROPERTIES,
-    );
-  }, [getCurrentTest, refreshCurrentTest]);
+    setTestProperties(workspaceTest?.testProperties ?? DEFAULT_TEST_PROPERTIES);
+  }, [workspaceTest]);
 
   const { test, selectedModules } = useMemo(() => {
     return {
