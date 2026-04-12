@@ -1,0 +1,1770 @@
+[
+  {
+    "test": {
+      "name": "modify_Label_Label_value_EQ_FAIL",
+      "systems": [
+        {
+          "name": "movement.module.modify_Label",
+          "timesToRun": 1
+        }
+      ],
+      "initialConfiguration": [
+        {
+          "id": "70c34d83-bf64-49e2-8bc2-56ed4a6be57d",
+          "entityName": "Entity",
+          "components": [
+            {
+              "id": "movement.module.Label",
+              "name": "Label",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": false,
+                "cmp": false
+              },
+              "fields": {
+                "value": {
+                  "type": "text",
+                  "value": "TEST"
+                }
+              }
+            },
+            {
+              "id": "movement.module.StringModifier",
+              "name": "StringModifier",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": false,
+                "cmp": false
+              },
+              "fields": {
+                "operation": {
+                  "type": "enum",
+                  "value": "Lowercase",
+                  "enumValues": ["None", "Lowercase", "Uppercase"]
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "expectedConfiguration": [
+        {
+          "id": "70c34d83-bf64-49e2-8bc2-56ed4a6be57d",
+          "entityName": "Entity",
+          "components": [
+            {
+              "id": "movement.module.Label",
+              "name": "Label",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": false,
+                "cmp": false
+              },
+              "fields": {
+                "value": {
+                  "type": "text",
+                  "value": "TEST"
+                }
+              }
+            },
+            {
+              "id": "movement.module.StringModifier",
+              "name": "StringModifier",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": false,
+                "cmp": false
+              },
+              "fields": {
+                "operation": {
+                  "type": "enum",
+                  "value": "None",
+                  "enumValues": ["None", "Lowercase", "Uppercase"]
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "operators": [
+        {
+          "type": "EQ",
+          "path": "70c34d83-bf64-49e2-8bc2-56ed4a6be57d/movement.module.Label/value"
+        }
+      ]
+    },
+    "selectedModules": [
+      {
+        "fullPath": "movement.module"
+      }
+    ]
+  },
+  {
+    "test": {
+      "name": "modify_Label_Label_value_EQ_PASS",
+      "systems": [
+        {
+          "name": "movement.module.modify_Label",
+          "timesToRun": 1
+        }
+      ],
+      "initialConfiguration": [
+        {
+          "id": "70c34d83-bf64-49e2-8bc2-56ed4a6be57d",
+          "entityName": "Entity",
+          "components": [
+            {
+              "id": "movement.module.Label",
+              "name": "Label",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": false,
+                "cmp": false
+              },
+              "fields": {
+                "value": {
+                  "type": "text",
+                  "value": "TEST"
+                }
+              }
+            },
+            {
+              "id": "movement.module.StringModifier",
+              "name": "StringModifier",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": false,
+                "cmp": false
+              },
+              "fields": {
+                "operation": {
+                  "type": "enum",
+                  "value": "Lowercase",
+                  "enumValues": ["None", "Lowercase", "Uppercase"]
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "expectedConfiguration": [
+        {
+          "id": "70c34d83-bf64-49e2-8bc2-56ed4a6be57d",
+          "entityName": "Entity",
+          "components": [
+            {
+              "id": "movement.module.Label",
+              "name": "Label",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": false,
+                "cmp": false
+              },
+              "fields": {
+                "value": {
+                  "type": "text",
+                  "value": "test"
+                }
+              }
+            },
+            {
+              "id": "movement.module.StringModifier",
+              "name": "StringModifier",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": false,
+                "cmp": false
+              },
+              "fields": {
+                "operation": {
+                  "type": "enum",
+                  "value": "None",
+                  "enumValues": ["None", "Lowercase", "Uppercase"]
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "operators": [
+        {
+          "type": "EQ",
+          "path": "70c34d83-bf64-49e2-8bc2-56ed4a6be57d/movement.module.Label/value"
+        }
+      ]
+    },
+    "selectedModules": [
+      {
+        "fullPath": "movement.module"
+      }
+    ]
+  },
+  {
+    "test": {
+      "name": "moveVector_Speed_PositionVector_LE_FAIL",
+      "systems": [
+        {
+          "name": "movement.module.moveVector_Speed",
+          "timesToRun": 1
+        }
+      ],
+      "initialConfiguration": [
+        {
+          "id": "1a92cd5c-396f-48ad-a23d-c541df7bfc2d",
+          "entityName": "Entity",
+          "components": [
+            {
+              "id": "movement.module.PositionVector",
+              "name": "PositionVector",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": true,
+                "cmp": true
+              },
+              "fields": {
+                "data": {
+                  "type": "vector",
+                  "value": [
+                    {
+                      "type": "component",
+                      "value": {
+                        "x": {
+                          "type": "float",
+                          "value": "0"
+                        },
+                        "y": {
+                          "type": "float",
+                          "value": "0"
+                        }
+                      }
+                    },
+                    {
+                      "type": "component",
+                      "value": {
+                        "x": {
+                          "type": "float",
+                          "value": "0"
+                        },
+                        "y": {
+                          "type": "float",
+                          "value": "0"
+                        }
+                      }
+                    }
+                  ],
+                  "schema": {
+                    "type": "component",
+                    "value": {
+                      "x": {
+                        "type": "float",
+                        "value": "0"
+                      },
+                      "y": {
+                        "type": "float",
+                        "value": "0"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "id": "movement.module.Speed",
+              "name": "Speed",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": true,
+                "cmp": true
+              },
+              "fields": {
+                "value": {
+                  "type": "float",
+                  "value": "1"
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "expectedConfiguration": [
+        {
+          "id": "1a92cd5c-396f-48ad-a23d-c541df7bfc2d",
+          "entityName": "Entity",
+          "components": [
+            {
+              "id": "movement.module.PositionVector",
+              "name": "PositionVector",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": true,
+                "cmp": true
+              },
+              "fields": {
+                "data": {
+                  "type": "vector",
+                  "value": [
+                    {
+                      "type": "component",
+                      "value": {
+                        "x": {
+                          "type": "float",
+                          "value": "-42"
+                        },
+                        "y": {
+                          "type": "float",
+                          "value": "42"
+                        }
+                      }
+                    },
+                    {
+                      "type": "component",
+                      "value": {
+                        "x": {
+                          "type": "float",
+                          "value": "1"
+                        },
+                        "y": {
+                          "type": "float",
+                          "value": "1"
+                        }
+                      }
+                    }
+                  ],
+                  "schema": {
+                    "type": "component",
+                    "value": {
+                      "x": {
+                        "type": "float",
+                        "value": "0"
+                      },
+                      "y": {
+                        "type": "float",
+                        "value": "0"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "id": "movement.module.Speed",
+              "name": "Speed",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": true,
+                "cmp": true
+              },
+              "fields": {
+                "value": {
+                  "type": "float",
+                  "value": "0"
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "operators": [
+        {
+          "type": "LT",
+          "path": "1a92cd5c-396f-48ad-a23d-c541df7bfc2d/movement.module.PositionVector"
+        }
+      ]
+    },
+    "selectedModules": [
+      {
+        "fullPath": "movement.module"
+      }
+    ]
+  },
+  {
+    "test": {
+      "name": "moveVector_Speed_PositionVector_LE_PASS",
+      "systems": [
+        {
+          "name": "movement.module.moveVector_Speed",
+          "timesToRun": 1
+        }
+      ],
+      "initialConfiguration": [
+        {
+          "id": "1a92cd5c-396f-48ad-a23d-c541df7bfc2d",
+          "entityName": "Entity",
+          "components": [
+            {
+              "id": "movement.module.PositionVector",
+              "name": "PositionVector",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": true,
+                "cmp": true
+              },
+              "fields": {
+                "data": {
+                  "type": "vector",
+                  "value": [
+                    {
+                      "type": "component",
+                      "value": {
+                        "x": {
+                          "type": "float",
+                          "value": "0"
+                        },
+                        "y": {
+                          "type": "float",
+                          "value": "0"
+                        }
+                      }
+                    },
+                    {
+                      "type": "component",
+                      "value": {
+                        "x": {
+                          "type": "float",
+                          "value": "0"
+                        },
+                        "y": {
+                          "type": "float",
+                          "value": "0"
+                        }
+                      }
+                    }
+                  ],
+                  "schema": {
+                    "type": "component",
+                    "value": {
+                      "x": {
+                        "type": "float",
+                        "value": "0"
+                      },
+                      "y": {
+                        "type": "float",
+                        "value": "0"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "id": "movement.module.Speed",
+              "name": "Speed",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": true,
+                "cmp": true
+              },
+              "fields": {
+                "value": {
+                  "type": "float",
+                  "value": "1"
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "expectedConfiguration": [
+        {
+          "id": "1a92cd5c-396f-48ad-a23d-c541df7bfc2d",
+          "entityName": "Entity",
+          "components": [
+            {
+              "id": "movement.module.PositionVector",
+              "name": "PositionVector",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": true,
+                "cmp": true
+              },
+              "fields": {
+                "data": {
+                  "type": "vector",
+                  "value": [
+                    {
+                      "type": "component",
+                      "value": {
+                        "x": {
+                          "type": "float",
+                          "value": "42"
+                        },
+                        "y": {
+                          "type": "float",
+                          "value": "-42"
+                        }
+                      }
+                    },
+                    {
+                      "type": "component",
+                      "value": {
+                        "x": {
+                          "type": "float",
+                          "value": "1"
+                        },
+                        "y": {
+                          "type": "float",
+                          "value": "1"
+                        }
+                      }
+                    }
+                  ],
+                  "schema": {
+                    "type": "component",
+                    "value": {
+                      "x": {
+                        "type": "float",
+                        "value": "0"
+                      },
+                      "y": {
+                        "type": "float",
+                        "value": "0"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "id": "movement.module.Speed",
+              "name": "Speed",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": true,
+                "cmp": true
+              },
+              "fields": {
+                "value": {
+                  "type": "float",
+                  "value": "0"
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "operators": [
+        {
+          "type": "LT",
+          "path": "1a92cd5c-396f-48ad-a23d-c541df7bfc2d/movement.module.PositionVector"
+        }
+      ]
+    },
+    "selectedModules": [
+      {
+        "fullPath": "movement.module"
+      }
+    ]
+  },
+  {
+    "test": {
+      "name": "moveVector_Speed_PositionVector_0_EQ_Acceleration_linear_x_NE_PASS",
+      "systems": [
+        {
+          "name": "movement.module.moveVector_Speed",
+          "timesToRun": 1
+        }
+      ],
+      "initialConfiguration": [
+        {
+          "id": "1a92cd5c-396f-48ad-a23d-c541df7bfc2d",
+          "entityName": "Entity",
+          "components": [
+            {
+              "id": "movement.module.PositionVector",
+              "name": "PositionVector",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": true,
+                "cmp": true
+              },
+              "fields": {
+                "data": {
+                  "type": "vector",
+                  "value": [
+                    {
+                      "type": "component",
+                      "value": {
+                        "x": {
+                          "type": "float",
+                          "value": "0"
+                        },
+                        "y": {
+                          "type": "float",
+                          "value": "0"
+                        }
+                      }
+                    },
+                    {
+                      "type": "component",
+                      "value": {
+                        "x": {
+                          "type": "float",
+                          "value": "0"
+                        },
+                        "y": {
+                          "type": "float",
+                          "value": "0"
+                        }
+                      }
+                    }
+                  ],
+                  "schema": {
+                    "type": "component",
+                    "value": {
+                      "x": {
+                        "type": "float",
+                        "value": "0"
+                      },
+                      "y": {
+                        "type": "float",
+                        "value": "0"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "id": "movement.module.Speed",
+              "name": "Speed",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": true,
+                "cmp": true
+              },
+              "fields": {
+                "value": {
+                  "type": "float",
+                  "value": "1"
+                }
+              }
+            },
+            {
+              "id": "movement.module.Acceleration",
+              "name": "Acceleration",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": false,
+                "cmp": false
+              },
+              "fields": {
+                "linear": {
+                  "type": "component",
+                  "value": {
+                    "x": {
+                      "type": "float",
+                      "value": "0"
+                    },
+                    "y": {
+                      "type": "float",
+                      "value": "0"
+                    }
+                  }
+                },
+                "angular": {
+                  "type": "float",
+                  "value": "0"
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "expectedConfiguration": [
+        {
+          "id": "1a92cd5c-396f-48ad-a23d-c541df7bfc2d",
+          "entityName": "Entity",
+          "components": [
+            {
+              "id": "movement.module.PositionVector",
+              "name": "PositionVector",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": true,
+                "cmp": true
+              },
+              "fields": {
+                "data": {
+                  "type": "vector",
+                  "value": [
+                    {
+                      "type": "component",
+                      "value": {
+                        "x": {
+                          "type": "float",
+                          "value": "1"
+                        },
+                        "y": {
+                          "type": "float",
+                          "value": "1"
+                        }
+                      }
+                    },
+                    {
+                      "type": "component",
+                      "value": {
+                        "x": {
+                          "type": "float",
+                          "value": "-42"
+                        },
+                        "y": {
+                          "type": "float",
+                          "value": "-42"
+                        }
+                      }
+                    }
+                  ],
+                  "schema": {
+                    "type": "component",
+                    "value": {
+                      "x": {
+                        "type": "float",
+                        "value": "0"
+                      },
+                      "y": {
+                        "type": "float",
+                        "value": "0"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "id": "movement.module.Speed",
+              "name": "Speed",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": true,
+                "cmp": true
+              },
+              "fields": {
+                "value": {
+                  "type": "float",
+                  "value": "-42"
+                }
+              }
+            },
+            {
+              "id": "movement.module.Acceleration",
+              "name": "Acceleration",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": false,
+                "cmp": false
+              },
+              "fields": {
+                "linear": {
+                  "type": "component",
+                  "value": {
+                    "x": {
+                      "type": "float",
+                      "value": "-42"
+                    },
+                    "y": {
+                      "type": "float",
+                      "value": "0"
+                    }
+                  }
+                },
+                "angular": {
+                  "type": "float",
+                  "value": "0"
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "operators": [
+        {
+          "type": "EQ",
+          "path": "1a92cd5c-396f-48ad-a23d-c541df7bfc2d/movement.module.PositionVector/data/0"
+        },
+        {
+          "type": "NEQ",
+          "path": "1a92cd5c-396f-48ad-a23d-c541df7bfc2d/movement.module.Acceleration/linear/x"
+        }
+      ]
+    },
+    "selectedModules": [
+      {
+        "fullPath": "movement.module"
+      }
+    ]
+  },
+  {
+    "test": {
+      "name": "moveVector_Speed_PositionVector_0_EQ_FAIL",
+      "systems": [
+        {
+          "name": "movement.module.moveVector_Speed",
+          "timesToRun": 1
+        }
+      ],
+      "initialConfiguration": [
+        {
+          "id": "1a92cd5c-396f-48ad-a23d-c541df7bfc2d",
+          "entityName": "Entity",
+          "components": [
+            {
+              "id": "movement.module.PositionVector",
+              "name": "PositionVector",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": true,
+                "cmp": true
+              },
+              "fields": {
+                "data": {
+                  "type": "vector",
+                  "value": [
+                    {
+                      "type": "component",
+                      "value": {
+                        "x": {
+                          "type": "float",
+                          "value": "0"
+                        },
+                        "y": {
+                          "type": "float",
+                          "value": "0"
+                        }
+                      }
+                    },
+                    {
+                      "type": "component",
+                      "value": {
+                        "x": {
+                          "type": "float",
+                          "value": "0"
+                        },
+                        "y": {
+                          "type": "float",
+                          "value": "0"
+                        }
+                      }
+                    }
+                  ],
+                  "schema": {
+                    "type": "component",
+                    "value": {
+                      "x": {
+                        "type": "float",
+                        "value": "0"
+                      },
+                      "y": {
+                        "type": "float",
+                        "value": "0"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "id": "movement.module.Speed",
+              "name": "Speed",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": true,
+                "cmp": true
+              },
+              "fields": {
+                "value": {
+                  "type": "float",
+                  "value": "1"
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "expectedConfiguration": [
+        {
+          "id": "1a92cd5c-396f-48ad-a23d-c541df7bfc2d",
+          "entityName": "Entity",
+          "components": [
+            {
+              "id": "movement.module.PositionVector",
+              "name": "PositionVector",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": true,
+                "cmp": true
+              },
+              "fields": {
+                "data": {
+                  "type": "vector",
+                  "value": [
+                    {
+                      "type": "component",
+                      "value": {
+                        "x": {
+                          "type": "float",
+                          "value": "-42"
+                        },
+                        "y": {
+                          "type": "float",
+                          "value": "1"
+                        }
+                      }
+                    },
+                    {
+                      "type": "component",
+                      "value": {
+                        "x": {
+                          "type": "float",
+                          "value": "-42"
+                        },
+                        "y": {
+                          "type": "float",
+                          "value": "-42"
+                        }
+                      }
+                    }
+                  ],
+                  "schema": {
+                    "type": "component",
+                    "value": {
+                      "x": {
+                        "type": "float",
+                        "value": "0"
+                      },
+                      "y": {
+                        "type": "float",
+                        "value": "0"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "id": "movement.module.Speed",
+              "name": "Speed",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": true,
+                "cmp": true
+              },
+              "fields": {
+                "value": {
+                  "type": "float",
+                  "value": "-42"
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "operators": [
+        {
+          "type": "EQ",
+          "path": "1a92cd5c-396f-48ad-a23d-c541df7bfc2d/movement.module.PositionVector/data/0"
+        }
+      ]
+    },
+    "selectedModules": [
+      {
+        "fullPath": "movement.module"
+      }
+    ]
+  },
+  {
+    "test": {
+      "name": "moveVector_Speed_PositionVector_0_EQ_PASS",
+      "systems": [
+        {
+          "name": "movement.module.moveVector_Speed",
+          "timesToRun": 1
+        }
+      ],
+      "initialConfiguration": [
+        {
+          "id": "1a92cd5c-396f-48ad-a23d-c541df7bfc2d",
+          "entityName": "Entity",
+          "components": [
+            {
+              "id": "movement.module.PositionVector",
+              "name": "PositionVector",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": true,
+                "cmp": true
+              },
+              "fields": {
+                "data": {
+                  "type": "vector",
+                  "value": [
+                    {
+                      "type": "component",
+                      "value": {
+                        "x": {
+                          "type": "float",
+                          "value": "0"
+                        },
+                        "y": {
+                          "type": "float",
+                          "value": "0"
+                        }
+                      }
+                    },
+                    {
+                      "type": "component",
+                      "value": {
+                        "x": {
+                          "type": "float",
+                          "value": "0"
+                        },
+                        "y": {
+                          "type": "float",
+                          "value": "0"
+                        }
+                      }
+                    }
+                  ],
+                  "schema": {
+                    "type": "component",
+                    "value": {
+                      "x": {
+                        "type": "float",
+                        "value": "0"
+                      },
+                      "y": {
+                        "type": "float",
+                        "value": "0"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "id": "movement.module.Speed",
+              "name": "Speed",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": true,
+                "cmp": true
+              },
+              "fields": {
+                "value": {
+                  "type": "float",
+                  "value": "1"
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "expectedConfiguration": [
+        {
+          "id": "1a92cd5c-396f-48ad-a23d-c541df7bfc2d",
+          "entityName": "Entity",
+          "components": [
+            {
+              "id": "movement.module.PositionVector",
+              "name": "PositionVector",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": true,
+                "cmp": true
+              },
+              "fields": {
+                "data": {
+                  "type": "vector",
+                  "value": [
+                    {
+                      "type": "component",
+                      "value": {
+                        "x": {
+                          "type": "float",
+                          "value": "1"
+                        },
+                        "y": {
+                          "type": "float",
+                          "value": "1"
+                        }
+                      }
+                    },
+                    {
+                      "type": "component",
+                      "value": {
+                        "x": {
+                          "type": "float",
+                          "value": "-42"
+                        },
+                        "y": {
+                          "type": "float",
+                          "value": "-42"
+                        }
+                      }
+                    }
+                  ],
+                  "schema": {
+                    "type": "component",
+                    "value": {
+                      "x": {
+                        "type": "float",
+                        "value": "0"
+                      },
+                      "y": {
+                        "type": "float",
+                        "value": "0"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "id": "movement.module.Speed",
+              "name": "Speed",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": true,
+                "cmp": true
+              },
+              "fields": {
+                "value": {
+                  "type": "float",
+                  "value": "-42"
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "operators": [
+        {
+          "type": "EQ",
+          "path": "1a92cd5c-396f-48ad-a23d-c541df7bfc2d/movement.module.PositionVector/data/0"
+        }
+      ]
+    },
+    "selectedModules": [
+      {
+        "fullPath": "movement.module"
+      }
+    ]
+  },
+  {
+    "test": {
+      "name": "moveVector_Speed_PositionVector_EQ_PASS",
+      "systems": [
+        {
+          "name": "movement.module.moveVector_Speed",
+          "timesToRun": 1
+        }
+      ],
+      "initialConfiguration": [
+        {
+          "id": "1a92cd5c-396f-48ad-a23d-c541df7bfc2d",
+          "entityName": "Entity",
+          "components": [
+            {
+              "id": "movement.module.PositionVector",
+              "name": "PositionVector",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": true,
+                "cmp": true
+              },
+              "fields": {
+                "data": {
+                  "type": "vector",
+                  "value": [
+                    {
+                      "type": "component",
+                      "value": {
+                        "x": {
+                          "type": "float",
+                          "value": "0"
+                        },
+                        "y": {
+                          "type": "float",
+                          "value": "0"
+                        }
+                      }
+                    },
+                    {
+                      "type": "component",
+                      "value": {
+                        "x": {
+                          "type": "float",
+                          "value": "0"
+                        },
+                        "y": {
+                          "type": "float",
+                          "value": "0"
+                        }
+                      }
+                    }
+                  ],
+                  "schema": {
+                    "type": "component",
+                    "value": {
+                      "x": {
+                        "type": "float",
+                        "value": "0"
+                      },
+                      "y": {
+                        "type": "float",
+                        "value": "0"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "id": "movement.module.Speed",
+              "name": "Speed",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": true,
+                "cmp": true
+              },
+              "fields": {
+                "value": {
+                  "type": "float",
+                  "value": "1"
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "expectedConfiguration": [
+        {
+          "id": "1a92cd5c-396f-48ad-a23d-c541df7bfc2d",
+          "entityName": "Entity",
+          "components": [
+            {
+              "id": "movement.module.PositionVector",
+              "name": "PositionVector",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": true,
+                "cmp": true
+              },
+              "fields": {
+                "data": {
+                  "type": "vector",
+                  "value": [
+                    {
+                      "type": "component",
+                      "value": {
+                        "x": {
+                          "type": "float",
+                          "value": "1"
+                        },
+                        "y": {
+                          "type": "float",
+                          "value": "1"
+                        }
+                      }
+                    },
+                    {
+                      "type": "component",
+                      "value": {
+                        "x": {
+                          "type": "float",
+                          "value": "1"
+                        },
+                        "y": {
+                          "type": "float",
+                          "value": "1"
+                        }
+                      }
+                    }
+                  ],
+                  "schema": {
+                    "type": "component",
+                    "value": {
+                      "x": {
+                        "type": "float",
+                        "value": "0"
+                      },
+                      "y": {
+                        "type": "float",
+                        "value": "0"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "id": "movement.module.Speed",
+              "name": "Speed",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": true,
+                "cmp": true
+              },
+              "fields": {
+                "value": {
+                  "type": "float",
+                  "value": "0"
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "operators": [
+        {
+          "type": "EQ",
+          "path": "1a92cd5c-396f-48ad-a23d-c541df7bfc2d/movement.module.PositionVector"
+        }
+      ]
+    },
+    "selectedModules": [
+      {
+        "fullPath": "movement.module"
+      }
+    ]
+  },
+  {
+    "test": {
+      "name": "moveVector_Speed_PositionVector_NE_PASS",
+      "systems": [
+        {
+          "name": "movement.module.moveVector_Speed",
+          "timesToRun": 1
+        }
+      ],
+      "initialConfiguration": [
+        {
+          "id": "1a92cd5c-396f-48ad-a23d-c541df7bfc2d",
+          "entityName": "Entity",
+          "components": [
+            {
+              "id": "movement.module.PositionVector",
+              "name": "PositionVector",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": true,
+                "cmp": true
+              },
+              "fields": {
+                "data": {
+                  "type": "vector",
+                  "value": [
+                    {
+                      "type": "component",
+                      "value": {
+                        "x": {
+                          "type": "float",
+                          "value": "0"
+                        },
+                        "y": {
+                          "type": "float",
+                          "value": "0"
+                        }
+                      }
+                    },
+                    {
+                      "type": "component",
+                      "value": {
+                        "x": {
+                          "type": "float",
+                          "value": "0"
+                        },
+                        "y": {
+                          "type": "float",
+                          "value": "0"
+                        }
+                      }
+                    }
+                  ],
+                  "schema": {
+                    "type": "component",
+                    "value": {
+                      "x": {
+                        "type": "float",
+                        "value": "0"
+                      },
+                      "y": {
+                        "type": "float",
+                        "value": "0"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "id": "movement.module.Speed",
+              "name": "Speed",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": true,
+                "cmp": true
+              },
+              "fields": {
+                "value": {
+                  "type": "float",
+                  "value": "1"
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "expectedConfiguration": [
+        {
+          "id": "1a92cd5c-396f-48ad-a23d-c541df7bfc2d",
+          "entityName": "Entity",
+          "components": [
+            {
+              "id": "movement.module.PositionVector",
+              "name": "PositionVector",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": true,
+                "cmp": true
+              },
+              "fields": {
+                "data": {
+                  "type": "vector",
+                  "value": [
+                    {
+                      "type": "component",
+                      "value": {
+                        "x": {
+                          "type": "float",
+                          "value": "-42"
+                        },
+                        "y": {
+                          "type": "float",
+                          "value": "1"
+                        }
+                      }
+                    },
+                    {
+                      "type": "component",
+                      "value": {
+                        "x": {
+                          "type": "float",
+                          "value": "1"
+                        },
+                        "y": {
+                          "type": "float",
+                          "value": "1"
+                        }
+                      }
+                    }
+                  ],
+                  "schema": {
+                    "type": "component",
+                    "value": {
+                      "x": {
+                        "type": "float",
+                        "value": "0"
+                      },
+                      "y": {
+                        "type": "float",
+                        "value": "0"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "id": "movement.module.Speed",
+              "name": "Speed",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": true,
+                "cmp": true
+              },
+              "fields": {
+                "value": {
+                  "type": "float",
+                  "value": "0"
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "operators": [
+        {
+          "type": "NEQ",
+          "path": "1a92cd5c-396f-48ad-a23d-c541df7bfc2d/movement.module.PositionVector"
+        }
+      ]
+    },
+    "selectedModules": [
+      {
+        "fullPath": "movement.module"
+      }
+    ]
+  },
+  {
+    "test": {
+      "name": "moveVector_Speed_PositionVector_EQ_FAIL",
+      "systems": [
+        {
+          "name": "movement.module.moveVector_Speed",
+          "timesToRun": 5
+        }
+      ],
+      "initialConfiguration": [
+        {
+          "id": "1a92cd5c-396f-48ad-a23d-c541df7bfc2d",
+          "entityName": "Entity",
+          "components": [
+            {
+              "id": "movement.module.PositionVector",
+              "name": "PositionVector",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": true,
+                "cmp": true
+              },
+              "fields": {
+                "data": {
+                  "type": "vector",
+                  "value": [
+                    {
+                      "type": "component",
+                      "value": {
+                        "x": {
+                          "type": "float",
+                          "value": "0"
+                        },
+                        "y": {
+                          "type": "float",
+                          "value": "0"
+                        }
+                      }
+                    },
+                    {
+                      "type": "component",
+                      "value": {
+                        "x": {
+                          "type": "float",
+                          "value": "0"
+                        },
+                        "y": {
+                          "type": "float",
+                          "value": "0"
+                        }
+                      }
+                    }
+                  ],
+                  "schema": {
+                    "type": "component",
+                    "value": {
+                      "x": {
+                        "type": "float",
+                        "value": "0"
+                      },
+                      "y": {
+                        "type": "float",
+                        "value": "0"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "id": "movement.module.Speed",
+              "name": "Speed",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": true,
+                "cmp": true
+              },
+              "fields": {
+                "value": {
+                  "type": "float",
+                  "value": "1"
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "expectedConfiguration": [
+        {
+          "id": "1a92cd5c-396f-48ad-a23d-c541df7bfc2d",
+          "entityName": "Entity",
+          "components": [
+            {
+              "id": "movement.module.PositionVector",
+              "name": "PositionVector",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": true,
+                "cmp": true
+              },
+              "fields": {
+                "data": {
+                  "type": "vector",
+                  "value": [
+                    {
+                      "type": "component",
+                      "value": {
+                        "x": {
+                          "type": "float",
+                          "value": "1"
+                        },
+                        "y": {
+                          "type": "float",
+                          "value": "1"
+                        }
+                      }
+                    },
+                    {
+                      "type": "component",
+                      "value": {
+                        "x": {
+                          "type": "float",
+                          "value": "42"
+                        },
+                        "y": {
+                          "type": "float",
+                          "value": "1"
+                        }
+                      }
+                    }
+                  ],
+                  "schema": {
+                    "type": "component",
+                    "value": {
+                      "x": {
+                        "type": "float",
+                        "value": "0"
+                      },
+                      "y": {
+                        "type": "float",
+                        "value": "0"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "id": "movement.module.Speed",
+              "name": "Speed",
+              "module": {
+                "fullPath": "movement.module"
+              },
+              "supportedOperators": {
+                "equals": true,
+                "cmp": true
+              },
+              "fields": {
+                "value": {
+                  "type": "float",
+                  "value": "0"
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "operators": [
+        {
+          "type": "EQ",
+          "path": "1a92cd5c-396f-48ad-a23d-c541df7bfc2d/movement.module.PositionVector"
+        }
+      ]
+    },
+    "selectedModules": [
+      {
+        "fullPath": "movement.module"
+      }
+    ]
+  }
+]
