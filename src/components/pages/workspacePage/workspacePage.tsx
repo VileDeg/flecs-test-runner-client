@@ -29,6 +29,7 @@ import {
   CheckSquare,
   Square,
   ArrowRightFromLine,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -40,6 +41,7 @@ import TestListItem from "./testListItem";
 import type { UnitTestProps } from "@/common/types";
 
 import { SortType, SortDirection } from "@/common/types";
+import { useMetadataLoader } from "@/contexts/metadataLoaderContext";
 
 const statusPriority: Record<TestStatus, number> = {
   [TestStatus.PASSED]: 0,
@@ -87,6 +89,8 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
     runMultipleTests,
     setCurrentWorkspaceTestId: setCurrentTestId,
   } = useWorkspace();
+
+  const { loadingMetadata } = useMetadataLoader();
 
   const [isExpanded, setIsExpanded] = useState(true);
 
@@ -345,6 +349,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
       </Button>
     </>
   );
+
   const renderHeader = () => (
     <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-8">
       <div>
@@ -406,11 +411,20 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <Uploader onTestsParsed={handleTestsUploaded} />
-        <p className="text-sm text-muted-foreground mt-4">
-          Upload JSON files containing one or multiple tests. Tests will be
-          added to your workspace.
-        </p>
+        {!loadingMetadata ? ( // Don't let upload until we know metadata, to ensure correct validation
+          <>
+            <Uploader onTestsParsed={handleTestsUploaded} />
+            <p className="text-sm text-muted-foreground mt-4">
+              Upload JSON files containing one or multiple tests. Tests will be
+              added to your workspace.
+            </p>
+          </>
+        ) : (
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground mb-4" />
+            <p className="text-muted-foreground">Loading metadata...</p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
