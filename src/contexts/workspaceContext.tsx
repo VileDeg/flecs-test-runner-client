@@ -434,7 +434,7 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
     wsTest.testProperties.selectedModules.forEach((module) => {
       if (!modulePathsSet.has(module.fullPath)) {
         results.push({
-          message: `Module ${module.fullPath} is not available. Removing...`,
+          message: `Module ${module.fullPath} is not available.`,
           type: MessageType.WARNING,
         });
       }
@@ -456,7 +456,7 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
           .map((res) => `${res.type ?? MessageType.ERROR}: ${res.message}`)
           .join("\n\t");
     } else if (wsTest.status === TestStatus.INVALID) {
-      wsTest.status = TestStatus.IDLE;
+      wsTest.status = TestStatus.IDLE; // TODO: set to previous status
     }
 
     return results;
@@ -510,7 +510,6 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
         const pr = passed.find((pt) => pt.name === unitTest.name);
         if (pr) {
           if (pr.worldExpectedSerialized) {
-            const expected = wsTest.testProperties.test.expectedConfiguration;
             const expectedNew = TestRunner.parseWorldSerialized(
               pr.worldExpectedSerialized,
               availableComponents,
@@ -524,13 +523,7 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
                 ...wsTest.testProperties,
                 test: {
                   ...unitTest,
-                  expectedConfiguration: expected.map((e) => ({
-                    ...e,
-                    components:
-                      expectedNew.find(
-                        (eNew) => eNew.entityName === e.entityName,
-                      )?.components ?? [],
-                  })),
+                  expectedConfiguration: expectedNew,
                 },
               },
             });
@@ -539,6 +532,11 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
               // Refresh current test in builder.
               refreshCurrentTestRef.current = !refreshCurrentTestRef.current;
             }
+
+            showToast(
+              `Incomplete test succeeded: ${pr.statusMessage}`,
+              MessageType.SUCCESS,
+            );
           } else {
             updateTestStatus(wsTest.id, TestStatus.PASSED, pr.statusMessage);
           }
@@ -546,6 +544,13 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
         }
         const fr = failed.find((pt) => pt.name === unitTest.name);
         if (fr) {
+          if (fr.worldExpectedSerialized) {
+            showToast(
+              `Incomplete test failed: ${fr.statusMessage}`,
+              MessageType.ERROR,
+            );
+          }
+
           updateTestStatus(wsTest.id, TestStatus.FAILED, fr.statusMessage);
           continue;
         }
@@ -559,6 +564,10 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
             wsTest.id,
             TestStatus.TIMEOUT,
             "Execution timed out",
+          );
+          showToast(
+            `Test ${wsTest.testProperties.test.name} timed out. Exceeded ${TEST_EXECUTION_TIMEOUT_MS / 1000} seconds`,
+            MessageType.ERROR,
           );
         }
       }

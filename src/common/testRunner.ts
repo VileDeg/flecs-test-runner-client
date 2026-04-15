@@ -139,18 +139,14 @@ export class TestRunner {
     destination: ComponentField,
     value: Core.ComponentFieldValue,
   ) {
-    console.log("mapFieldsCoreToEntity, typeof value: ", typeof value);
     if (Core.isComponentFieldValuePrimitive(value)) {
-      console.log("Assign primitive value (key, value): ", name, value);
       // Primitive type
       destination.value = String(value);
     } else if (Array.isArray(value)) {
-      console.log("mapFieldsCoreToEntity value is array: ", value);
       const schema = destination.schema;
       if (!schema) {
         throw Error("Schema is missing on :" + destination); // TODO:
       }
-      console.log("\tschema: ", schema);
       // TODO: assert dest value is array
       const arrayValue: ComponentFieldsArray = [];
       value.forEach((element) => {
@@ -159,7 +155,6 @@ export class TestRunner {
         arrayValue.push(destinationElement);
       });
       destination.value = arrayValue;
-      console.log("\tparsed into: ", arrayValue);
     } else {
       if (!isComponentFieldValueDict(destination.value)) {
         throw Error(
@@ -224,7 +219,6 @@ export class TestRunner {
       const component = structuredClone(
         this.getComponentByPath(fullPath, knownComponents),
       );
-      console.log("Retrieved component for path: ", fullPath, component);
       TestRunner.mapFieldsCoreToEntity(component.fields, fields);
       components.push(component);
     }
@@ -268,71 +262,6 @@ export class TestRunner {
   }
 
   /**
-   * Poll for incomplete test results with Executed tag
-   * Returns the worldExpectedSerialized from the Executed component
-   */
-  async pollForIncompleteTestResult(
-    testName: string,
-    timeoutMs: number = 30000,
-    pollIntervalMs: number = 500,
-  ): Promise<IncompleteTestPollingResult | { error: string }> {
-    const startTime = Date.now();
-
-    while (Date.now() - startTime < timeoutMs) {
-      try {
-        // Query for this specific test with Incomplete and Executed tags
-        const query = await this.connection?.query(
-          `${UNIT_TEST_EXECUTED_TAG_NAME}, ${UNIT_TEST_INCOMPLETE_TAG_NAME}, ?${UNIT_TEST_INCOMPLETE_TAG_NAME}`, // TODO
-          {},
-        );
-
-        console.log(
-          "pollForIncompleteTestResult for test name ",
-          testName,
-          " returned: ",
-          query,
-        );
-
-        for (const queryResult of query.results) {
-          const result = queryResult as QueriedEntity;
-          const values = result.fields.values;
-          if (result.name === testName) {
-            const [executed, incomplete, passed] = values as [
-              UnitTest.Executed,
-              UnitTest.Incomplete,
-              UnitTest.Passed?,
-            ];
-
-            console.log("found name, ic: ", incomplete);
-
-            if (executed && incomplete) {
-              console.log("polling success");
-              return {
-                incomplete,
-                executed,
-                passed,
-              };
-            }
-          }
-        }
-
-        // Wait before next poll
-        await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
-      } catch (error: unknown) {
-        const msg = flecsErrorMessage(error);
-        console.error(msg);
-        return {
-          error: msg,
-        };
-      }
-    }
-
-    return {
-      error: `Timeout: Test did not complete within ${timeoutMs}ms`,
-    };
-  }
-
-  /**
    * Parse serialized world JSON into EntityData array
    * The serialized world format should contain entities with their components
    */
@@ -341,7 +270,6 @@ export class TestRunner {
     knownComponents: Components,
   ): WorldConfiguration {
     try {
-      console.log("parseWorldSerialized, json: ", worldJson);
       const world: Core.SerializedWorld = JSON.parse(worldJson);
       if (!world.results) {
         throw Error("Missing results property on serialized world");
@@ -350,8 +278,6 @@ export class TestRunner {
       const entities = world.results.map((entityCore) =>
         this.convertCoreToEntity(entityCore, knownComponents),
       );
-
-      console.log("PARSED, entities: ", entities);
 
       return entities;
     } catch (error: unknown) {
