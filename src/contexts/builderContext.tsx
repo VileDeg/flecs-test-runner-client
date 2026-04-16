@@ -3,11 +3,9 @@ import React, {
   useContext,
   useState,
   useEffect,
-  useCallback,
   type ReactNode,
   useMemo,
 } from "react";
-import { type WorkspaceTest } from "@/common/workspaceTypes";
 import { DEFAULT_TEST_PROPERTIES } from "@common/constants";
 import { useWorkspace } from "@/contexts/workspaceContext.tsx";
 
@@ -32,7 +30,6 @@ interface BuilderContextType {
   loadingMetadata: boolean;
   updateTestProperties: (updates: Partial<UnitTestProps>) => void;
   updateUnitTest: (updates: Partial<UnitTest>) => void;
-  changeEntityName: (id: string, newName: string) => void;
   addEntity: () => void;
   removeEntity: (id: string) => void;
   getEntity: (id: string, expected: boolean) => EntityConfiguration | undefined;
@@ -124,17 +121,6 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
     });
   };
 
-  const changeEntityName = (id: string, newName: string) => {
-    updateUnitTest((prev) => ({
-      initialConfiguration: prev.initialConfiguration.map((e) =>
-        e.id === id ? { ...e, entityName: newName } : e,
-      ),
-      expectedConfiguration: prev.expectedConfiguration.map((e) =>
-        e.id === id ? { ...e, entityName: newName } : e,
-      ),
-    }));
-  };
-
   const getEntity = (id: string, expected: boolean) => {
     return expected
       ? test.expectedConfiguration.find((e) => e.id === id)
@@ -169,6 +155,7 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
         (e) => e.id !== id,
       ),
     }));
+    handleOnOperatorChanged(null, id);
   };
 
   const getAvailableComponent = (id: string): Component => {
@@ -312,7 +299,6 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
     loadingMetadata,
     addEntity,
     removeEntity,
-    changeEntityName,
     addComponent,
     getEntity,
     replaceComponent,

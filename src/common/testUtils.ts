@@ -52,9 +52,9 @@ export function validateComponents(
   availableComponents: Component[],
 ): string[] {
   const all: string[] = [];
-  if (components.length < 1) {
-    all.push("Does not have components");
-  }
+  // if (components.length < 1) {
+  //   all.push("Does not have components");
+  // }
   components.forEach((component: Component) => {
     if (!availableComponents.find((avComp) => avComp.id === component.id)) {
       all.push(
@@ -114,25 +114,23 @@ export function validateConfiguration(
 
   const all: string[] = [];
   if (entities.length < 1) {
-    all.push(`${name} configuration can not be empty`);
-  } else {
-    const prefix = `${name}: `;
-    const duplicates = findDuplicates(entities.map((e) => e.entityName.trim()));
-    if (duplicates.length > 0) {
-      const msg =
-        prefix +
-        `Entities must have unique names, duplicates: ${duplicates.join(", ")}`;
-      all.push(msg);
-    }
-
-    let messages = validateEntities(entities, availableComponents);
-    messages = messages.map((msg) => (msg = prefix + msg));
-    all.push(...messages);
+    return all;
   }
+  const prefix = `${name}: `;
+  const duplicates = findDuplicates(entities.map((e) => e.entityName.trim()));
+  if (duplicates.length > 0) {
+    const msg =
+      prefix +
+      `Entities must have unique names, duplicates: ${duplicates.join(", ")}`;
+    all.push(msg);
+  }
+
+  let messages = validateEntities(entities, availableComponents);
+  messages = messages.map((msg) => (msg = prefix + msg));
+  all.push(...messages);
   return all;
 }
 
-// TODO: filter out unavailable systems and components.
 export function validateTest(
   test: UnitTest,
   availableSystems: System[],

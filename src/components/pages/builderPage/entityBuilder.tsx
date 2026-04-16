@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Button } from "@components/ui/button";
 import { Input } from "@components/ui/input";
-import { Label } from "@components/ui/label";
 import { Trash2, Package, ChevronDown, ChevronRight } from "lucide-react";
 
 import type { Component, EntityConfiguration } from "@/common/types";
@@ -27,9 +26,7 @@ export const EntityBuilder: React.FC<EntityBuilderProps> = ({
 
   const {
     availableComponents,
-    changeEntityName,
     removeEntity,
-    addComponent,
     onOperatorChanged,
     getOperatorType,
   } = useBuilder();
@@ -85,34 +82,60 @@ export const EntityBuilder: React.FC<EntityBuilderProps> = ({
     </Button>
   );
 
-  const TODO = "aboba";
   const renderEntityHeaderRegion = (entity: EntityConfiguration) => (
     <div className="flex justify-between items-start">
       {renderCollapseToggle()}
       <div className="space-y-2 flex-1">
-        <Label htmlFor={`entity-name-${TODO}`}>Entity Name</Label>
+        <p className="text-xs text-muted-foreground font-mono px-1">
+          ID: {entity.id}
+        </p>
         <Input
-          id={`entity-name-${TODO}`}
+          id={`entity-name-${entity.entityName}`}
           type="text"
           value={entity.entityName}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            changeEntityName(configuration.id, e.target.value)
+            onUpdate({
+              ...configuration,
+              entityName: e.target.value,
+            })
           }
           placeholder="e.g., TestEntity"
           className="w-auto"
-          disabled={isExpected}
         />
       </div>
       {isExpected && renderOperatorControls()}
-      {!isExpected && renderRemoveButton()}
+      {renderRemoveButton()}
     </div>
   );
+
+  const getAvailableComponent = (id: string): Component => {
+    const component = availableComponents.find(
+      (component) => component.id == id,
+    );
+    if (!component) {
+      throw Error(`Component with ID ${id} is not available`);
+    }
+
+    return component;
+  };
 
   const renderComponentSelector = (componentId: string) => (
     <ComponentSelector
       id={`${componentId}`}
       value={componentId}
-      onChange={(id: string) => addComponent(configuration.id, id)}
+      onChange={(id: string) => {
+        const comp = getAvailableComponent(id);
+        onUpdate({
+          ...configuration,
+          components: [
+            ...configuration.components,
+            {
+              ...comp,
+              fields: structuredClone(comp.fields),
+            },
+          ],
+        });
+      }}
       availableComponents={getAvailableComponents()}
     ></ComponentSelector>
   );
@@ -141,7 +164,7 @@ export const EntityBuilder: React.FC<EntityBuilderProps> = ({
           ></ComponentBuilder>
         ))}
 
-        {!isExpected && renderComponentSelector("")}
+        {renderComponentSelector("")}
       </div>
     </div>
   );

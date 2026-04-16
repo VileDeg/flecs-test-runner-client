@@ -86,7 +86,6 @@ export const ComponentBuilder: React.FC<ComponentBuilderProps> = ({
           replaceComponent(entityHeader.id, index, newComponentId)
         }
         availableComponents={availableComponents}
-        disabled={isExpected}
       ></ComponentSelector>
     </div>
   );
@@ -97,7 +96,7 @@ export const ComponentBuilder: React.FC<ComponentBuilderProps> = ({
       {renderComponentSelector()}
       <div className="grow" />
       {renderOperatorControls()}
-      {!isExpected && renderRemoveButton()}
+      {renderRemoveButton()}
     </div>
   );
 

@@ -33,7 +33,7 @@ import * as Utils from "@/common/testUtils";
 
 import { useMetadataLoader } from "@/contexts/metadataLoaderContext";
 
-import type { UnitTest, QueryResponse } from "@/common/types";
+import type { UnitTest, QueryResponse, Operator } from "@/common/types";
 
 import {
   UNIT_TEST_EXECUTED_TAG_NAME,
@@ -43,6 +43,7 @@ import {
 } from "@common/constants.ts";
 
 import { TestRunner } from "@/common/testRunner";
+import { OperatorType } from "@/common/coreTypes";
 
 interface WorkspaceContextType {
   // State
@@ -191,7 +192,6 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
   }, [loadingMetadata, availableModules, moduleMetadataMap]);
 
   const testsRef = useRef(wsState.tests);
-
   // Update the ref every time the state changes
   useEffect(() => {
     testsRef.current = wsState.tests;
@@ -515,15 +515,22 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
               availableComponents,
             );
 
+            const testProperties = wsTest.testProperties;
+
+            const newOperators: Operator[] = expectedNew.map((entity) => {
+              return { type: OperatorType.Eq, path: entity.id };
+            });
+
             // Incomplete test result
             updateTest(wsTest.id, {
               status: TestStatus.IDLE,
               statusMessage: pr.statusMessage,
               testProperties: {
-                ...wsTest.testProperties,
+                ...testProperties,
                 test: {
                   ...unitTest,
                   expectedConfiguration: expectedNew,
+                  operators: newOperators, // reset all operators (new entities have new IDs)
                 },
               },
             });
@@ -572,7 +579,7 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
         }
       }
     },
-    [currentTestId, availableComponents],
+    [currentTestId, availableComponents, showToast],
   );
 
   const pollTestResults = useCallback(async () => {

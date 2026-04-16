@@ -380,7 +380,11 @@ export type TypeInfoResponseArray = (
   | TypeInfoResponseDict
 )[];
 
-export type TypeInfoResponse = TypeInfoResponseDict | TypeInfoResponseArray;
+// Can be 0 when component does not have type info (e.g. empty Component/Tag)
+export type TypeInfoResponse =
+  | TypeInfoResponseDict
+  | TypeInfoResponseArray
+  | number;
 
 export function isTypeInfoLeafValue(
   value: unknown,

@@ -244,6 +244,10 @@ export const flecs = {
           path = this._.escapePath(path);
           return this._.request(this, "GET", "type_info/" + path, {}, 
             (msg) => {
+              //*/
+              msg = JSON.parse(msg);
+              recv(msg);
+              /*/
               if (msg[0] == '{' || msg[0] == '[') {
                 msg = JSON.parse(msg);
                 recv(msg);
@@ -252,6 +256,8 @@ export const flecs = {
                   err(JSON.parse(msg));
                 }
               }
+              //*/
+
             }, (msg) => {
               if (err) {
                 if (msg && (msg[0] == '{' || msg[0] == '[')) {

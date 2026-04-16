@@ -6,11 +6,11 @@ import type { EntityConfiguration, WorldConfiguration } from "@/common/types";
 
 import { EntityBuilder } from "./entityBuilder";
 import { useBuilder } from "@/contexts/builderContext";
+import { OperatorType } from "@/common/coreTypes";
 
 export interface WorldBuilderProps {
   configuration: WorldConfiguration;
   isExpected: boolean;
-  // Null signalizes to remove from
   onUpdate: (worldConfiguration: WorldConfiguration) => void; // TODO: use partial?
 }
 
@@ -19,7 +19,7 @@ export const WorldBuilderComponent: React.FC<WorldBuilderProps> = ({
   isExpected,
   onUpdate,
 }) => {
-  const { addEntity } = useBuilder();
+  const { onOperatorChanged } = useBuilder();
 
   const handleOnEntityUpdated = (
     updates: Partial<EntityConfiguration> | null,
@@ -33,6 +33,22 @@ export const WorldBuilderComponent: React.FC<WorldBuilderProps> = ({
           );
 
     onUpdate(updatedEntities);
+  };
+
+  const addEntity = () => {
+    const newId = crypto.randomUUID();
+    const newName = "Entity";
+
+    const newEntity: EntityConfiguration = {
+      id: newId,
+      entityName: newName,
+      components: [],
+    };
+    onUpdate([...configuration, newEntity]);
+
+    if (isExpected) {
+      onOperatorChanged(OperatorType.Eq, newId);
+    }
   };
 
   const renderAddEntityButton = () => (
@@ -56,8 +72,7 @@ export const WorldBuilderComponent: React.FC<WorldBuilderProps> = ({
           ></EntityBuilder>
         ))}
       </div>
-
-      {!isExpected && renderAddEntityButton()}
+      {renderAddEntityButton()}
     </div>
   );
 };

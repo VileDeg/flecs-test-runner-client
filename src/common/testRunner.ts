@@ -2,7 +2,6 @@ import {
   UNIT_TEST_COMPONENT_NAME,
   UNIT_TEST_READY_TAG_NAME,
   UNIT_TEST_INCOMPLETE_TAG_NAME,
-  UNIT_TEST_EXECUTED_TAG_NAME,
 } from "./constants";
 
 import type {
@@ -26,7 +25,7 @@ import {
 
 import * as Core from "@/common/coreTypes";
 
-import { FlecsAsync, flecsError, flecsErrorMessage } from "@/common/flecsAsync";
+import { FlecsAsync, flecsError } from "@/common/flecsAsync";
 
 export interface IncompleteTestPollingResult {
   incomplete: UnitTest.Incomplete;
@@ -215,12 +214,14 @@ export class TestRunner {
   ): EntityConfiguration {
     const components: Components = [];
 
-    for (const [fullPath, fields] of Object.entries(entityCore.components)) {
-      const component = structuredClone(
-        this.getComponentByPath(fullPath, knownComponents),
-      );
-      TestRunner.mapFieldsCoreToEntity(component.fields, fields);
-      components.push(component);
+    if (entityCore.components) {
+      for (const [fullPath, fields] of Object.entries(entityCore.components)) {
+        const component = structuredClone(
+          this.getComponentByPath(fullPath, knownComponents),
+        );
+        TestRunner.mapFieldsCoreToEntity(component.fields, fields);
+        components.push(component);
+      }
     }
 
     return {

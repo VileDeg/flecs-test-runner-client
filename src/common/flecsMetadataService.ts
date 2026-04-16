@@ -292,14 +292,17 @@ export class FlecsMetadataService {
 
       let fields: ComponentFields = {};
 
-      if (!Array.isArray(typeInfo)) {
-        fields = this.parseTypeInfoDict(typeInfo);
-      } else {
+      if (typeof typeInfo === "number") {
+        console.log("Empty type info for ", componentName);
+        return {}; // no type info, empty component
+      }
+      if (Array.isArray(typeInfo)) {
         // Can be array in case of vector/array
         // We probably don't want to support it being used as a component itself,
-        // only as a member
+        // only as a member of a component
         return null;
       }
+      fields = this.parseTypeInfoDict(typeInfo);
 
       return fields;
     } catch (error) {
