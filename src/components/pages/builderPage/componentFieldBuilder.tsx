@@ -63,7 +63,6 @@ export const ComponentFieldBuilder: React.FC<ComponentFieldBuilderProps> = ({
     onUpdate(newField);
   };
 
-  // TODO: dont need name param?
   const onUpdateValueArrayElement = (
     _: string,
     index: number,
@@ -100,8 +99,8 @@ export const ComponentFieldBuilder: React.FC<ComponentFieldBuilderProps> = ({
           }}
           // Sets width based on character count + a little padding
           style={{ width: `${stringValue.length + 2}ch` }}
-          // min-w-[40px] ensures it doesn't vanish if the value is empty
-          className="h-8 min-w-[40px] px-2 w-auto"
+          // min-w-10 ensures it doesn't vanish if the value is empty
+          className="h-8 min-w-10 px-2 w-auto"
         />
       </div>
     );
@@ -132,7 +131,7 @@ export const ComponentFieldBuilder: React.FC<ComponentFieldBuilderProps> = ({
           onUpdate(newField);
         }}
       >
-        <SelectTrigger className="h-8 w-[180px]">
+        <SelectTrigger className="h-8 w-45">
           <SelectValue placeholder="Select value..." />
         </SelectTrigger>
         <SelectContent>

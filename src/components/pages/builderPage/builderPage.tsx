@@ -345,8 +345,6 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
     <div className="space-y-8">
       {renderTopRow()}
 
-      {/* Bottom Section: World Builders (Full Width) */}
-
       <div className="pt-4 border-t">{renderWorldBuilders()}</div>
     </div>
   );

@@ -123,13 +123,13 @@ export const ModuleSelector: React.FC<ModuleSelectorProps> = ({
                   className="flex-1 cursor-pointer flex items-center gap-2"
                 >
                   <span className="font-medium text-foreground">
-                    {module.getName()}
+                    {module.fullPath}
                   </span>
-                  {module.fullPath !== module.getName() && (
+                  {/* {module.fullPath !== module.getName() && (
                     <span className="text-sm text-muted-foreground">
                       ({module.fullPath})
                     </span>
-                  )}
+                  )} */}
                 </Label>
               </div>
             ))}

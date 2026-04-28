@@ -4,7 +4,7 @@ import type { OperatorType } from "@common/coreTypes";
 
 // Core types
 export interface SystemInvocation {
-  name: string; // full path: module + system name
+  name: string; // Full path: module.system_name. Must be unique
   timesToRun: number;
 }
 
@@ -103,11 +103,11 @@ export interface System {
 
 // name : field
 export type ComponentFields = Record<string, ComponentField>;
-export type ComponentFieldsRaw = Record<string, ComponentFieldValue>;
+export type ComponentFieldsRaw = Record<string, ComponentFieldValue>; // TODO: unused?
 
 export type ComponentBody = ComponentFields;
 
-export type ComponentFieldsArray = ComponentField[]; //ComponentFieldValue[];
+export type ComponentFieldsArray = ComponentField[];
 
 export type ComponentFieldValuePrimitive = string;
 export type ComponentFieldValue =
