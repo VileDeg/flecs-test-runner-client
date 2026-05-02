@@ -26,6 +26,7 @@ import {
 import * as Core from "@/common/coreTypes";
 
 import { FlecsAsync, flecsError } from "@/common/flecsAsync";
+import { FlecsMetadataService } from "./flecsMetadataService";
 
 export interface IncompleteTestPollingResult {
   incomplete: UnitTest.Incomplete;
@@ -117,19 +118,10 @@ export class TestRunner {
     }
   }
 
-  static getComponentByPath(
-    fullPath: string,
-    knownComponents: Components,
-  ): Component {
-    const parts = fullPath.split(".");
-    const name = parts.pop();
-    const module = parts.join(".");
-
-    const component = knownComponents.find(
-      (comp) => comp.name == name && comp.module.fullPath == module,
-    );
+  static getComponentById(id: string, knownComponents: Components): Component {
+    const component = knownComponents.find((comp) => comp.id == id);
     if (!component) {
-      throw Error("Unknown component: " + fullPath);
+      throw Error("Unknown component with id: " + id);
     }
     return component;
   }
@@ -139,8 +131,13 @@ export class TestRunner {
     value: Core.ComponentFieldValue,
   ) {
     if (Core.isComponentFieldValuePrimitive(value)) {
-      // Primitive type
-      destination.value = String(value);
+      destination.value = String(
+        FlecsMetadataService.parseValueForPrimitiveType(
+          destination.type,
+          String(value),
+          destination.enumValues,
+        ),
+      );
     } else if (Array.isArray(value)) {
       const schema = destination.schema;
       if (!schema) {
@@ -215,9 +212,9 @@ export class TestRunner {
     const components: Components = [];
 
     if (entityCore.components) {
-      for (const [fullPath, fields] of Object.entries(entityCore.components)) {
+      for (const [id, fields] of Object.entries(entityCore.components)) {
         const component = structuredClone(
-          this.getComponentByPath(fullPath, knownComponents),
+          this.getComponentById(id, knownComponents),
         );
         TestRunner.mapFieldsCoreToEntity(component.fields, fields);
         components.push(component);

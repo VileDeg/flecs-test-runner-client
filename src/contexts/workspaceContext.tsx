@@ -338,10 +338,10 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
         statusMessage: "Executed successfully",
         executedAtEpochMs: Date.now(),
       });
-      showToast(
-        `Test "${unitTest.name}" started successfully`,
-        MessageType.SUCCESS,
-      );
+      // showToast(
+      //   `Test "${unitTest.name}" started successfully`,
+      //   MessageType.SUCCESS,
+      // );
 
       return true;
     } catch (e: unknown) {
@@ -391,10 +391,10 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
         statusMessage: "Executed successfully",
         executedAtEpochMs: Date.now(),
       });
-      showToast(
-        `Test "${unitTest.name}" started successfully`,
-        MessageType.SUCCESS,
-      );
+      // showToast(
+      //   `Test "${unitTest.name}" started successfully`,
+      //   MessageType.SUCCESS,
+      // );
 
       setIsPolling(true);
 

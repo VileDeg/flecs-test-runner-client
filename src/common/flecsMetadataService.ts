@@ -344,9 +344,16 @@ export class FlecsMetadataService {
     const nt = type.toLowerCase();
     return nt === "float" || nt === "double" || nt === "f32" || nt === "f64";
   }
+  // Unsigned char is considered "int" by Flecs.
   static isIntegerType(type: string): boolean {
     const nt = type.toLowerCase();
     return nt === "int" || nt === "integer" || nt === "i32" || nt === "i64";
+  }
+  // TODO: remove. Flecs does not use char type. Uses "text" for string and char instead.
+  // When deserializing to char, Flecs just takes 1st char of text.
+  static isCharType(type: string): boolean {
+    const nt = type.toLowerCase();
+    return nt === "char";
   }
   static isStringType(type: string): boolean {
     const nt = type.toLowerCase();
@@ -374,8 +381,12 @@ export class FlecsMetadataService {
 
     if (this.isBooleanType(type)) {
       const lower = rawValue.toLowerCase();
-      if (lower === "true") return true;
-      if (lower === "false") return false;
+      if (lower === "true") {
+        return true;
+      }
+      if (lower === "false") {
+        return false;
+      }
       throw new Error(
         `Value "${value}" is not a valid boolean for type ${type}`,
       );
@@ -388,6 +399,21 @@ export class FlecsMetadataService {
         );
       }
       return parseInt(rawValue, 10);
+    }
+    if (this.isCharType(type)) {
+      // char type unused by Flecs
+      if (rawValue.length > 1) {
+        throw new Error(
+          `Value "${value}" is not a valid char for type ${type}`,
+        );
+      }
+      const code = rawValue.charCodeAt(0);
+      if (isNaN(code) || code > 127) {
+        throw new Error(
+          `Char code "${rawValue}" is outside of the valid char range for type ${type}`,
+        );
+      }
+      return rawValue.charCodeAt(0);
     }
     if (this.isFloatType(type)) {
       const parsed = Number(rawValue);
@@ -417,6 +443,7 @@ export class FlecsMetadataService {
   private static readonly DEFAULT_VALUES: Record<string, PrimitiveType> = {
     boolean: false,
     int: 0,
+    char: 97, // 'a'
     float: 0,
     string: "",
     text: "",
@@ -434,31 +461,4 @@ export class FlecsMetadataService {
     }
     return value;
   }
-
-  // TODO: component name vs module.name
-  // TODO: array support
-  // static getDefaultValueForField(fieldType: string, knownComponents: Components)
-  //   : ComponentFieldValue
-  // {
-  //   const component = knownComponents.find((component) => { component.name == fieldType });
-  //   if (!component) {
-  //     return String(this.getDefaultValueForPrimitiveType(fieldType));
-  //   }
-
-  //   return this.getDefaultValueForComponentFields(component.fields, knownComponents);
-  // }
-
-  // static getDefaultValueForComponentFields(
-  //   fields: ComponentFields, knownComponents: Components
-  // ): ComponentFields
-  // {
-  //   try{
-
-  //     return Utils.mapRecord(fields,
-  //       f => ({ ...f, value: this.getDefaultValueForField(f.type, knownComponents) })
-  //     )
-  //   } catch(error: any) {
-  //     throw Error(error.cause);
-  //   }
-  // }
 }
