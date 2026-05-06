@@ -15,6 +15,7 @@ import {
   DEFAULT_WORKSPACE_STATE,
   DEFAULT_TEST_PROPERTIES,
   OPERATOR_PATH_SEP,
+  TEST_RESULTS_POLLING_RATE_MS,
 } from "@common/constants";
 
 import { useFlecsConnection } from "@contexts/flecsConnectionContext";
@@ -44,6 +45,7 @@ import {
 
 import { TestRunner } from "@/common/testRunner";
 import { OperatorType } from "@/common/coreTypes";
+import { profiler } from "@/common/profiler";
 
 interface WorkspaceContextType {
   // State
@@ -307,6 +309,7 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
   ): Promise<boolean> => {
     const testId = wsTest.id;
     const unitTest = wsTest.testProperties.test;
+    profiler.markStart(unitTest.name);
     if (wsTest.status === TestStatus.INVALID) {
       showToast(
         `Test "${unitTest.name}" is not valid. Cannot run.`,
@@ -547,6 +550,7 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
           } else {
             updateTestStatus(wsTest.id, TestStatus.PASSED, pr.statusMessage);
           }
+          profiler.markEnd(pr.name);
           continue;
         }
         const fr = failed.find((pt) => pt.name === unitTest.name);
@@ -557,8 +561,8 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
               MessageType.ERROR,
             );
           }
-
           updateTestStatus(wsTest.id, TestStatus.FAILED, fr.statusMessage);
+          profiler.markEnd(fr.name);
           continue;
         }
         if (wsTest.executedAtEpochMs === undefined) {
@@ -566,6 +570,7 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
           continue;
         }
         if (wsTest.executedAtEpochMs + TEST_EXECUTION_TIMEOUT_MS < Date.now()) {
+          const testName = wsTest.testProperties.test.name;
           console.warn("TIMEOUT for ", wsTest.id);
           updateTestStatus(
             wsTest.id,
@@ -573,9 +578,10 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
             "Execution timed out",
           );
           showToast(
-            `Test ${wsTest.testProperties.test.name} timed out. Exceeded ${TEST_EXECUTION_TIMEOUT_MS / 1000} seconds`,
+            `Test ${testName} timed out. Exceeded ${TEST_EXECUTION_TIMEOUT_MS / 1000} seconds`,
             MessageType.ERROR,
           );
+          profiler.cancel(testName);
         }
       }
     },
@@ -639,7 +645,7 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
       } finally {
         // Only schedule the NEXT poll after the current one is DONE
         if (isPolling && isMounted) {
-          timerId = setTimeout(runPoll, 5000);
+          timerId = setTimeout(runPoll, TEST_RESULTS_POLLING_RATE_MS);
         }
       }
     };

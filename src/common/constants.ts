@@ -14,6 +14,11 @@ export const UNIT_TEST_PASSED_TAG_NAME = `${TEST_RUNNER_NAME}.Passed`;
 
 export const TEST_EXECUTION_TIMEOUT_MS = 10000;
 
+// Low polling rate for more accurate measurement
+const urlParams = new URLSearchParams(window.location.search);
+const isMeasureForced = urlParams.get("measure") === "true";
+export const TEST_RESULTS_POLLING_RATE_MS = isMeasureForced ? 10 : 500;
+
 export const SUPPORTER_OPERATORS_COMPONENT_NAME = `${TEST_RUNNER_NAME}.SupportedOperators`;
 
 export const OPERATOR_PATH_SEP = "/";
