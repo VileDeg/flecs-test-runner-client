@@ -45,8 +45,9 @@ import { useMetadataLoader } from "@/contexts/metadataLoaderContext";
 
 const statusPriority: Record<TestStatus, number> = {
   [TestStatus.PASSED]: 0,
-  [TestStatus.RUNNING]: 1,
-  [TestStatus.FAILED]: 2,
+  [TestStatus.FAILED]: 1,
+  [TestStatus.RUNNING]: 2,
+  [TestStatus.PENDING]: 3,
   [TestStatus.TIMEOUT]: 3,
   [TestStatus.INVALID]: 4,
   [TestStatus.IDLE]: 5,
@@ -55,8 +56,9 @@ const statusPriority: Record<TestStatus, number> = {
 const allStatuses = [
   null,
   TestStatus.PASSED,
-  TestStatus.RUNNING,
   TestStatus.FAILED,
+  TestStatus.RUNNING,
+  TestStatus.PENDING,
   TestStatus.TIMEOUT,
   TestStatus.INVALID,
   TestStatus.IDLE,
@@ -85,8 +87,8 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
     addWorkspaceTests: addTests,
     addEmptyWorkspaceTest: addEmptyTest,
     removeWorkspaceTest: removeTest,
-    runTest,
-    runMultipleTests,
+    getWorkspaceTest,
+    runTests,
     setCurrentWorkspaceTestId: setCurrentTestId,
   } = useWorkspace();
 
@@ -216,7 +218,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
 
   // Handle test execution
   const handleRunTest = async (testId: string) => {
-    await runTest(testId);
+    runTests([getWorkspaceTest(testId)!]);
   };
 
   const getSelectedTests = () => {
@@ -230,7 +232,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
       showToast("No tests selected", "error");
       return;
     }
-    await runMultipleTests(selectedTests);
+    runTests(selectedTests);
   };
 
   // Handle export selected tests
@@ -526,7 +528,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
       }
     >
       <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
-      Polling For Results
+      Polling...
     </Badge>
   );
 

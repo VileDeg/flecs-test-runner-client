@@ -41,6 +41,7 @@ import {
   UNIT_TEST_PASSED_TAG_NAME,
   UNIT_TEST_INCOMPLETE_TAG_NAME,
   TEST_EXECUTION_TIMEOUT_MS,
+  TEST_EXECUTION_MAX_BATCH_SIZE,
 } from "@common/constants.ts";
 
 import { TestRunner } from "@/common/testRunner";
@@ -64,13 +65,11 @@ interface WorkspaceContextType {
 
   // Bulk operations
   addWorkspaceTests: (tests: UnitTestProps[]) => void;
-  runTest: (testId: string) => Promise<boolean>;
   runTestIncomplete: (
     testId: string,
     testProps: UnitTestProps,
   ) => Promise<boolean>;
-  runMultipleTests: (tests: WorkspaceTest[]) => Promise<boolean>;
-
+  runTests: (tests: WorkspaceTest[]) => void;
   setIsPolling: (isPolling: boolean) => void;
 }
 
@@ -199,6 +198,20 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
     testsRef.current = wsState.tests;
   }, [wsState.tests]);
 
+  useEffect(() => {
+    // Use .some() to stop iteration as soon as one active test is found
+    const hasActiveTests = wsState.tests.some(
+      (test) =>
+        test.status === TestStatus.RUNNING ||
+        test.status === TestStatus.PENDING,
+    );
+
+    // Only trigger a state update if the value actually changes
+    if (isPolling !== hasActiveTests) {
+      setIsPolling(hasActiveTests);
+    }
+  }, [wsState.tests, isPolling]);
+
   const generateTestId = (): string => {
     return crypto.randomUUID();
   };
@@ -261,16 +274,27 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
     });
   };
 
-  // Update a test
-  const updateTest = (id: string, updates: Partial<WorkspaceTest>) => {
+  const updateTests = (updatesMap: Record<string, Partial<WorkspaceTest>>) => {
     setWsState((prev) => ({
       ...prev,
-      tests: prev.tests.map((test) =>
-        test.id === id
-          ? { ...test, ...updates, lastUpdated: Date.now() }
-          : test,
-      ),
+      tests: prev.tests.map((test) => {
+        const update = updatesMap[test.id];
+
+        if (!update) {
+          return test;
+        }
+
+        return {
+          ...test,
+          ...update,
+          lastUpdated: Date.now(),
+        };
+      }),
     }));
+  };
+
+  const updateTest = (id: string, updates: Partial<WorkspaceTest>) => {
+    updateTests(Object.fromEntries([[id, updates]]));
   };
 
   const displayValidationResults = (results: TestValidationResult[]) => {
@@ -303,7 +327,7 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
     setWsState((prev) => ({ ...prev, tests: [] }));
   };
 
-  const runTest = async (
+  const executeTest = async (
     wsTest: WorkspaceTest,
     clearLastResult: boolean = true,
   ): Promise<boolean> => {
@@ -334,17 +358,14 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
 
       const testCore = TestRunner.convertTestToCore(testToRun);
       const testRunner = new TestRunner(connection!);
-      await testRunner.executeTest(testCore, clearLastResult);
 
       updateTest(testId, {
         status: TestStatus.RUNNING, // Will be later updated by polling
-        statusMessage: "Executed successfully",
+        statusMessage: "Running...",
         executedAtEpochMs: Date.now(),
       });
-      // showToast(
-      //   `Test "${unitTest.name}" started successfully`,
-      //   MessageType.SUCCESS,
-      // );
+
+      await testRunner.executeTest(testCore, clearLastResult);
 
       return true;
     } catch (e: unknown) {
@@ -399,7 +420,7 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
       //   MessageType.SUCCESS,
       // );
 
-      setIsPolling(true);
+      //setIsPolling(true);
 
       return true;
     } catch (e: unknown) {
@@ -465,29 +486,26 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
     return results;
   };
 
-  const runSingleTest = async (testId: string): Promise<boolean> => {
-    if (await runTest(getTest(testId))) {
-      setIsPolling(true);
-      return true;
+  const executeTests = async (wsTests: WorkspaceTest[]): Promise<boolean> => {
+    if (wsTests.length < 1) {
+      return false;
     }
-    return false;
+    const results = await Promise.all(
+      wsTests.map((test) => executeTest(test, true)),
+    );
+
+    return results.every((res) => res === true);
   };
 
-  const runMultipleTests = async (
-    wsTests: WorkspaceTest[],
-  ): Promise<boolean> => {
-    // Clear previous results
-    const testRunner = new TestRunner(connection!);
-    await testRunner.deleteTestEntities();
-
-    const results = await Promise.all(
-      wsTests.map((test) => runTest(test, false)),
+  const runTests = async (wsTests: WorkspaceTest[]) => {
+    const pendingUpdates: Record<
+      string,
+      Partial<WorkspaceTest>
+    > = Object.fromEntries(
+      wsTests.map((test) => [test.id, { status: TestStatus.PENDING }]),
     );
-    const anyRun = results.some((res) => res === true);
-    if (anyRun) {
-      setIsPolling(true);
-    }
-    return results.every((res) => res === true);
+
+    updateTests(pendingUpdates);
   };
 
   const filterRunningTests = useCallback(
@@ -585,45 +603,52 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
         }
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [currentTestId, availableComponents, showToast],
   );
 
-  const pollTestResults = useCallback(async () => {
+  const progressTests = useCallback(async () => {
     try {
       if (!connection) {
         return;
       }
 
-      // Use the ref to get the absolute latest state
+      // Use the ref to get the absolute latest state without triggering re-renders/invalidation
       const currentTests = testsRef.current;
       const runningTests = currentTests.filter(
-        (test) => test.status === TestStatus.RUNNING,
+        (t) => t.status === TestStatus.RUNNING,
+      );
+      const pendingTests = currentTests.filter(
+        (t) => t.status === TestStatus.PENDING,
       );
 
-      if (runningTests.length === 0) {
-        setIsPolling(false);
-        return;
+      if (runningTests.length < 1) {
+        if (pendingTests.length > 0) {
+          // Process pending tests
+          executeTests(pendingTests.slice(0, TEST_EXECUTION_MAX_BATCH_SIZE));
+        }
+      } else {
+        // Execute queries
+        const [passedQuery, failedQuery] = await Promise.all([
+          connection.query(
+            `TestRunner.UnitTest, ${UNIT_TEST_EXECUTED_TAG_NAME},  ${UNIT_TEST_PASSED_TAG_NAME}, ?${UNIT_TEST_INCOMPLETE_TAG_NAME}`,
+          ),
+          connection.query(
+            `TestRunner.UnitTest, ${UNIT_TEST_EXECUTED_TAG_NAME}, !${UNIT_TEST_PASSED_TAG_NAME}, ?${UNIT_TEST_INCOMPLETE_TAG_NAME}`,
+          ),
+        ]);
+
+        const passedResults = parseQueryResults(passedQuery);
+        const failedResults = parseQueryResults(failedQuery);
+
+        // Filter and update
+        filterRunningTests(runningTests, passedResults, failedResults);
       }
-
-      // Execute queries
-      const [passedQuery, failedQuery] = await Promise.all([
-        connection.query(
-          `TestRunner.UnitTest, ${UNIT_TEST_EXECUTED_TAG_NAME},  ${UNIT_TEST_PASSED_TAG_NAME}, ?${UNIT_TEST_INCOMPLETE_TAG_NAME}`,
-        ),
-        connection.query(
-          `TestRunner.UnitTest, ${UNIT_TEST_EXECUTED_TAG_NAME}, !${UNIT_TEST_PASSED_TAG_NAME}, ?${UNIT_TEST_INCOMPLETE_TAG_NAME}`,
-        ),
-      ]);
-
-      const passedResults = parseQueryResults(passedQuery);
-      const failedResults = parseQueryResults(failedQuery);
-
-      // Filter and update
-      filterRunningTests(runningTests, passedResults, failedResults);
     } catch (e: unknown) {
       const errorMessage = e instanceof Error ? e.message : String(e);
       console.error("Polling error:", errorMessage);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connection, filterRunningTests]);
 
   // Start/stop polling
@@ -639,7 +664,7 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
 
       try {
         // Await the async logic fully
-        await pollTestResults();
+        await progressTests();
       } catch (error) {
         console.error("Poll for results failed: ", error);
       } finally {
@@ -658,7 +683,7 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
       isMounted = false;
       clearTimeout(timerId);
     };
-  }, [pollTestResults, isPolling]);
+  }, [progressTests, isPolling]);
 
   const value: WorkspaceContextType = {
     state: wsState,
@@ -672,9 +697,8 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
     setCurrentWorkspaceTestId: setCurrentTestId,
     clearWorkspaceTests: clearTests,
     addWorkspaceTests: addTests,
-    runTest: runSingleTest,
     runTestIncomplete,
-    runMultipleTests,
+    runTests,
     setIsPolling,
   };
 

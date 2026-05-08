@@ -44,6 +44,11 @@ const TEST_STATUS_STYLE: Record<TestStatus, StatusStyle> = {
     color:
       "bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-400 border-blue-200 dark:border-blue-800",
   },
+  [TestStatus.PENDING]: {
+    icon: <Play className="h-4 w-4" />,
+    color:
+      "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 border-blue-300 dark:border-blue-700",
+  },
   [TestStatus.INVALID]: {
     icon: <AlertTriangle className="h-4 w-4" />,
     color:

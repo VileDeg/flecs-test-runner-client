@@ -7,6 +7,7 @@ import { isUnitTestProps } from "@/common/types";
  */
 export const TestStatus = {
   RUNNING: "running",
+  PENDING: "pending",
   PASSED: "passed",
   FAILED: "failed",
   TIMEOUT: "timeout",
