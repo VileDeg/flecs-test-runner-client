@@ -61,7 +61,7 @@ export function validateComponents(
   components.forEach((component: Component) => {
     if (!availableComponents.find((avComp) => avComp.id === component.id)) {
       all.push(
-        `Component ${component.name} from module ${component.module.fullPath} is not available`,
+        `Component ${component.name} from module ${component.module} is not available`,
       );
     }
 
@@ -152,9 +152,7 @@ export function validateTest(
   }
 
   const availableSystemNamesSet = new Set(
-    availableSystems.map(
-      (system) => system.module.fullPath + "." + system.name,
-    ),
+    availableSystems.map((system) => system.module + "." + system.name),
   );
   test.systems.forEach((system) => {
     const systemName = system.name.trim();

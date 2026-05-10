@@ -7,7 +7,7 @@ import { Plus, Minus, Trash2 } from "lucide-react";
 import type { System } from "@/common/types";
 import type { SystemInvocation } from "@/common/coreTypes";
 
-import { MODULE_PATH_SEP } from "@/common/constants";
+import { FLECS_PATH_SEP } from "@/common/constants";
 
 export interface SystemsListProps {
   selectedSystems: SystemInvocation[];
@@ -21,7 +21,7 @@ export const SystemsList: React.FC<SystemsListProps> = ({
   onUpdateSystems,
 }) => {
   const makeSystemId = (system: System) =>
-    system.module.fullPath + MODULE_PATH_SEP + system.name;
+    system.module + FLECS_PATH_SEP + system.name;
 
   const addSystem = () => {
     onUpdateSystems([
@@ -56,7 +56,7 @@ export const SystemsList: React.FC<SystemsListProps> = ({
         {availableSystems.map((sys) => (
           <option key={sys.name} value={makeSystemId(sys)}>
             {/* Assign module + name as invocation name */}
-            {`${sys.name} (${sys.module.fullPath})`}
+            {`${sys.name} (${sys.module})`}
           </option>
         ))}
       </select>

@@ -25,7 +25,7 @@ export const ComponentSelector: React.FC<ComponentSelectorProps> = ({
   };
 
   const getOptionDisplayString = (comp: Component) => {
-    return `${trimString(comp.name)} (${trimString(comp.module.fullPath)})`;
+    return `${trimString(comp.name)} (${trimString(comp.module)})`;
   };
 
   return (
@@ -36,7 +36,7 @@ export const ComponentSelector: React.FC<ComponentSelectorProps> = ({
         onChange(e.target.value)
       }
       disabled={disabled || availableComponents.length === 0}
-      className="w-fit min-w-[200px] max-w-[300px] px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+      className="w-fit min-w-50 max-w-75 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
     >
       <option value="" disabled hidden>
         {availableComponents.length === 0

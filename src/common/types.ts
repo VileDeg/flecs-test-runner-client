@@ -4,6 +4,7 @@
  */
 
 import type { SystemInvocation, OperatorType } from "@common/coreTypes";
+import { FLECS_PATH_SEP } from "./constants";
 
 export interface Operator {
   path: string;
@@ -23,20 +24,7 @@ export interface UnitTest {
  */
 export interface UnitTestProps {
   test: UnitTest;
-  selectedModules: Module[];
-}
-
-/**
- * Structural Check (Duck Typing)
- * Returns true if the object has the shape of a Module,
- * even if the prototype was lost (e.g., via structuredClone or JSON.parse).
- */
-export function isModuleStructural(obj: unknown): obj is Module {
-  if (typeof obj !== "object" || obj === null) return false;
-
-  // Cast to a record to allow property probing
-  const candidate = obj as Record<string, unknown>;
-  return typeof candidate.fullPath === "string";
+  selectedModules: string[];
 }
 
 export function isUnitTestProps(obj: unknown): obj is UnitTestProps {
@@ -47,7 +35,7 @@ export function isUnitTestProps(obj: unknown): obj is UnitTestProps {
 
   return (
     Array.isArray(candidate.selectedModules) &&
-    candidate.selectedModules.every(isModuleStructural) &&
+    candidate.selectedModules.every((mod) => typeof mod === "string") &&
     typeof test === "object" &&
     test !== null &&
     typeof test.name === "string" &&
@@ -58,27 +46,9 @@ export function isUnitTestProps(obj: unknown): obj is UnitTestProps {
   );
 }
 
-// General types
-// TODO: convert to simple type (no need for class)
-export class Module {
-  fullPath: string;
-
-  constructor(fullPath: string) {
-    this.fullPath = fullPath;
-  }
-
-  getName(): string {
-    return this.fullPath.split(".").pop() ?? "";
-  }
-
-  equals(other: Module): boolean {
-    return other.fullPath == this.fullPath;
-  }
-}
-
 export interface System {
   name: string;
-  module: Module;
+  module: string;
 }
 
 /**
@@ -114,7 +84,7 @@ export interface ComponentField {
 export interface ComponentHeader {
   id: string;
   name: string;
-  module: Module;
+  module: string;
   supportedOperators: SupportedOperators;
 }
 
@@ -239,8 +209,6 @@ export function isComponentFieldEnum(field: ComponentField): boolean {
   );
 }
 
-const PATH_DELIM = ".";
-
 // Allows to return something by processing each field
 // Or return nothing?
 export type ComponentFieldCallback<T> = (
@@ -276,7 +244,7 @@ export function iterateComponentField<T>(
     const newArray: GenericFieldArray<T> = [];
     value.forEach((element, index) => {
       const suffix = `${index}`;
-      const me = parent + PATH_DELIM + suffix;
+      const me = parent + FLECS_PATH_SEP + suffix;
       // TODO: assert schema exists and holds a string
       newArray.push(iterateComponentField(element, me, func));
     });

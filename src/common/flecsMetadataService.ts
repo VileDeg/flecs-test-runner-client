@@ -15,7 +15,6 @@ import type {
 } from "@/common/types";
 
 import {
-  Module,
   isTypeInfoLeafValue,
   typeInfoLeafValueToString,
   isSupportedOperators,
@@ -23,7 +22,7 @@ import {
 } from "@/common/types";
 
 import {
-  MODULE_PATH_SEP,
+  FLECS_PATH_SEP,
   SUPPORTER_OPERATORS_COMPONENT_NAME,
 } from "@common/constants";
 
@@ -69,7 +68,7 @@ export class FlecsMetadataService {
       console.warn(`Error building full path for ${entityName}:`, error);
     }
 
-    return pathParts.join(".");
+    return pathParts.join(FLECS_PATH_SEP);
   }
 
   /**
@@ -78,13 +77,13 @@ export class FlecsMetadataService {
    * @param connection Flecs connection.
    * @returns Array of modules.
    */
-  static async getAvailableModules(connection: FlecsAsync): Promise<Module[]> {
+  static async getAvailableModules(connection: FlecsAsync): Promise<string[]> {
     try {
       // Query for modules that have the TestableModule tag
       const data = await connection.query(
         "flecs.core.Module, TestRunner.TestableModule",
       );
-      const modules: Module[] = [];
+      const modules: string[] = [];
 
       for (const entity of data.results as QueriedEntity[]) {
         const entityName = entity.name;
@@ -97,13 +96,13 @@ export class FlecsMetadataService {
 
         // Build full path by traversing parents
         let fullPath = await this.buildFullPath(connection, parentName);
-        fullPath += "." + entityName;
+        fullPath += FLECS_PATH_SEP + entityName;
 
-        modules.push(new Module(fullPath));
+        modules.push(fullPath);
       }
 
       // Sort modules by full path for better UX
-      return modules.sort((a, b) => a.fullPath.localeCompare(b.fullPath));
+      return modules.sort((a, b) => a.localeCompare(b));
     } catch (error) {
       console.error("Error fetching modules:", error);
       throw error;
@@ -118,11 +117,11 @@ export class FlecsMetadataService {
    */
   static async getSystemsInModule(
     connection: FlecsAsync,
-    module: Module,
+    module: string,
   ): Promise<System[]> {
     try {
       const systems: System[] = [];
-      const query = `(ChildOf, ${module.fullPath}), flecs.system.System`;
+      const query = `(ChildOf, ${module}), flecs.system.System`;
 
       const data = await connection.query(query);
 
@@ -141,10 +140,7 @@ export class FlecsMetadataService {
       // Sort systems by name
       return systems.sort((a, b) => a.name.localeCompare(b.name));
     } catch (error) {
-      console.error(
-        `Error fetching systems for module ${module.fullPath}: `,
-        error,
-      );
+      console.error(`Error fetching systems for module ${module}: `, error);
       throw error;
     }
   }
@@ -157,9 +153,9 @@ export class FlecsMetadataService {
    */
   static async getComponentsInModule(
     connection: FlecsAsync,
-    module: Module,
+    module: string,
   ): Promise<Components> {
-    const modulePath = module.fullPath;
+    const modulePath = module;
     try {
       const components: Components = [];
       const query = `(ChildOf, ${modulePath}), flecs.core.Component`;
@@ -173,7 +169,7 @@ export class FlecsMetadataService {
         const componentName = entity.name;
 
         // Try to get component metadata to discover fields
-        const componentId = `${module.fullPath}${MODULE_PATH_SEP}${componentName}`;
+        const componentId = `${module}${FLECS_PATH_SEP}${componentName}`;
         const fields = await this.getComponentFields(connection, componentId);
         if (!fields) {
           console.warn(`Component ${componentId} skipped. Unsupported.`);

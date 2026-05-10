@@ -178,17 +178,17 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
     const availableComponents: Component[] = [];
     if (!loadingMetadata) {
       availableModules.forEach((module) => {
-        if (!moduleMetadataMap.has(module.fullPath)) {
+        if (!moduleMetadataMap.has(module)) {
           // Cannot happen
           console.error(
             "Internal Error: module ",
-            module.fullPath,
+            module,
             " is not in the map ",
             moduleMetadataMap,
           );
           return;
         }
-        const md = moduleMetadataMap.get(module.fullPath)!;
+        const md = moduleMetadataMap.get(module)!;
         availableSystems.push(...md.systems);
         availableComponents.push(...md.components);
       });
@@ -454,13 +454,11 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
       results.push({ message: `Test with name ${test.name} already exists` });
     }
 
-    const modulePathsSet = new Set(
-      availableModules.map((module) => module.fullPath),
-    );
+    const modulePathsSet = new Set(availableModules.map((module) => module));
     wsTest.testProperties.selectedModules.forEach((module) => {
-      if (!modulePathsSet.has(module.fullPath)) {
+      if (!modulePathsSet.has(module)) {
         results.push({
-          message: `Module ${module.fullPath} is not available.`,
+          message: `Module ${module} is not available.`,
           type: MessageType.WARNING,
         });
       }

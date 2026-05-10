@@ -9,7 +9,7 @@ import React, {
 import { useFlecsConnection } from "@/contexts/flecsConnectionContext";
 import { FlecsMetadataService } from "@common/flecsMetadataService.ts";
 
-import type { Module, System, Component } from "@/common/types";
+import type { System, Component } from "@/common/types";
 
 export interface ModuleMetadata {
   systems: System[];
@@ -17,7 +17,7 @@ export interface ModuleMetadata {
 }
 
 interface MetadataLoaderContextType {
-  availableModules: Module[];
+  availableModules: string[];
   moduleMetadataMap: Map<string, ModuleMetadata>;
   loadingMetadata: boolean;
 }
@@ -38,7 +38,7 @@ export const MetadataLoaderProvider: React.FC<MetadataLoaderProviderProps> = ({
     Map<string, ModuleMetadata>
   >(new Map());
 
-  const [availableModules, setAvailableModules] = useState<Module[]>([]);
+  const [availableModules, setAvailableModules] = useState<string[]>([]);
   const [loadingMetadata, setLoadingMetadata] = useState(true);
 
   const setModuleMetadata = (module: string, metadata: ModuleMetadata) => {
@@ -64,7 +64,7 @@ export const MetadataLoaderProvider: React.FC<MetadataLoaderProviderProps> = ({
             FlecsMetadataService.getSystemsInModule(connection, module),
             FlecsMetadataService.getComponentsInModule(connection, module),
           ]);
-          setModuleMetadata(module.fullPath, { systems, components });
+          setModuleMetadata(module, { systems, components });
         }
       } catch (error: unknown) {
         console.error("Failed to load metadata:", error);

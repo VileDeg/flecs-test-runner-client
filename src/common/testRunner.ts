@@ -197,11 +197,10 @@ export class TestRunner {
 
     entityConf.components.forEach((comp) => {
       // Use the full path (module + name) as the key to match Flecs expectations
-      const componentPath = `${comp.module.fullPath}.${comp.name}`;
-      coreComponents[componentPath] =
+      coreComponents[comp.id] =
         iterateComponentFieldDict<Core.ComponentFieldValuePrimitive>(
           comp.fields,
-          componentPath,
+          comp.id,
           TestRunner.convertEntityToCoreFnCallback,
         );
     });

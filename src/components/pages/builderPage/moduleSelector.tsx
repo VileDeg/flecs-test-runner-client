@@ -5,12 +5,10 @@ import { Checkbox } from "@components/ui/checkbox";
 import { Label } from "@components/ui/label";
 import { CheckSquare, Square } from "lucide-react";
 
-import { Module } from "@common/types.ts";
-
 interface ModuleSelectorProps {
-  availableModules: Module[];
-  selectedModules: Module[];
-  onSelectionChange: (selectedModules: Module[]) => void;
+  availableModules: string[];
+  selectedModules: string[];
+  onSelectionChange: (selectedModules: string[]) => void;
   loading?: boolean;
 }
 
@@ -20,14 +18,10 @@ export const ModuleSelector: React.FC<ModuleSelectorProps> = ({
   onSelectionChange,
   loading = false,
 }) => {
-  const handleToggleModule = (module: Module) => {
-    const isSelected = selectedModules.some(
-      (m) => m.fullPath === module.fullPath,
-    );
+  const handleToggleModule = (module: string) => {
+    const isSelected = selectedModules.some((m) => m === module);
     if (isSelected) {
-      onSelectionChange(
-        selectedModules.filter((m) => m.fullPath !== module.fullPath),
-      );
+      onSelectionChange(selectedModules.filter((m) => m !== module));
     } else {
       onSelectionChange([...selectedModules, module]);
     }
@@ -107,24 +101,20 @@ export const ModuleSelector: React.FC<ModuleSelectorProps> = ({
           <div className="space-y-2">
             {availableModules.map((module) => (
               <div
-                key={module.fullPath}
+                key={module}
                 className="flex items-center gap-3 p-2 rounded-md hover:bg-accent transition-colors"
               >
                 <Checkbox
-                  id={`module-${module.fullPath}`}
-                  checked={selectedModules.some(
-                    (m) => m.fullPath === module.fullPath,
-                  )}
+                  id={`module-${module}`}
+                  checked={selectedModules.some((m) => m === module)}
                   onCheckedChange={() => handleToggleModule(module)}
                   className="h-5 w-5"
                 />
                 <Label
-                  htmlFor={`module-${module.fullPath}`}
+                  htmlFor={`module-${module}`}
                   className="flex-1 cursor-pointer flex items-center gap-2"
                 >
-                  <span className="font-medium text-foreground">
-                    {module.fullPath}
-                  </span>
+                  <span className="font-medium text-foreground">{module}</span>
                 </Label>
               </div>
             ))}

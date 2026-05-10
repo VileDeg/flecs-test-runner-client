@@ -17,7 +17,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-import type { Module, WorldConfiguration } from "@/common/types";
+import type { WorldConfiguration } from "@/common/types";
 import { MessageType } from "@/common/types";
 import type { SystemInvocation } from "@/common/coreTypes";
 
@@ -52,7 +52,7 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
   const { test, selectedModules } = testProperties;
 
   // Helper setters
-  const setSelectedModules = (selectedModules: Module[]) => {
+  const setSelectedModules = (selectedModules: string[]) => {
     updateTestProperties({ ...testProperties, selectedModules });
   };
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);

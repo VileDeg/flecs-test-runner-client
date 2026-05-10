@@ -17,14 +17,13 @@ import type {
   EntityConfiguration,
   WorldConfiguration,
 } from "@/common/types";
-import { Module } from "@/common/types";
 import { OperatorType } from "@/common/coreTypes";
 
 import { useMetadataLoader } from "@/contexts/metadataLoaderContext";
 
 interface BuilderContextType {
   testProperties: UnitTestProps;
-  availableModules: Module[];
+  availableModules: string[];
   availableSystems: System[];
   availableComponents: Component[];
   loadingMetadata: boolean;
@@ -87,16 +86,16 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
     const availableComponents: Component[] = [];
     if (!loadingMetadata) {
       selectedModules.forEach((module) => {
-        if (!moduleMetadataMap.has(module.fullPath)) {
+        if (!moduleMetadataMap.has(module)) {
           console.error(
             "Internal Error: module ",
-            module.fullPath,
+            module,
             " is not in the map ",
             moduleMetadataMap,
           ); // Cannot happen
           return;
         }
-        const md = moduleMetadataMap.get(module.fullPath)!;
+        const md = moduleMetadataMap.get(module)!;
         availableSystems.push(...md.systems);
         availableComponents.push(...md.components);
       });
