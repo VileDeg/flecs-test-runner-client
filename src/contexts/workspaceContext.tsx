@@ -62,7 +62,6 @@ interface WorkspaceContextType {
   saveToWorkspace: (id: string, testProperties: UnitTestProps) => void;
   removeWorkspaceTest: (id: string) => void;
   setCurrentWorkspaceTestId: (string: string | null) => void;
-  clearWorkspaceTests: () => void;
 
   // Bulk operations
   addWorkspaceTests: (tests: UnitTestProps[]) => void;
@@ -71,7 +70,6 @@ interface WorkspaceContextType {
     testProps: UnitTestProps,
   ) => Promise<boolean>;
   runTests: (tests: WorkspaceTest[]) => void;
-  setIsPolling: (isPolling: boolean) => void;
 }
 
 const WorkspaceContext = createContext<WorkspaceContextType | undefined>(
@@ -324,11 +322,6 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
       ...prev,
       tests: prev.tests.filter((test) => test.id !== id),
     }));
-  };
-
-  // Clear all tests
-  const clearTests = () => {
-    setWsState((prev) => ({ ...prev, tests: [] }));
   };
 
   const executeTest = async (wsTest: WorkspaceTest): Promise<boolean> => {
@@ -741,11 +734,9 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
     saveToWorkspace,
     removeWorkspaceTest: removeTest,
     setCurrentWorkspaceTestId: setCurrentTestId,
-    clearWorkspaceTests: clearTests,
     addWorkspaceTests: addTests,
     executeTestIncomplete,
     runTests,
-    setIsPolling,
   };
 
   return (

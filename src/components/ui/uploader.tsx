@@ -19,7 +19,7 @@ export const Uploader: React.FC<UploaderProps> = ({ onTestsParsed }) => {
 
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
-      // Why is async?
+      // TODO: Why is async?
       const allTests: UnitTestProps[] = [];
 
       for (const file of acceptedFiles) {
@@ -32,7 +32,7 @@ export const Uploader: React.FC<UploaderProps> = ({ onTestsParsed }) => {
             // Validate each test in the array
             json.forEach((test: unknown) => {
               if (!isUnitTestProps(test)) {
-                // TODO: show correct structure example
+                // TODO: show correct structure example?
                 showToast(
                   `File ${file.name} has incorrect test structure inside array of tests. \
                   Skipping...`,

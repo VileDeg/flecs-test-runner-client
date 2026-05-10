@@ -14,7 +14,6 @@ import type {
   UnitTest,
   System,
   Component,
-  EntityConfiguration,
   WorldConfiguration,
 } from "@/common/types";
 import { OperatorType } from "@/common/coreTypes";
@@ -29,17 +28,13 @@ interface BuilderContextType {
   loadingMetadata: boolean;
   updateTestProperties: (updates: Partial<UnitTestProps>) => void;
   updateUnitTest: (updates: Partial<UnitTest>) => void;
-  addEntity: () => void;
   removeEntity: (id: string) => void;
-  getEntity: (id: string, expected: boolean) => EntityConfiguration | undefined;
-  addComponent: (entityName: string, componentId: string) => void;
   replaceComponent: (
     entityName: string,
     index: number,
     newComponent: string | null,
   ) => void; // null => remove
   onOperatorChanged: (type: OperatorType | null, fullPath: string) => void;
-  isOperatorEnabled: (path: string) => boolean;
   getOperatorType: (path: string) => OperatorType | null;
 }
 
@@ -71,7 +66,7 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
     setTestProperties(workspaceTest?.testProperties ?? DEFAULT_TEST_PROPERTIES);
   }, [workspaceTest]);
 
-  const { test, selectedModules } = useMemo(() => {
+  const { selectedModules } = useMemo(() => {
     return {
       test: testProperties.test,
       selectedModules: testProperties.selectedModules,
@@ -120,31 +115,6 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
     });
   };
 
-  const getEntity = (id: string, expected: boolean) => {
-    return expected
-      ? test.expectedConfiguration.find((e) => e.id === id)
-      : test.initialConfiguration.find((e) => e.id === id);
-  };
-
-  const addEntity = () => {
-    const newId = crypto.randomUUID();
-    const newName = "Entity";
-
-    // Same entity reference in both configs
-    const newEntity: EntityConfiguration = {
-      id: newId,
-      entityName: newName,
-      components: [],
-    };
-
-    updateUnitTest((prevTest) => ({
-      initialConfiguration: [...prevTest.initialConfiguration, newEntity],
-      expectedConfiguration: [...prevTest.expectedConfiguration, newEntity],
-    }));
-
-    handleOnOperatorChanged(OperatorType.Eq, newId);
-  };
-
   const removeEntity = (id: string) => {
     updateUnitTest((prev) => ({
       initialConfiguration: prev.initialConfiguration.filter(
@@ -168,37 +138,8 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
     return component;
   };
 
-  const addComponentToWorld = (
-    world: WorldConfiguration,
-    entityId: string,
-    comp: Component,
-  ) => {
-    return world.map((e) =>
-      e.id == entityId ? { ...e, components: [...e.components, comp] } : e,
-    )!;
-  };
-
   const cloneComponent = (component: Component): Component => {
     return { ...component, fields: structuredClone(component.fields) };
-  };
-
-  const addComponent = (entityId: string, componentId: string) => {
-    const comp = getAvailableComponent(componentId);
-
-    const initial = addComponentToWorld(test.initialConfiguration, entityId, {
-      ...comp,
-      fields: structuredClone(comp.fields),
-    });
-    const expected = addComponentToWorld(
-      test.expectedConfiguration,
-      entityId,
-      cloneComponent(comp),
-    );
-
-    updateUnitTest({
-      initialConfiguration: initial,
-      expectedConfiguration: expected,
-    });
   };
 
   const replaceComponentFromWorld = (
@@ -282,10 +223,6 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
     });
   };
 
-  const isOperatorEnabled = (path: string): boolean => {
-    return operators.find((op) => op.path == path) !== undefined;
-  };
-
   const getOperatorType = (path: string): OperatorType | null => {
     return operators.find((op) => op.path == path)?.type ?? null;
   };
@@ -296,15 +233,11 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
     availableSystems,
     availableComponents,
     loadingMetadata,
-    addEntity,
     removeEntity,
-    addComponent,
-    getEntity,
     replaceComponent,
     updateTestProperties,
     updateUnitTest,
     onOperatorChanged: handleOnOperatorChanged,
-    isOperatorEnabled,
     getOperatorType,
   };
 

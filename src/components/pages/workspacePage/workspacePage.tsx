@@ -536,7 +536,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
       }
     >
       <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
-      Polling...
+      Running...
     </Badge>
   );
 
