@@ -95,6 +95,10 @@ const TestListItem: React.FC<TestListItemProps> = ({
 
   const statusStyle = TEST_STATUS_STYLE[wsTest.status];
 
+  const isTestActive =
+    wsTest.status === TestStatus.PENDING ||
+    wsTest.status === TestStatus.RUNNING;
+
   // Format timestamp
   const formatTime = (timestamp: number) => {
     return new Date(timestamp).toLocaleTimeString([], {
@@ -150,6 +154,13 @@ const TestListItem: React.FC<TestListItemProps> = ({
     </div>
   );
 
+  const renderTestStatusBadge = () => (
+    <Badge variant="outline" className={cn("font-medium", statusStyle.color)}>
+      {statusStyle.icon}
+      <span className="ml-1 capitalize">{wsTest.status}</span>
+    </Badge>
+  );
+
   return (
     <div
       className={cn(
@@ -170,13 +181,7 @@ const TestListItem: React.FC<TestListItemProps> = ({
             <h3 className="text-lg font-semibold text-foreground">
               {unitTest.name}
             </h3>
-            <Badge
-              variant="outline"
-              className={cn("font-medium", statusStyle.color)}
-            >
-              {statusStyle.icon}
-              <span className="ml-1 capitalize">{wsTest.status}</span>
-            </Badge>
+            {!isTestActive && renderTestStatusBadge()}
           </div>
 
           <div className="text-sm text-muted-foreground mb-3">
@@ -206,7 +211,7 @@ const TestListItem: React.FC<TestListItemProps> = ({
           </div>
         </div>
 
-        {renderActionButtons()}
+        {isTestActive ? renderTestStatusBadge() : renderActionButtons()}
       </div>
 
       <Separator className="my-3" />

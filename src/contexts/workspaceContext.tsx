@@ -65,7 +65,7 @@ interface WorkspaceContextType {
 
   // Bulk operations
   addWorkspaceTests: (tests: UnitTestProps[]) => void;
-  runTestIncomplete: (
+  executeTestIncomplete: (
     testId: string,
     testProps: UnitTestProps,
   ) => Promise<boolean>;
@@ -85,6 +85,9 @@ interface TestResult {
   statusMessage: string;
   worldExpectedSerialized?: string;
 }
+
+type CheckTestResultReturnType = [TestStatus, string];
+type CheckTestResultReturnTypeOrNull = CheckTestResultReturnType | null;
 
 interface WorkspaceProviderProps {
   children: ReactNode;
@@ -359,13 +362,14 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
       const testCore = TestRunner.convertTestToCore(testToRun);
       const testRunner = new TestRunner(connection!);
 
+      await testRunner.executeTest(testCore, clearLastResult);
+
+      // Ensure running status set only after all HTTP requests got delivered
       updateTest(testId, {
-        status: TestStatus.RUNNING, // Will be later updated by polling
+        status: TestStatus.RUNNING,
         statusMessage: "Running...",
         executedAtEpochMs: Date.now(),
       });
-
-      await testRunner.executeTest(testCore, clearLastResult);
 
       return true;
     } catch (e: unknown) {
@@ -382,7 +386,13 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
     return false;
   };
 
-  const runTestIncomplete = async (
+  /**
+   * Bypasses the Pending stage.
+   * @param testId
+   * @param testProps
+   * @returns
+   */
+  const executeTestIncomplete = async (
     testId: string,
     testProps: UnitTestProps,
   ) => {
@@ -415,12 +425,6 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
         statusMessage: "Executed successfully",
         executedAtEpochMs: Date.now(),
       });
-      // showToast(
-      //   `Test "${unitTest.name}" started successfully`,
-      //   MessageType.SUCCESS,
-      // );
-
-      //setIsPolling(true);
 
       return true;
     } catch (e: unknown) {
@@ -508,100 +512,147 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
     updateTests(pendingUpdates);
   };
 
+  const updateTestStatus = (
+    testId: string,
+    status: TestStatus,
+    message: string,
+  ) => {
+    updateTest(testId, { status, statusMessage: message });
+  };
+
+  const checkTestResultPassedIncomplete = (
+    wsTest: WorkspaceTest,
+    pr: TestResult,
+  ): CheckTestResultReturnTypeOrNull => {
+    if (!pr.worldExpectedSerialized) {
+      return null;
+    }
+    const expectedNew = TestRunner.parseWorldSerialized(
+      pr.worldExpectedSerialized,
+      availableComponents,
+    );
+
+    const testProperties = wsTest.testProperties;
+    const unitTest = testProperties.test;
+
+    const newOperators: Operator[] = expectedNew.map((entity) => {
+      return { type: OperatorType.Eq, path: entity.id };
+    });
+
+    // Incomplete test result
+    updateTest(wsTest.id, {
+      testProperties: {
+        ...testProperties,
+        test: {
+          ...unitTest,
+          expectedConfiguration: expectedNew,
+          operators: newOperators, // reset all operators (new entities have new IDs)
+        },
+      },
+    });
+
+    if (wsTest.id === currentTestId) {
+      // Refresh current test in builder.
+      refreshCurrentTestRef.current = !refreshCurrentTestRef.current;
+    }
+
+    showToast(
+      `Incomplete test succeeded: ${pr.statusMessage}`,
+      MessageType.SUCCESS,
+    );
+    return [TestStatus.IDLE, pr.statusMessage];
+  };
+
+  const checkTestPassed = (
+    wsTest: WorkspaceTest,
+    passedResults: TestResult[],
+  ): CheckTestResultReturnTypeOrNull => {
+    const unitTest = wsTest.testProperties.test;
+    const pr = passedResults.find((pt) => pt.name === unitTest.name);
+    if (!pr) {
+      return null;
+    }
+
+    const incompleteUpdates = checkTestResultPassedIncomplete(wsTest, pr);
+    if (!incompleteUpdates) {
+      profiler.markEnd(pr.name);
+    }
+    return incompleteUpdates ?? [TestStatus.PASSED, pr.statusMessage];
+  };
+
+  const checkTestFailed = (
+    wsTest: WorkspaceTest,
+    failedResults: TestResult[],
+  ): CheckTestResultReturnTypeOrNull => {
+    const unitTest = wsTest.testProperties.test;
+    const fr = failedResults.find((pt) => pt.name === unitTest.name);
+    if (!fr) {
+      return null;
+    }
+    if (fr.worldExpectedSerialized) {
+      showToast(
+        `Incomplete test failed: ${fr.statusMessage}`,
+        MessageType.ERROR,
+      );
+    }
+    profiler.markEnd(fr.name);
+    return [TestStatus.FAILED, fr.statusMessage];
+  };
+
+  const checkTestTimedOut = (
+    wsTest: WorkspaceTest,
+  ): CheckTestResultReturnTypeOrNull => {
+    if (
+      wsTest.executedAtEpochMs !== undefined &&
+      wsTest.executedAtEpochMs + TEST_EXECUTION_TIMEOUT_MS >= Date.now()
+    ) {
+      return null;
+    }
+    if (wsTest.executedAtEpochMs === undefined) {
+      console.error("Internal error executedAtEpochMs is undefined");
+    }
+
+    const testName = wsTest.testProperties.test.name;
+
+    const timeoutMessage = `Exceeded ${TEST_EXECUTION_TIMEOUT_MS} milliseconds`;
+    const warning = `Test ${testName} timed out. ${timeoutMessage}`;
+    console.warn(warning);
+    showToast(warning, MessageType.WARNING);
+
+    profiler.cancel(testName);
+    return [TestStatus.TIMEOUT, timeoutMessage];
+  };
+
   const filterRunningTests = useCallback(
-    (
+    async (
       runningTests: WorkspaceTest[],
       passed: TestResult[],
       failed: TestResult[],
     ) => {
-      const updateTestStatus = (
-        testId: string,
-        status: TestStatus,
-        message?: string,
-      ) => {
-        updateTest(
-          testId,
-          message ? { status, statusMessage: message } : { status },
-        );
-      };
-
+      let testStatusUpdates: Record<string, CheckTestResultReturnType> = {};
+      let numResultsFound = 0;
       for (const wsTest of runningTests) {
-        const unitTest = wsTest.testProperties.test;
+        const statusUpdate =
+          checkTestPassed(wsTest, passed) ??
+          checkTestFailed(wsTest, failed) ??
+          checkTestTimedOut(wsTest);
 
-        const pr = passed.find((pt) => pt.name === unitTest.name);
-        if (pr) {
-          if (pr.worldExpectedSerialized) {
-            const expectedNew = TestRunner.parseWorldSerialized(
-              pr.worldExpectedSerialized,
-              availableComponents,
-            );
-
-            const testProperties = wsTest.testProperties;
-
-            const newOperators: Operator[] = expectedNew.map((entity) => {
-              return { type: OperatorType.Eq, path: entity.id };
-            });
-
-            // Incomplete test result
-            updateTest(wsTest.id, {
-              status: TestStatus.IDLE,
-              statusMessage: pr.statusMessage,
-              testProperties: {
-                ...testProperties,
-                test: {
-                  ...unitTest,
-                  expectedConfiguration: expectedNew,
-                  operators: newOperators, // reset all operators (new entities have new IDs)
-                },
-              },
-            });
-
-            if (wsTest.id === currentTestId) {
-              // Refresh current test in builder.
-              refreshCurrentTestRef.current = !refreshCurrentTestRef.current;
-            }
-
-            showToast(
-              `Incomplete test succeeded: ${pr.statusMessage}`,
-              MessageType.SUCCESS,
-            );
-          } else {
-            updateTestStatus(wsTest.id, TestStatus.PASSED, pr.statusMessage);
-          }
-          profiler.markEnd(pr.name);
-          continue;
-        }
-        const fr = failed.find((pt) => pt.name === unitTest.name);
-        if (fr) {
-          if (fr.worldExpectedSerialized) {
-            showToast(
-              `Incomplete test failed: ${fr.statusMessage}`,
-              MessageType.ERROR,
-            );
-          }
-          updateTestStatus(wsTest.id, TestStatus.FAILED, fr.statusMessage);
-          profiler.markEnd(fr.name);
-          continue;
-        }
-        if (wsTest.executedAtEpochMs === undefined) {
-          console.error("Internal error executedAtEpochMs is undefined");
-          continue;
-        }
-        if (wsTest.executedAtEpochMs + TEST_EXECUTION_TIMEOUT_MS < Date.now()) {
-          const testName = wsTest.testProperties.test.name;
-          console.warn("TIMEOUT for ", wsTest.id);
-          updateTestStatus(
-            wsTest.id,
-            TestStatus.TIMEOUT,
-            "Execution timed out",
-          );
-          showToast(
-            `Test ${testName} timed out. Exceeded ${TEST_EXECUTION_TIMEOUT_MS / 1000} seconds`,
-            MessageType.ERROR,
-          );
-          profiler.cancel(testName);
+        if (statusUpdate) {
+          ++numResultsFound;
+          testStatusUpdates[wsTest.id] = statusUpdate;
         }
       }
+
+      // If all running tests got processed
+      if (numResultsFound >= runningTests.length) {
+        const testRunner = new TestRunner(connection!);
+        await testRunner.deleteAllTestEntities();
+      }
+
+      // Status must not be updated before entities got removed
+      Object.entries(testStatusUpdates).forEach(([id, [status, message]]) =>
+        updateTestStatus(id, status, message),
+      );
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [currentTestId, availableComponents, showToast],
@@ -613,7 +664,6 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
         return;
       }
 
-      // Use the ref to get the absolute latest state without triggering re-renders/invalidation
       const currentTests = testsRef.current;
       const runningTests = currentTests.filter(
         (t) => t.status === TestStatus.RUNNING,
@@ -624,8 +674,10 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
 
       if (runningTests.length < 1) {
         if (pendingTests.length > 0) {
-          // Process pending tests
-          executeTests(pendingTests.slice(0, TEST_EXECUTION_MAX_BATCH_SIZE));
+          // Run next batch of tests
+          await executeTests(
+            pendingTests.slice(0, TEST_EXECUTION_MAX_BATCH_SIZE),
+          );
         }
       } else {
         // Execute queries
@@ -642,7 +694,7 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
         const failedResults = parseQueryResults(failedQuery);
 
         // Filter and update
-        filterRunningTests(runningTests, passedResults, failedResults);
+        await filterRunningTests(runningTests, passedResults, failedResults);
       }
     } catch (e: unknown) {
       const errorMessage = e instanceof Error ? e.message : String(e);
@@ -697,7 +749,7 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
     setCurrentWorkspaceTestId: setCurrentTestId,
     clearWorkspaceTests: clearTests,
     addWorkspaceTests: addTests,
-    runTestIncomplete,
+    executeTestIncomplete,
     runTests,
     setIsPolling,
   };

@@ -111,7 +111,6 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
   // Selection helper functions
   const toggleSelectionMode = () => {
     if (isSelectionMode) {
-      // Cancel selection mode
       clearSelection();
     }
     setIsSelectionMode(!isSelectionMode);
@@ -225,6 +224,12 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
     return wsTests.filter((test) => selectedTestIds.has(test.id));
   };
 
+  const onSelectionModeAction = () => {
+    if (isSelectionMode) {
+      toggleSelectionMode();
+    }
+  };
+
   // Handle run selected tests
   const handleRunSelectedTests = async () => {
     const selectedTests = getSelectedTests();
@@ -233,6 +238,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
       return;
     }
     runTests(selectedTests);
+    onSelectionModeAction();
   };
 
   // Handle export selected tests
@@ -245,6 +251,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
       return;
     }
     Utils.downloadJson(selectedTests, `Tests_${Date.now()}`);
+    onSelectionModeAction();
   };
 
   const makeTestResult = (test: WorkspaceTest): TestResult => {
@@ -270,6 +277,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
       selectedTests.map((test) => [test.id, makeTestResult(test)]),
     );
     Utils.downloadJson(results, `Test_Results_${Date.now()}`);
+    onSelectionModeAction();
   };
 
   // Handle clear selected tests
@@ -281,7 +289,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
     }
     selectedTests.forEach((test) => removeTest(test.id));
     showToast(`Cleared ${selectedTests.length} selected test(s)`, "success");
-    clearSelection();
+    onSelectionModeAction();
   };
 
   const handleExportTest = async (testId: string) => {
@@ -397,7 +405,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
         {/* Row 2: Selection Mode Actions */}
         {isSelectionMode && (
           <div className="flex flex-wrap gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
-            {renderSelectionModeButtons()}
+            {!isPolling && renderSelectionModeButtons()}
           </div>
         )}
       </div>
@@ -591,9 +599,14 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
             <Separator orientation="vertical" className="h-6" />
 
             {!isSelectionMode && renderTestStats()}
+          </div>
 
+          <div className="flex items-center gap-2">
             {isSelectionMode && (
               <div className="flex items-center gap-2 ml-2">
+                <span className="text-lg text-muted-foreground">
+                  Select all
+                </span>
                 <Checkbox
                   checked={allVisibleSelected}
                   onCheckedChange={(checked) => {
@@ -601,18 +614,12 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                     else clearSelection();
                   }}
                   className={cn(
-                    "h-4 w-4",
+                    "h-8 w-24",
                     someVisibleSelected && "data-[state=checked]:bg-primary/50",
                   )}
                 />
-                <span className="text-sm text-muted-foreground">
-                  Select all
-                </span>
               </div>
             )}
-          </div>
-
-          <div className="flex items-center gap-2">
             {isPolling && renderPollingBadge()}
             <div
               className={cn(

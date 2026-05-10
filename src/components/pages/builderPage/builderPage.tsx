@@ -40,7 +40,7 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
     currentTestId: maybeCurrentTestId,
     getWorkspaceTest,
     saveToWorkspace,
-    runTestIncomplete,
+    executeTestIncomplete: runTestIncomplete,
   } = useWorkspace();
 
   const {
@@ -334,11 +334,11 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
   const currentStatus = getWorkspaceTest(currentTestId)!.status;
 
   if (currentStatus === TestStatus.RUNNING) {
-    return renderLoadingDisplay("Test Is Currently Running. Wait...");
+    return renderLoadingDisplay("Test is currently running. Wait...");
   }
 
   if (loadingMetadata) {
-    return renderLoadingDisplay("Loading Metadata...");
+    return renderLoadingDisplay("Loading metadata...");
   }
 
   return (

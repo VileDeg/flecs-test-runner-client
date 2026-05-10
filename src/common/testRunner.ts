@@ -25,7 +25,7 @@ import {
 
 import * as Core from "@/common/coreTypes";
 
-import { FlecsAsync, flecsError } from "@/common/flecsAsync";
+import { FlecsAsync, flecsError, flecsErrorMessage } from "@/common/flecsAsync";
 import { FlecsMetadataService } from "./flecsMetadataService";
 
 export interface IncompleteTestPollingResult {
@@ -59,7 +59,7 @@ export class TestRunner {
         (queriedEntity) => (queriedEntity as QueriedEntity).name === testName,
       ) as QueriedEntity | undefined;
     } catch (error: unknown) {
-      throw flecsError(error, `Error query test entities for "${testName}"`);
+      throw flecsError(error, `Error in response for query test entities for test "${testName}"`);
     }
   }
 
@@ -73,11 +73,11 @@ export class TestRunner {
       await this.connection.delete(testEntity.name);
       return true;
     } catch (error: unknown) {
-      throw flecsError(error, `Error deleting test entity "${testName}"`);
+      throw flecsError(error, `Error in response, when deleting test entity "${testName}"`);
     }
   }
 
-  async deleteTestEntities() {
+  async deleteAllTestEntities() {
     const allTestsQuery = await this.queryTestEntities();
 
     const deletePromises = allTestsQuery.results.map((entity) =>
@@ -95,26 +95,26 @@ export class TestRunner {
     clearLastResult: boolean,
     incomplete: boolean = false,
   ): Promise<void> {
+    const testName = test.name;
     try {
-      const testName = test.name;
-      if (clearLastResult) {
-        await this.deleteTestEntity(testName);
+      try {
+        // Create the entity for this test
+        await this.connection?.create(testName);
+
+        // Set the test component
+        await this.connection?.set(testName, UNIT_TEST_COMPONENT_NAME, test);
+
+        if (incomplete) {
+          // Add Incomplete tag to signal this is for expected state generation
+          await this.connection?.add(testName, UNIT_TEST_INCOMPLETE_TAG_NAME);
+        }
+
+        await this.connection?.add(testName, UNIT_TEST_READY_TAG_NAME);
+      } catch (error: unknown) {
+        throw Error(`${flecsErrorMessage(error)}`)
       }
-
-      // Create the entity for this test
-      await this.connection?.create(testName);
-
-      // Set the test component
-      await this.connection?.set(testName, UNIT_TEST_COMPONENT_NAME, test);
-
-      if (incomplete) {
-        // Add Incomplete tag to signal this is for expected state generation
-        await this.connection?.add(testName, UNIT_TEST_INCOMPLETE_TAG_NAME);
-      }
-
-      await this.connection?.add(testName, UNIT_TEST_READY_TAG_NAME);
     } catch (error: unknown) {
-      throw flecsError(error, `Error executing test "${test.name}"`);
+      throw Error(`Error executing test "${test.name}": ${error}`);
     }
   }
 

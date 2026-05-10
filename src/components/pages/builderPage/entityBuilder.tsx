@@ -83,7 +83,7 @@ export const EntityBuilder: React.FC<EntityBuilderProps> = ({
   );
 
   const renderEntityHeaderRegion = (entity: EntityConfiguration) => (
-    <div className="flex justify-between items-start">
+    <div className="flex justify-between items-start gap-2">
       {renderCollapseToggle()}
       <div className="space-y-2 flex-1">
         <p className="text-xs text-muted-foreground font-mono px-1">
