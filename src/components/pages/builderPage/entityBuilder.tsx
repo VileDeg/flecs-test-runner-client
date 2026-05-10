@@ -174,7 +174,7 @@ export const EntityBuilder: React.FC<EntityBuilderProps> = ({
       <Button
         variant="destructive"
         size="sm"
-        onClick={() => removeEntity(configuration.id)}
+        onClick={() => removeEntity(configuration.id, isExpected)}
         className="gap-2"
       >
         <Trash2 className="h-4 w-4" />

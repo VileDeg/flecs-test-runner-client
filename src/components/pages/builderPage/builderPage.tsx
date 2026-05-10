@@ -12,6 +12,7 @@ import {
   Trash2,
   FileText,
   Layers,
+  Copy,
   Loader2,
   ChevronLeft,
   ChevronRight,
@@ -37,7 +38,7 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
     currentTestId: maybeCurrentTestId,
     getWorkspaceTest,
     saveToWorkspace,
-    executeTestIncomplete: runTestIncomplete,
+    executeTestIncomplete,
   } = useWorkspace();
 
   const {
@@ -47,6 +48,7 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
     testProperties,
     updateTestProperties,
     updateUnitTest,
+    copyFromInitial,
   } = useBuilder();
 
   const { test, selectedModules } = testProperties;
@@ -206,13 +208,18 @@ export const TestBuilder: React.FC<TestBuilderProps> = ({
         Clear Form
       </Button>
 
+      <Button variant="outline" onClick={copyFromInitial} className="gap-2">
+        <Copy className="h-4 w-4" />
+        {"Copy from Initial"}
+      </Button>
+
       <Button
         variant="outline"
-        onClick={() => runTestIncomplete(currentTestId, testProperties)}
+        onClick={() => executeTestIncomplete(currentTestId, testProperties)}
         className="gap-2"
       >
         <Layers className="h-4 w-4" />
-        {"Generate Expected from Initial"}
+        {"Generate from Initial"}
       </Button>
 
       <Button

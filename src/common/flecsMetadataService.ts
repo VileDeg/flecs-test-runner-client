@@ -285,7 +285,7 @@ export class FlecsMetadataService {
       let fields: ComponentFields = {};
 
       if (typeof typeInfo === "number") {
-        console.log("Empty type info for ", componentId);
+        console.log(`Empty type info for ${componentId}. This is not an error`);
         // No type info, empty component. Is valid for tags.
         return {};
       }

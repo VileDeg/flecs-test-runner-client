@@ -6,7 +6,10 @@ import React, {
   type ReactNode,
   useMemo,
 } from "react";
-import { DEFAULT_TEST_PROPERTIES } from "@common/constants";
+import {
+  DEFAULT_ENTITY_NAME,
+  DEFAULT_TEST_PROPERTIES,
+} from "@common/constants";
 import { useWorkspace } from "@/contexts/workspaceContext.tsx";
 
 import type {
@@ -15,6 +18,7 @@ import type {
   System,
   Component,
   WorldConfiguration,
+  EntityConfiguration,
 } from "@/common/types";
 import { OperatorType } from "@/common/coreTypes";
 
@@ -28,12 +32,14 @@ interface BuilderContextType {
   loadingMetadata: boolean;
   updateTestProperties: (updates: Partial<UnitTestProps>) => void;
   updateUnitTest: (updates: Partial<UnitTest>) => void;
-  removeEntity: (id: string) => void;
+  addEntity: (isExpectedConfiguration: boolean) => void;
+  removeEntity: (id: string, isExpectedConfiguration: boolean) => void;
   replaceComponent: (
     entityName: string,
     index: number,
     newComponent: string | null,
   ) => void; // null => remove
+  copyFromInitial: () => void;
   onOperatorChanged: (type: OperatorType | null, fullPath: string) => void;
   getOperatorType: (path: string) => OperatorType | null;
 }
@@ -66,9 +72,9 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
     setTestProperties(workspaceTest?.testProperties ?? DEFAULT_TEST_PROPERTIES);
   }, [workspaceTest]);
 
-  const { selectedModules } = useMemo(() => {
+  const { unitTest, selectedModules } = useMemo(() => {
     return {
-      test: testProperties.test,
+      unitTest: testProperties.test,
       selectedModules: testProperties.selectedModules,
     };
   }, [testProperties]);
@@ -98,6 +104,8 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
     return { availableSystems, availableComponents };
   }, [loadingMetadata, moduleMetadataMap, selectedModules]);
 
+  const generateEntityId = () => crypto.randomUUID();
+
   const updateTestProperties = (updates: Partial<UnitTestProps>) => {
     setTestProperties((prev) => ({ ...prev, ...updates }));
   };
@@ -115,7 +123,46 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
     });
   };
 
-  const removeEntity = (id: string) => {
+  /**
+   * Must always be called when entity is created!
+   */
+  const onEntityAdded = (id: string, isExpectedConfiguration: boolean) => {
+    if (isExpectedConfiguration) {
+      onOperatorChanged(OperatorType.Eq, id);
+    }
+  };
+
+  /**
+   * Must always be called when entity is removed or replaced!
+   */
+  const onEntityRemoved = (id: string, isExpectedConfiguration: boolean) => {
+    if (isExpectedConfiguration) {
+      onOperatorChanged(null, id);
+    }
+  };
+
+  const addEntity = (isExpectedConfiguration: boolean) => {
+    const newId = generateEntityId();
+    const newName = DEFAULT_ENTITY_NAME;
+
+    const newEntity: EntityConfiguration = {
+      id: newId,
+      entityName: newName,
+      components: [],
+    };
+    updateUnitTest((prev) =>
+      isExpectedConfiguration
+        ? {
+            expectedConfiguration: [...prev.expectedConfiguration, newEntity],
+          }
+        : {
+            initialConfiguration: [...prev.initialConfiguration, newEntity],
+          },
+    );
+    onEntityAdded(newId, isExpectedConfiguration);
+  };
+
+  const removeEntity = (id: string, isExpectedConfiguration: boolean) => {
     updateUnitTest((prev) => ({
       initialConfiguration: prev.initialConfiguration.filter(
         (e) => e.id !== id,
@@ -124,7 +171,36 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
         (e) => e.id !== id,
       ),
     }));
-    handleOnOperatorChanged(null, id);
+    onEntityRemoved(id, isExpectedConfiguration);
+  };
+
+  const cloneComponent = (component: Component): Component => {
+    return { ...component, fields: structuredClone(component.fields) };
+  };
+
+  const cloneEntity = (entity: EntityConfiguration): EntityConfiguration => {
+    return {
+      id: generateEntityId(),
+      entityName: entity.entityName,
+      components: entity.components.map((comp) => cloneComponent(comp)),
+    };
+  };
+
+  const copyFromInitial = () => {
+    // Cleanup current entities
+    unitTest.expectedConfiguration.forEach((entity) =>
+      onEntityRemoved(entity.id, true),
+    );
+
+    const newExpected = unitTest.initialConfiguration.map((entity) =>
+      cloneEntity(entity),
+    );
+
+    newExpected.forEach((entity) => onEntityAdded(entity.id, true));
+
+    updateUnitTest({
+      expectedConfiguration: newExpected,
+    });
   };
 
   const getAvailableComponent = (id: string): Component => {
@@ -136,10 +212,6 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
     }
 
     return component;
-  };
-
-  const cloneComponent = (component: Component): Component => {
-    return { ...component, fields: structuredClone(component.fields) };
   };
 
   const replaceComponentFromWorld = (
@@ -203,10 +275,7 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
     return true;
   }
 
-  const handleOnOperatorChanged = (
-    type: OperatorType | null,
-    fullPath: string,
-  ) => {
+  const onOperatorChanged = (type: OperatorType | null, fullPath: string) => {
     updateUnitTest((prevTest) => {
       let newOperators = [];
       if (type) {
@@ -233,11 +302,13 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
     availableSystems,
     availableComponents,
     loadingMetadata,
+    addEntity,
     removeEntity,
     replaceComponent,
+    copyFromInitial,
     updateTestProperties,
     updateUnitTest,
-    onOperatorChanged: handleOnOperatorChanged,
+    onOperatorChanged,
     getOperatorType,
   };
 

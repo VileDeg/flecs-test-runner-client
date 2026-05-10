@@ -30,6 +30,8 @@ export const SUPPORTER_OPERATORS_COMPONENT_NAME = `${TEST_RUNNER_NAME}.Supported
 export const OPERATOR_PATH_SEP = "/";
 export const FLECS_PATH_SEP = ".";
 
+export const DEFAULT_ENTITY_NAME: string = "Entity";
+
 export const DEFAULT_UNIT_TEST: UnitTest = {
   name: "Test",
   systems: [],

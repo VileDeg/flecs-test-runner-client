@@ -6,7 +6,6 @@ import type { EntityConfiguration, WorldConfiguration } from "@/common/types";
 
 import { EntityBuilder } from "./entityBuilder";
 import { useBuilder } from "@/contexts/builderContext";
-import { OperatorType } from "@/common/coreTypes";
 
 export interface WorldBuilderProps {
   configuration: WorldConfiguration;
@@ -19,7 +18,7 @@ export const WorldBuilderComponent: React.FC<WorldBuilderProps> = ({
   isExpected,
   onUpdate,
 }) => {
-  const { onOperatorChanged } = useBuilder();
+  const { addEntity } = useBuilder();
 
   const handleOnEntityUpdated = (
     updates: Partial<EntityConfiguration> | null,
@@ -35,25 +34,13 @@ export const WorldBuilderComponent: React.FC<WorldBuilderProps> = ({
     onUpdate(updatedEntities);
   };
 
-  const addEntity = () => {
-    const newId = crypto.randomUUID();
-    const newName = "Entity";
-
-    const newEntity: EntityConfiguration = {
-      id: newId,
-      entityName: newName,
-      components: [],
-    };
-    onUpdate([...configuration, newEntity]);
-
-    if (isExpected) {
-      onOperatorChanged(OperatorType.Eq, newId);
-    }
-  };
-
   const renderAddEntityButton = () => (
     <div className="flex justify-center">
-      <Button variant="outline" onClick={addEntity} className="gap-2">
+      <Button
+        variant="outline"
+        onClick={() => addEntity(isExpected)}
+        className="gap-2"
+      >
         <Plus className="h-4 w-4" />
         Add Entity
       </Button>
