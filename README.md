@@ -29,7 +29,7 @@ npm run dev
 
 ## Testing
 
-Folder `test_json` contains tests that can be imported and executed when connected to the running [FTR Sample Project](https://github.com/VileDeg/flecs-test-runner-sample-project) application to validate the **FTR Client** behavior or simply to demonstrate it.
+Folder `sample_tests` contains tests that can be imported and executed when connected to the running [FTR Sample Project](https://github.com/VileDeg/flecs-test-runner-sample-project) application to validate the **FTR Client** behavior or simply to demonstrate it.
 
 ## Notes
 
