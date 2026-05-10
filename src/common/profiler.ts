@@ -6,13 +6,18 @@ const isSaveToFileForced = urlParams.get("save_to_file") === "true";
 const MEASURE_PERFORMANCE =
   import.meta.env.VITE_MEASURE_PERFORMANCE === "true" || isMeasureForced;
 
+/**
+ * Simple runtime profiler implementation. Used for profiling test execution time.
+ */
 interface IProfiler {
   markStart(testName: string): void;
   markEnd(testName: string): void;
   cancel(testName: string): void;
 }
 
-// The actual implementation (same as before)
+/**
+ * The actual implementation for when profiling is enabled.
+ */
 class ClientProfiler implements IProfiler {
   private startTimes = new Map<string, number>();
   private results: { testName: string; duration: number }[] = [];
@@ -65,7 +70,7 @@ class ClientProfiler implements IProfiler {
 
     const body = rows.join("\n");
     console.log(body);
-    if(!saveToFile) {
+    if (!saveToFile) {
       return;
     }
 
@@ -83,14 +88,18 @@ class ClientProfiler implements IProfiler {
   }
 }
 
-// The "No-Op" version that does nothing
+/**
+ * The "No-Op" disabled version.
+ */
 class NoopProfiler implements IProfiler {
   markStart(_testName: string) {}
   markEnd(_testName: string) {}
   cancel(_testName: string) {}
 }
 
-// 5. Export a single instance based on the constant
+/**
+ * Export a single instance based on the constant.
+ */
 export const profiler: IProfiler = MEASURE_PERFORMANCE
   ? new ClientProfiler()
   : new NoopProfiler();

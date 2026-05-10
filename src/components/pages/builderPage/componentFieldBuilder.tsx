@@ -232,11 +232,11 @@ export const ComponentFieldBuilder: React.FC<ComponentFieldBuilderProps> = ({
     return Object.values(OperatorType);
   };
 
-  // TODO: save to state, otherwise done every re-render?
+  // TODO: save to state or useMemo?
   const getSupportedOperatorsForFields = (fields: ComponentFields) => {
-    const comp = availableComponents.find(
-      // operatorProps?.
-      (comp) => isComponentStructureEqual(comp.fields, fields),
+    // Match the structure of component with a known component to find out what component it is.
+    const comp = availableComponents.find((comp) =>
+      isComponentStructureEqual(comp.fields, fields),
     );
     if (!comp) {
       console.error("Failed to match fields ", fields, " to any component");
@@ -253,7 +253,7 @@ export const ComponentFieldBuilder: React.FC<ComponentFieldBuilderProps> = ({
     return supportedOps;
   };
 
-  // TODO: save to state, otherwise done every re-render?
+  // TODO: save to state or useMemo?
   const getSupportedOperators = () => {
     if (isComponentFieldValuePrimitive(field.value)) {
       return isComponentFieldEnum(field) ? [] : getAllOperatorTypes();

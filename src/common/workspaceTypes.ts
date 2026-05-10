@@ -1,9 +1,14 @@
+/**
+ * @file
+ * Types used in workspace context and page.
+ */
+
 import type { UnitTestProps } from "./types";
 
 import { isUnitTestProps } from "@/common/types";
 
 /**
- * Test status types
+ * Test status types,
  */
 export const TestStatus = {
   RUNNING: "running",
@@ -11,8 +16,8 @@ export const TestStatus = {
   PASSED: "passed",
   FAILED: "failed",
   TIMEOUT: "timeout",
-  INVALID: "invalid", // when test did not pass validation
-  IDLE: "idle", // not displayed in UI?
+  INVALID: "invalid", // When test did not pass validation
+  IDLE: "idle",
 } as const;
 export type TestStatus = (typeof TestStatus)[keyof typeof TestStatus];
 
@@ -32,8 +37,16 @@ export interface WorkspaceTest {
   lastUpdated: number;
   /** Timestamp when test was created/added to workspace */
   createdAt: number;
-
+  /** Timestamp when test was executed */
   executedAtEpochMs?: number;
+}
+
+/**
+ * Workspace state stored in localStorage
+ */
+export interface WorkspaceState {
+  /** All tests in the workspace */
+  tests: WorkspaceTest[];
 }
 
 export function isWorkspaceTest(value: unknown): value is WorkspaceTest {
@@ -53,13 +66,6 @@ export function isWorkspaceTest(value: unknown): value is WorkspaceTest {
       typeof candidate.executedAtEpochMs === "number")
   );
 }
-/**
- * Workspace state stored in localStorage
- */
-export interface WorkspaceState {
-  /** All tests in the workspace */
-  tests: WorkspaceTest[];
-}
 
 export function isWorkspaceState(value: unknown): value is WorkspaceState {
   if (typeof value !== "object" || value === null) return false;
@@ -71,23 +77,15 @@ export function isWorkspaceState(value: unknown): value is WorkspaceState {
   );
 }
 
-/**
- * Polling configuration
- */
-export interface PollingConfig {
-  /** Polling interval in milliseconds */
-  interval: number;
-  /** Whether polling is enabled */
-  enabled: boolean;
-  /** Timeout for individual poll requests */
-  timeout: number;
-}
+export const SortType = {
+  Alphabetical: "alphabetical",
+  Status: "status",
+  Chronological: "chronological",
+} as const;
+export type SortType = (typeof SortType)[keyof typeof SortType];
 
-/**
- * Default polling configuration
- */
-export const DEFAULT_POLLING_CONFIG: PollingConfig = {
-  interval: 5000, // 5 seconds
-  enabled: true,
-  timeout: 10000, // 10 seconds
-};
+export const SortDirection = {
+  Ascending: "asc",
+  Descending: "desc",
+} as const;
+export type SortDirection = (typeof SortDirection)[keyof typeof SortDirection];

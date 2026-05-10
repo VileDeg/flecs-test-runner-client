@@ -33,6 +33,9 @@ export function flecsError(error: any, prefix: string): Error {
   return Error(`${prefix}: ${flecsErrorMessage(error)}`);
 }
 
+/**
+ * A wrapper classes enabling asynchronous execution of Flecs REST API requests.
+ */
 export class FlecsAsync {
   connection: any;
   isConnected: boolean = false;
@@ -42,7 +45,11 @@ export class FlecsAsync {
     this.isConnected = false;
   }
 
-  // Wait for connection to be established
+  /**
+   * Wait for connection to be established.
+   * @param timeoutMs Timeout.
+   * @returns
+   */
   async waitForConnection(timeoutMs = 5000) {
     return new Promise<void>((resolve, reject) => {
       if (this.isConnected) {
@@ -84,14 +91,12 @@ export class FlecsAsync {
     });
   }
 
-  // Entity operations
   async entity(path, params = {}): Promise<QueriedEntity> {
     return this._wrapMethod("entity", path, params);
   }
 
   async typeInfo(path): Promise<TypeInfoResponse> {
-    // , params = {}
-    return this._wrapMethod("typeInfo", path); // , params
+    return this._wrapMethod("typeInfo", path);
   }
 
   async create(path) {
@@ -102,7 +107,6 @@ export class FlecsAsync {
     return this._wrapMethod("delete", path);
   }
 
-  // Component operations
   async add(path, component) {
     return this._wrapMethod("add", path, component);
   }
@@ -111,7 +115,6 @@ export class FlecsAsync {
     return this._wrapMethod("remove", path, component);
   }
 
-  // Methods that DON'T take recv/err - return request objects
   async set(path, component, value) {
     return this._wrapMethod("set", path, component, value);
   }
@@ -120,42 +123,10 @@ export class FlecsAsync {
     return this._wrapMethod("get", path, params);
   }
 
-  // async enable(path, component) {
-  //   return this._wrapMethod('enable', path, component);
-  // }
-
-  // async disable(path, component) {
-  //   return this._wrapMethod('disable', path, component);
-  // }
-
   // Query operations
   async query(queryString, params = {}): Promise<QueryResponse> {
     return this._wrapMethod("query", queryString, params);
   }
-
-  // async queryName(queryName, params = {}) {
-  //   return this._wrapMethod('queryName', queryName, params);
-  // }
-
-  // // World operations
-  // async world() {
-  //   return this._wrapMethod('world');
-  // }
-
-  // // Script operations
-  // async scriptUpdate(path, code, params = {}) {
-  //   return this._wrapMethod('scriptUpdate', path, code, params);
-  // }
-
-  // // Action operations
-  // async action(action) {
-  //   return this._wrapMethod('action', action);
-  // }
-
-  // // Generic request
-  // async request(path, params = {}) {
-  //   return this._wrapMethod('request', path, params);
-  // }
 
   // Connection management
   disconnect() {
@@ -167,7 +138,6 @@ export class FlecsAsync {
   get status() {
     return this.connection.status;
   }
-
   get worldInfo() {
     return this.connection.worldInfo;
   }

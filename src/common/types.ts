@@ -1,12 +1,9 @@
-/* eslint-disable @typescript-eslint/no-empty-object-type */
+/**
+ * @file
+ * Types used by FTR Client application.
+ */
 
-import type { OperatorType } from "@common/coreTypes";
-
-// Core types
-export interface SystemInvocation {
-  name: string; // Full path: module.system_name. Must be unique
-  timesToRun: number;
-}
+import type { SystemInvocation, OperatorType } from "@common/coreTypes";
 
 export interface Operator {
   path: string;
@@ -21,29 +18,12 @@ export interface UnitTest {
   operators: Operator[];
 }
 
-// TODO: move to core types?
-export namespace UnitTest {
-  export interface Executed {
-    statusMessage: string;
-  }
-  export interface Passed {}
-  export interface Incomplete {
-    worldExpectedSerialized: string;
-  }
-}
-
-// Properties used by builder
+/**
+ * Properties used by builder
+ */
 export interface UnitTestProps {
   test: UnitTest;
   selectedModules: Module[];
-}
-
-/**
- * Standard Prototype Check
- * Returns true only if the object was created via 'new Module()'
- */
-export function isModule(obj: unknown): obj is Module {
-  return obj instanceof Module;
 }
 
 /**
@@ -79,8 +59,8 @@ export function isUnitTestProps(obj: unknown): obj is UnitTestProps {
 }
 
 // General types
+// TODO: convert to simple type (no need for class)
 export class Module {
-  // TODO: convert to simple type (not class)
   fullPath: string;
 
   constructor(fullPath: string) {
@@ -101,54 +81,89 @@ export interface System {
   module: Module;
 }
 
-// name : field
+/**
+ * Name: Field
+ */
 export type ComponentFields = Record<string, ComponentField>;
-export type ComponentFieldsRaw = Record<string, ComponentFieldValue>; // TODO: unused?
-
-export type ComponentBody = ComponentFields;
 
 export type ComponentFieldsArray = ComponentField[];
-
 export type ComponentFieldValuePrimitive = string;
+
 export type ComponentFieldValue =
   | ComponentFieldValuePrimitive
   | ComponentFields
   | ComponentFieldsArray;
 
 export interface ComponentField {
-  // We only know the actual type for the primitive
+  /**
+   * We only know the actual type for the primitive.
+   * If field is a component, type is unknown.
+   */
   type: string;
   value: ComponentFieldValue;
-
-  // For vector and array to know what the element looks like
+  /**
+   * For vector and array to know what the element looks like.
+   */
   schema?: ComponentField;
+  /**
+   * For the enum type, list of possible values.
+   */
   enumValues?: string[];
 }
 
-// TODO: difference between equals and cmp
+export interface ComponentHeader {
+  id: string;
+  name: string;
+  module: Module;
+  supportedOperators: SupportedOperators;
+}
+
+export interface Component extends ComponentHeader {
+  fields: ComponentFields;
+}
+export type Components = Component[];
+
+/**
+ * Captures the presence of on_equals, on_compare Flecs hooks.
+ */
 export interface SupportedOperators {
   equals: boolean;
   cmp: boolean;
 }
 
+export function isSupportedOperators(
+  value: unknown,
+): value is SupportedOperators {
+  if (typeof value !== "object" || value === null) return false;
+
+  const candidate = value as Record<string, unknown>;
+
+  return (
+    typeof candidate.equals === "boolean" && typeof candidate.cmp === "boolean"
+  );
+}
+
+/**
+ * Compare the structure of two component fields.
+ */
 export function isComponentStructureEqual(
   a: ComponentFieldValue,
   b: ComponentFieldValue,
 ): boolean {
-  // 1. Handle Primitive Case (string)
+  // Primitive
   if (typeof a === "string" || typeof b === "string") {
-    return true; // don't check the value
-    //return a === b;
+    // Don't check the value, we only care about structure.
+    return true;
   }
 
-  // 2. Handle Array Case (ComponentFieldsArray)
+  // Array
   if (Array.isArray(a) && Array.isArray(b)) {
     if (a.length !== b.length) return false;
     // Recursively check each field in the array
     return a.every((field, index) => isFieldStructureEqual(field, b[index]));
   }
 
-  // 3. Handle Dictionary Case (ComponentFields / Record)
+  // Dictionary
   if (
     typeof a === "object" &&
     a !== null &&
@@ -176,43 +191,24 @@ export function isComponentStructureEqual(
   return false;
 }
 
-/**
- * Helper to compare the ComponentField wrapper objects
- */
 export function isFieldStructureEqual(
   a: ComponentField,
   b: ComponentField,
 ): boolean {
-  // Compare the explicit 'type' property
-  if (a.type !== b.type) return false;
+  if (a.type !== b.type) {
+    return false;
+  }
 
   // Recursively check the schema structure if it exists
-  if (!!a.schema !== !!b.schema) return false;
+  if (!!a.schema !== !!b.schema) {
+    return false;
+  }
   if (a.schema && b.schema) {
     return isFieldStructureEqual(a.schema, b.schema);
   }
 
   // Recurse into the value structure (ignoring the literal value, checking its shape)
   return isComponentStructureEqual(a.value, b.value);
-}
-
-export function isSupportedOperators(
-  value: unknown,
-): value is SupportedOperators {
-  if (typeof value !== "object" || value === null) return false;
-
-  const candidate = value as Record<string, unknown>;
-
-  return (
-    typeof candidate.equals === "boolean" && typeof candidate.cmp === "boolean"
-  );
-}
-
-export interface ComponentHeader {
-  id: string;
-  name: string;
-  module: Module;
-  supportedOperators: SupportedOperators;
 }
 
 export function isComponentFieldValuePrimitive(
@@ -304,12 +300,6 @@ export function iterateComponentFieldDict<T>(
   return fieldsOut;
 }
 
-export type Components = Component[];
-
-export interface Component extends ComponentHeader {
-  fields: ComponentFields;
-}
-
 export interface EntityHeader {
   id: string; // unique
   entityName: string;
@@ -323,6 +313,15 @@ export interface EntityConfiguration extends EntityHeader {
 export type WorldConfiguration = EntityConfiguration[];
 
 export type PrimitiveType = boolean | string | number;
+
+export const PRIMITIVE_TYPE_DEFAULT_VALUES: Record<string, PrimitiveType> = {
+  boolean: false,
+  int: 0,
+  char: 97, // 'a'
+  float: 0,
+  string: "",
+  text: "",
+};
 
 // Types retrieved from Flecs query
 export interface QueriedEntityFields {
@@ -399,14 +398,6 @@ export function typeInfoLeafValueToString(
   return typeof value === "string" ? value : value.toString();
 }
 
-export const OperatorLevel = {
-  Entity: "entity",
-  Component: "component",
-  Property: "field",
-} as const;
-export type OperatorLevel = (typeof OperatorLevel)[keyof typeof OperatorLevel];
-
-// 1. Erasable "Enum" Replacement
 export const MessageType = {
   INFO: "info",
   SUCCESS: "success",
@@ -419,16 +410,3 @@ export interface TestValidationResult {
   message: string;
   type?: MessageType;
 }
-
-export const SortType = {
-  Alphabetical: "alphabetical",
-  Status: "status",
-  Chronological: "chronological",
-} as const;
-export type SortType = (typeof SortType)[keyof typeof SortType];
-
-export const SortDirection = {
-  Ascending: "asc",
-  Descending: "desc",
-} as const;
-export type SortDirection = (typeof SortDirection)[keyof typeof SortDirection];

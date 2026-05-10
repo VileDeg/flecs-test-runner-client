@@ -46,6 +46,7 @@ import {
 
 import { TestRunner } from "@/common/testRunner";
 import { OperatorType } from "@/common/coreTypes";
+import type { Executed, Incomplete } from "@/common/coreTypes";
 import { profiler } from "@/common/profiler";
 
 interface WorkspaceContextType {
@@ -133,9 +134,9 @@ const parseQueryResults = (queryResult: QueryResponse): TestResult[] => {
   for (const entity of queryResult.results) {
     const [unitTest, executed, _, incomplete] = entity.fields.values as [
       UnitTest,
-      UnitTest.Executed,
-      UnitTest.Passed,
-      UnitTest.Incomplete?,
+      Executed,
+      undefined,
+      Incomplete?,
     ];
 
     results.push({
@@ -330,10 +331,7 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
     setWsState((prev) => ({ ...prev, tests: [] }));
   };
 
-  const executeTest = async (
-    wsTest: WorkspaceTest,
-    clearLastResult: boolean = true,
-  ): Promise<boolean> => {
+  const executeTest = async (wsTest: WorkspaceTest): Promise<boolean> => {
     const testId = wsTest.id;
     const unitTest = wsTest.testProperties.test;
     profiler.markStart(unitTest.name);
@@ -362,7 +360,7 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
       const testCore = TestRunner.convertTestToCore(testToRun);
       const testRunner = new TestRunner(connection!);
 
-      await testRunner.executeTest(testCore, clearLastResult);
+      await testRunner.executeTest(testCore);
 
       // Ensure running status set only after all HTTP requests got delivered
       updateTest(testId, {
@@ -419,7 +417,7 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
       });
 
       // Execute incomplete test
-      await testRunner.executeTest(coreTest, true, true);
+      await testRunner.executeTest(coreTest, true);
       updateTest(testId, {
         status: TestStatus.RUNNING, // Will be later updated by polling
         statusMessage: "Executed successfully",
@@ -494,9 +492,7 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
     if (wsTests.length < 1) {
       return false;
     }
-    const results = await Promise.all(
-      wsTests.map((test) => executeTest(test, true)),
-    );
+    const results = await Promise.all(wsTests.map((test) => executeTest(test)));
 
     return results.every((res) => res === true);
   };
@@ -629,7 +625,7 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({
       passed: TestResult[],
       failed: TestResult[],
     ) => {
-      let testStatusUpdates: Record<string, CheckTestResultReturnType> = {};
+      const testStatusUpdates: Record<string, CheckTestResultReturnType> = {};
       let numResultsFound = 0;
       for (const wsTest of runningTests) {
         const statusUpdate =

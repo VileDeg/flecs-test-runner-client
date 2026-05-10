@@ -1,4 +1,11 @@
-import type { SystemInvocation } from "./types";
+/**
+ * @file
+ * Types that mirror C++ types in core.
+ */
+export interface SystemInvocation {
+  name: string; // Full path: module.system_name. Must be unique
+  timesToRun: number;
+}
 
 export type ComponentFieldsArray = ComponentFieldValue[];
 export type ComponentFieldValuePrimitive = string | number;
@@ -61,4 +68,11 @@ export interface UnitTest {
   expectedConfiguration: SerializedEntities;
 
   operators: Operator[];
+}
+
+export interface Executed {
+  statusMessage: string;
+}
+export interface Incomplete {
+  worldExpectedSerialized: string;
 }

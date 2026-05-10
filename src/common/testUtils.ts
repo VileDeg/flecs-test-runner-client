@@ -13,6 +13,11 @@ import { iterateComponentFieldDict } from "@/common/types";
 
 import { FlecsMetadataService } from "@common/flecsMetadataService.ts";
 
+/**
+ * Download an object in JSON format.
+ * @param item Item to download.
+ * @param filename Filename to save as.
+ */
 export function downloadJson<T>(item: T, filename: string) {
   const blob = new Blob([JSON.stringify(item, null, 2)], {
     type: "application/json",
@@ -52,9 +57,7 @@ export function validateComponents(
   availableComponents: Component[],
 ): string[] {
   const all: string[] = [];
-  // if (components.length < 1) {
-  //   all.push("Does not have components");
-  // }
+
   components.forEach((component: Component) => {
     if (!availableComponents.find((avComp) => avComp.id === component.id)) {
       all.push(
@@ -131,6 +134,9 @@ export function validateConfiguration(
   return all;
 }
 
+/**
+ * Validate the whole unit test definition.
+ */
 export function validateTest(
   test: UnitTest,
   availableSystems: System[],

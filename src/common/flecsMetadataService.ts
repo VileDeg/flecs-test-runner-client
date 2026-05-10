@@ -10,7 +10,6 @@ import type {
   ComponentFields,
   SupportedOperators,
   TypeInfoResponseDict,
-  TypeInfoResponseArray,
   TypeInfoResponseEntryValue,
   QueriedComponent,
 } from "@/common/types";
@@ -20,6 +19,7 @@ import {
   isTypeInfoLeafValue,
   typeInfoLeafValueToString,
   isSupportedOperators,
+  PRIMITIVE_TYPE_DEFAULT_VALUES,
 } from "@/common/types";
 
 import {
@@ -27,9 +27,12 @@ import {
   SUPPORTER_OPERATORS_COMPONENT_NAME,
 } from "@common/constants";
 
+/**
+ * Class resposible for metadata retrieval from the tested application.
+ */
 export class FlecsMetadataService {
   /**
-   * Build full path by recursively querying parent entities by name
+   * Build full path by recursively querying parent entities by name.
    */
   private static async buildFullPath(
     connection: FlecsAsync,
@@ -70,10 +73,12 @@ export class FlecsMetadataService {
   }
 
   /**
-   * Fetch all available modules from the Flecs application
-   * Only fetches modules that have the TestableModule tag
+   * Fetch all available modules from the Flecs application.
+   * Only fetches modules that have the specific tag.
+   * @param connection Flecs connection.
+   * @returns Array of modules.
    */
-  static async getModules(connection: FlecsAsync): Promise<Module[]> {
+  static async getAvailableModules(connection: FlecsAsync): Promise<Module[]> {
     try {
       // Query for modules that have the TestableModule tag
       const data = await connection.query(
@@ -106,18 +111,17 @@ export class FlecsMetadataService {
   }
 
   /**
-   * Fetch systems filtered by selected modules
+   * Fetch systems of a module.
+   * @param connection Flecs connection.
+   * @param module Module to get systems from.
+   * @returns Array of systems in module.
    */
-  static async getSystems(
+  static async getSystemsInModule(
     connection: FlecsAsync,
     module: Module,
   ): Promise<System[]> {
     try {
       const systems: System[] = [];
-
-      // Build query to find systems under this module
-      // Format: (ChildOf, module_path), System
-      // (ChildOf, modules.movement), flecs.system.System
       const query = `(ChildOf, ${module.fullPath}), flecs.system.System`;
 
       const data = await connection.query(query);
@@ -146,19 +150,18 @@ export class FlecsMetadataService {
   }
 
   /**
-   * Fetch components filtered by selected modules
+   * Fetch components of a module.
+   * @param connection Flecs connection.
+   * @param module Module to get components from.
+   * @returns Array of components in module.
    */
-  static async getComponents(
+  static async getComponentsInModule(
     connection: FlecsAsync,
     module: Module,
   ): Promise<Components> {
     const modulePath = module.fullPath;
     try {
       const components: Components = [];
-
-      // Query components that are children of each selected module
-      // Build query to find components under this module
-      // Format: (ChildOf, module_path), flecs.core.Component
       const query = `(ChildOf, ${modulePath}), flecs.core.Component`;
 
       const data = await connection.query(query);
@@ -170,23 +173,20 @@ export class FlecsMetadataService {
         const componentName = entity.name;
 
         // Try to get component metadata to discover fields
-        const fullComponentPath = modulePath + "." + componentName;
-        const fields = await this.getComponentFields(
-          connection,
-          fullComponentPath,
-        );
+        const componentId = `${module.fullPath}${MODULE_PATH_SEP}${componentName}`;
+        const fields = await this.getComponentFields(connection, componentId);
         if (!fields) {
-          console.warn(`Component ${fullComponentPath} skipped. Unsupported.`);
+          console.warn(`Component ${componentId} skipped. Unsupported.`);
           continue;
         }
 
-        const supportedOperators = await this.getComponentSupportedOperators(
+        const supportedOperators = await this.getSupportedOperatorsForComponent(
           connection,
-          fullComponentPath,
+          componentId,
         );
 
         components.push({
-          id: `${module.fullPath}${MODULE_PATH_SEP}${componentName}`,
+          id: componentId,
           name: componentName,
           module,
           supportedOperators,
@@ -203,16 +203,6 @@ export class FlecsMetadataService {
       );
       throw error;
     }
-  }
-
-  static flecsNameToPath(name: string, delim: string = "/"): string {
-    return name.replaceAll(".", delim);
-  }
-
-  static parseTypeInfoArray(_: TypeInfoResponseArray): ComponentFields {
-    console.warn("parseTypeInfoArray is not supported");
-    const fields: ComponentFields = {};
-    return fields;
   }
 
   static isCollectionType(type: string): boolean {
@@ -256,15 +246,15 @@ export class FlecsMetadataService {
         };
       }
     } else if (isTypeInfoLeafValue(value)) {
-      // unsupported for now
+      // TODO: unsupported
       field = {
         type: "skip", // fallback type for now
         value: "<undefined>",
       };
     } else {
-      // dict
+      // Dict
       field = {
-        type: "component", // here we don't know which component it is
+        type: "component", // Here we cannot know which component it is
         value: this.parseTypeInfoDict(value),
       };
     }
@@ -283,18 +273,25 @@ export class FlecsMetadataService {
     return fields;
   }
 
+  /**
+   * Retrieve metadata about component fields.
+   * @param connection Flecs connection.
+   * @param componentId Id of a component.
+   * @returns Component fields if was able to retrieve.
+   */
   static async getComponentFields(
     connection: FlecsAsync,
-    componentName: string,
+    componentId: string,
   ): Promise<ComponentFields | null> {
     try {
-      const typeInfo = await connection.typeInfo(`${componentName}`);
+      const typeInfo = await connection.typeInfo(`${componentId}`);
 
       let fields: ComponentFields = {};
 
       if (typeof typeInfo === "number") {
-        console.log("Empty type info for ", componentName);
-        return {}; // no type info, empty component
+        console.log("Empty type info for ", componentId);
+        // No type info, empty component. Is valid for tags.
+        return {};
       }
       if (Array.isArray(typeInfo)) {
         // Can be array in case of vector/array
@@ -307,17 +304,23 @@ export class FlecsMetadataService {
       return fields;
     } catch (error) {
       throw new Error(
-        `Error fetching component info for ${componentName}: ${error}`,
+        `Error fetching component info for ${componentId}: ${error}`,
       );
     }
   }
 
-  static async getComponentSupportedOperators(
+  /**
+   * Get supported operators metadata for a component.
+   * @param connection Flecs connection.
+   * @param componentId Component id.
+   * @returns Supported operators metadata.
+   */
+  static async getSupportedOperatorsForComponent(
     connection: FlecsAsync,
-    componentName: string, // full path
+    componentId: string,
   ): Promise<SupportedOperators> {
     try {
-      const query = `${SUPPORTER_OPERATORS_COMPONENT_NAME}(${componentName})`;
+      const query = `${SUPPORTER_OPERATORS_COMPONENT_NAME}(${componentId})`;
       const response = await connection.query(query);
 
       const component = response.results[0] as QueriedComponent;
@@ -331,7 +334,7 @@ export class FlecsMetadataService {
       return supportedOperators;
     } catch (error) {
       throw new Error(
-        `Error fetching supported operators for ${componentName}: ${error}`,
+        `Error fetching supported operators for ${componentId}: ${error}`,
       );
     }
   }
@@ -340,29 +343,39 @@ export class FlecsMetadataService {
     const nt = type.toLowerCase();
     return nt === "bool" || nt === "boolean";
   }
+
   static isFloatType(type: string): boolean {
     const nt = type.toLowerCase();
     return nt === "float" || nt === "double" || nt === "f32" || nt === "f64";
   }
-  // Unsigned char is considered "int" by Flecs.
+
+  /**
+   * Note: Unsigned char is considered "int" by Flecs.
+   */
   static isIntegerType(type: string): boolean {
     const nt = type.toLowerCase();
     return nt === "int" || nt === "integer" || nt === "i32" || nt === "i64";
   }
-  // TODO: remove. Flecs does not use char type. Uses "text" for string and char instead.
-  // When deserializing to char, Flecs just takes 1st char of text.
+
+  /**
+   * TODO: remove. Flecs does not use char type. Uses "text" for string and char instead.
+   * When deserializing to char, Flecs just takes 1st char of text.
+   */
   static isCharType(type: string): boolean {
     const nt = type.toLowerCase();
     return nt === "char";
   }
+
   static isStringType(type: string): boolean {
     const nt = type.toLowerCase();
     return nt === "string" || nt === "str" || nt === "text";
   }
+
   static isEnumType(type: string): boolean {
     const nt = type.toLowerCase();
     return nt === "enum";
   }
+
   static isPrimitiveType(type: string): boolean {
     return (
       this.isBooleanType(type) ||
@@ -372,6 +385,10 @@ export class FlecsMetadataService {
     );
   }
 
+  /**
+   * Parse a value of a primitive type.
+   * Throws in case the value does not match the type.
+   */
   static parseValueForPrimitiveType(
     type: string,
     value: string,
@@ -400,8 +417,8 @@ export class FlecsMetadataService {
       }
       return parseInt(rawValue, 10);
     }
+    // TODO: remove. char type unused by Flecs
     if (this.isCharType(type)) {
-      // char type unused by Flecs
       if (rawValue.length > 1) {
         throw new Error(
           `Value "${value}" is not a valid char for type ${type}`,
@@ -440,22 +457,13 @@ export class FlecsMetadataService {
     throw new Error(`Unsupported or invalid type: ${type}`);
   }
 
-  private static readonly DEFAULT_VALUES: Record<string, PrimitiveType> = {
-    boolean: false,
-    int: 0,
-    char: 97, // 'a'
-    float: 0,
-    string: "",
-    text: "",
-  };
-
   /**
-   * Get a default value for a component field based on its type
+   * Get a default value for a primitive value component field, based on its type
    */
   static getDefaultValueForPrimitiveType(type: string): PrimitiveType {
     const normalizedType = type.toLowerCase();
 
-    const value = this.DEFAULT_VALUES[normalizedType];
+    const value = PRIMITIVE_TYPE_DEFAULT_VALUES[normalizedType];
     if (value === undefined) {
       throw new Error(`Unsupported or invalid type: ${type}`);
     }

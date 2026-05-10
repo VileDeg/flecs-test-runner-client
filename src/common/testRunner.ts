@@ -28,12 +28,11 @@ import * as Core from "@/common/coreTypes";
 import { FlecsAsync, flecsError, flecsErrorMessage } from "@/common/flecsAsync";
 import { FlecsMetadataService } from "./flecsMetadataService";
 
-export interface IncompleteTestPollingResult {
-  incomplete: UnitTest.Incomplete;
-  executed: UnitTest.Executed;
-  passed?: UnitTest.Passed;
-}
-
+/**
+ * Class responsible for test execution.
+ * Calls Flecs REST API endpoints.
+ * Serializes the Client data, deserializes retrieved Core data.
+ */
 export class TestRunner {
   private connection: FlecsAsync;
 
@@ -41,58 +40,13 @@ export class TestRunner {
     this.connection = connection;
   }
 
-  async queryTestEntities(): Promise<QueryResponse> {
-    try {
-      // Query all entities with UnitTest component
-      return await this.connection.query(UNIT_TEST_COMPONENT_NAME, {});
-    } catch (error: unknown) {
-      throw Error(`Error queries test entities: ${error}`);
-    }
-  }
-
-  async findTestEntity(testName: string): Promise<QueriedEntity | undefined> {
-    try {
-      // Query all entities with UnitTest component
-      const allTestsQuery = await this.queryTestEntities();
-
-      return allTestsQuery.results.find(
-        (queriedEntity) => (queriedEntity as QueriedEntity).name === testName,
-      ) as QueriedEntity | undefined;
-    } catch (error: unknown) {
-      throw flecsError(error, `Error in response for query test entities for test "${testName}"`);
-    }
-  }
-
-  async deleteTestEntity(testName: string): Promise<boolean> {
-    try {
-      const testEntity = await this.findTestEntity(testName);
-      if (!testEntity) {
-        return false;
-      }
-
-      await this.connection.delete(testEntity.name);
-      return true;
-    } catch (error: unknown) {
-      throw flecsError(error, `Error in response, when deleting test entity "${testName}"`);
-    }
-  }
-
-  async deleteAllTestEntities() {
-    const allTestsQuery = await this.queryTestEntities();
-
-    const deletePromises = allTestsQuery.results.map((entity) =>
-      this.connection.delete((entity as QueriedEntity).name),
-    );
-
-    await Promise.all(deletePromises);
-  }
-
   /**
-   * Execute a test
+   * Execute a single test.
+   * @param test Unit test definition.
+   * @param incomplete Whether the test is "incomplete". Used to generate the "expected" configuration.
    */
   async executeTest(
     test: Core.UnitTest,
-    clearLastResult: boolean,
     incomplete: boolean = false,
   ): Promise<void> {
     const testName = test.name;
@@ -108,22 +62,75 @@ export class TestRunner {
           // Add Incomplete tag to signal this is for expected state generation
           await this.connection?.add(testName, UNIT_TEST_INCOMPLETE_TAG_NAME);
         }
-
+        // Add ready tag to signal its ready to be processed by the "Run Test" system in Core.
         await this.connection?.add(testName, UNIT_TEST_READY_TAG_NAME);
       } catch (error: unknown) {
-        throw Error(`${flecsErrorMessage(error)}`)
+        throw Error(`${flecsErrorMessage(error)}`);
       }
     } catch (error: unknown) {
       throw Error(`Error executing test "${test.name}": ${error}`);
     }
   }
 
-  static getComponentById(id: string, knownComponents: Components): Component {
-    const component = knownComponents.find((comp) => comp.id == id);
-    if (!component) {
-      throw Error("Unknown component with id: " + id);
+  /**
+   * Query all entities with UnitTest component.
+   */
+  async queryTestEntities(): Promise<QueryResponse> {
+    try {
+      return await this.connection.query(UNIT_TEST_COMPONENT_NAME, {});
+    } catch (error: unknown) {
+      throw Error(`Error queries test entities: ${error}`);
     }
-    return component;
+  }
+
+  /**
+   * Find a single test entity.
+   * @param testName Entity name (same as test name).
+   */
+  async findTestEntity(testName: string): Promise<QueriedEntity | undefined> {
+    try {
+      const allTestsQuery = await this.queryTestEntities();
+
+      return allTestsQuery.results.find(
+        (queriedEntity) => (queriedEntity as QueriedEntity).name === testName,
+      ) as QueriedEntity | undefined;
+    } catch (error: unknown) {
+      throw flecsError(
+        error,
+        `Error in response for query test entities for test "${testName}"`,
+      );
+    }
+  }
+
+  /**
+   * Delete a single test entity.
+   * @param testName Entity name (same as test name).
+   */
+  async deleteTestEntity(testName: string): Promise<boolean> {
+    try {
+      const testEntity = await this.findTestEntity(testName);
+      if (!testEntity) {
+        return false;
+      }
+
+      await this.connection.delete(testEntity.name);
+      return true;
+    } catch (error: unknown) {
+      throw flecsError(
+        error,
+        `Error in response, when deleting test entity "${testName}"`,
+      );
+    }
+  }
+
+  async deleteAllTestEntities() {
+    const allTestsQuery = await this.queryTestEntities();
+
+    const deletePromises = allTestsQuery.results.map((entity) =>
+      this.connection.delete((entity as QueriedEntity).name),
+    );
+
+    await Promise.all(deletePromises);
   }
 
   static mapFieldCoreToEntity(
@@ -141,7 +148,7 @@ export class TestRunner {
     } else if (Array.isArray(value)) {
       const schema = destination.schema;
       if (!schema) {
-        throw Error("Schema is missing on :" + destination); // TODO:
+        throw Error("Schema is missing on :" + destination);
       }
       // TODO: assert dest value is array
       const arrayValue: ComponentFieldsArray = [];
@@ -205,6 +212,14 @@ export class TestRunner {
     };
   }
 
+  static getComponentById(id: string, knownComponents: Components): Component {
+    const component = knownComponents.find((comp) => comp.id == id);
+    if (!component) {
+      throw Error("Unknown component with id: " + id);
+    }
+    return component;
+  }
+
   static convertCoreToEntity(
     entityCore: Core.Entity,
     knownComponents: Components,
@@ -260,8 +275,15 @@ export class TestRunner {
   }
 
   /**
-   * Parse serialized world JSON into EntityData array
-   * The serialized world format should contain entities with their components
+   
+   */
+
+  /**
+   * Parse serialized world JSON into an array of entity configurations.
+   * The serialized world format must contain entities with their components.
+   * @param worldJson Serialized world.
+   * @param knownComponents Known components.
+   * @returns Asrray of entity configurations.
    */
   static parseWorldSerialized(
     worldJson: string,

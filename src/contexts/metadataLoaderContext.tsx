@@ -55,13 +55,14 @@ export const MetadataLoaderProvider: React.FC<MetadataLoaderProviderProps> = ({
 
     const loadMetadata = async () => {
       try {
-        const avModules = await FlecsMetadataService.getModules(connection);
+        const avModules =
+          await FlecsMetadataService.getAvailableModules(connection);
         setAvailableModules(avModules);
 
         for (const module of avModules) {
           const [systems, components] = await Promise.all([
-            FlecsMetadataService.getSystems(connection, module),
-            FlecsMetadataService.getComponents(connection, module),
+            FlecsMetadataService.getSystemsInModule(connection, module),
+            FlecsMetadataService.getComponentsInModule(connection, module),
           ]);
           setModuleMetadata(module.fullPath, { systems, components });
         }

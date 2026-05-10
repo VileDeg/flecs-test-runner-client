@@ -1,3 +1,7 @@
+/**
+ * @file
+ * Store/retrieve values to/from local storage.
+ */
 export type ValidatePredicate<T> = (parsed: unknown) => parsed is T;
 export function get<T>(
   key: string,
