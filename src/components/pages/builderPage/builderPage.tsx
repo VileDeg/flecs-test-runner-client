@@ -17,12 +17,9 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-import {
-  type Module,
-  type WorldConfiguration,
-  type SystemInvocation,
-  MessageType,
-} from "@/common/types";
+import type { Module, WorldConfiguration } from "@/common/types";
+import { MessageType } from "@/common/types";
+import type { SystemInvocation } from "@/common/coreTypes";
 
 import { DEFAULT_TEST_PROPERTIES } from "@common/constants.ts";
 import { TestStatus } from "@/common/workspaceTypes.ts";

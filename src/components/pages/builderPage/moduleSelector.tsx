@@ -125,11 +125,6 @@ export const ModuleSelector: React.FC<ModuleSelectorProps> = ({
                   <span className="font-medium text-foreground">
                     {module.fullPath}
                   </span>
-                  {/* {module.fullPath !== module.getName() && (
-                    <span className="text-sm text-muted-foreground">
-                      ({module.fullPath})
-                    </span>
-                  )} */}
                 </Label>
               </div>
             ))}

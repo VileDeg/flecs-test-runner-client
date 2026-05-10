@@ -4,7 +4,9 @@ import { Input } from "@components/ui/input";
 import { Label } from "@components/ui/label";
 import { Plus, Minus, Trash2 } from "lucide-react";
 
-import type { SystemInvocation, System } from "@/common/types";
+import type { System } from "@/common/types";
+import type { SystemInvocation } from "@/common/coreTypes";
+
 import { MODULE_PATH_SEP } from "@/common/constants";
 
 export interface SystemsListProps {

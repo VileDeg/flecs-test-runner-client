@@ -40,7 +40,7 @@ import TestListItem from "./testListItem";
 
 import type { UnitTestProps } from "@/common/types";
 
-import { SortType, SortDirection } from "@/common/types";
+import { SortType, SortDirection } from "@/common/workspaceTypes";
 import { useMetadataLoader } from "@/contexts/metadataLoaderContext";
 
 const statusPriority: Record<TestStatus, number> = {
