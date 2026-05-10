@@ -17,12 +17,12 @@ export const TEST_EXECUTION_TIMEOUT_MS = parseInt(
   urlParams.get("timeout") ?? "10000",
 );
 export const TEST_EXECUTION_MAX_BATCH_SIZE = parseInt(
-  urlParams.get("batch_size") ?? "10",
+  urlParams.get("batch_size") ?? "4",
 );
 export const TEST_RESULTS_POLLING_RATE_MS = parseInt(
   (urlParams.get("polling_rate") ?? urlParams.get("measure") === "true")
     ? "10"
-    : "500",
+    : "250",
 );
 
 export const SUPPORTER_OPERATORS_COMPONENT_NAME = `${TEST_RUNNER_NAME}.SupportedOperators`;

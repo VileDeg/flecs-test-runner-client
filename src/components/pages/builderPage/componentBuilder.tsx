@@ -91,7 +91,7 @@ export const ComponentBuilder: React.FC<ComponentBuilderProps> = ({
   );
 
   const renderHeader = () => (
-    <div className="flex items-start mt-4 mb-4 mr-3">
+    <div className="flex items-start mt-4 mb-4 mr-3 gap-2">
       {renderCollapseToggle()}
       {renderComponentSelector()}
       <div className="grow" />
