@@ -17,13 +17,13 @@ The project is publicly accessible at [GitHub Pages](https://viledeg.github.io/f
 To build the project `npm` has to be installed on the system.
 Install dependencies:
 
-```ps
+```powershell
 npm install
 ```
 
 Run:
 
-```ps
+```powershell
 npm run dev
 ```
 
@@ -34,3 +34,16 @@ Folder `sample_tests` contains tests that can be imported and executed when conn
 ## Notes
 
 The project is still in development state, so it may contain bugs, TODO comments, commented code, debug logs etc.
+
+## Potential Improvements
+
+- Add a visual indicator in Expected when entity/component/property is the same as intial. (maybe just toned down colors?)
+- Make initial and expected maintain same order of components and entities (better UX).
+- Add ability to drag components (swap places)? 
+- Check if system has affected any entities. If not, produce warning.
+- Fill Expected: Return only the serialized entities that have changed to save bandwidth.
+  - But how to tell when the entity got deleted?
+- Add option to specify delta time in system?
+  - Would this be useful?
+- Support import/export in YAML format.
+  - Would improve readability.

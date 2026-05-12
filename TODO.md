@@ -1,8 +1,0 @@
-- Check if system has affected any entities. If not, produce warning.
-- Fill Expected: Return only the serialized entities that were changed.
-- Add option to specify delta time in system?
-- Allow to copy initial from expected
-- Add an visual indicator in Expected when entity/component is the same as intial. (maybe just toned down colors?)
-- Add ability to drag components (swap places)? 
-  - Make initial and expected maintain same order of components and entities (better UX).
-- Support import/export in YAML format.
